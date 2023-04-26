@@ -1,0 +1,4 @@
+name: TheatriaClaims
+version: '${project.version}'
+main: com.jliii.theatriaclaims.TheatriaClaims
+api-version: 1.19
