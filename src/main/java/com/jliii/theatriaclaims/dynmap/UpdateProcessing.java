@@ -1,5 +1,8 @@
 package com.jliii.theatriaclaims.dynmap;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.util.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.claim.Claim;
 import me.ryanhamshire.GriefPrevention.util.DataStore;
@@ -24,7 +27,7 @@ import static me.ryanhamshire.GriefPrevention.dynmap.DynmapIntegration.ADMIN_ID;
 
 public class UpdateProcessing {
 
-    private final GriefPrevention plugin;
+    private final TheatriaClaims plugin;
     private final DynmapIntegration dynmapIntegration;
     private final Map<UUID, String> playerNameCache;
     private final Pattern idPattern;
@@ -33,7 +36,7 @@ public class UpdateProcessing {
     //TODO this is referencing the GriefPrevention class but still has ties to the old set up where this was a standalone plugin.
     // The DynmapGriefPreventionPlugin class needs to be refactored to be an object in this plugin.
 
-    public UpdateProcessing(@NotNull GriefPrevention plugin, DynmapIntegration dynmapIntegration) {
+    public UpdateProcessing(@NotNull TheatriaClaims plugin, DynmapIntegration dynmapIntegration) {
         this.plugin = plugin;
         this.dynmapIntegration = dynmapIntegration;
         showDebug = plugin.getConfig().getBoolean("debug", false);

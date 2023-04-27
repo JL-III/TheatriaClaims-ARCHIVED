@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.dynmap;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
@@ -21,7 +22,7 @@ public class DynmapIntegration {
     Plugin dynmap;
     DynmapAPI api;
     MarkerAPI markerapi;
-    GriefPrevention griefPrevention;
+    TheatriaClaims theatriaClaims;
 
     MarkerSet set;
     boolean use3d;
@@ -39,8 +40,8 @@ public class DynmapIntegration {
 
     Map<String, AreaMarker> resareas;
 
-    public DynmapIntegration(GriefPrevention plugin) {
-        this.griefPrevention = plugin;
+    public DynmapIntegration(TheatriaClaims plugin) {
+        this.theatriaClaims = plugin;
         resareas = new HashMap<>();
         updateProcessing = new UpdateProcessing(plugin, this);
         api = (DynmapAPI) dynmap;

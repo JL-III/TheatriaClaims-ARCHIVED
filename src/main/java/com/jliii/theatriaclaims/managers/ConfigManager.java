@@ -1,10 +1,9 @@
 package com.jliii.theatriaclaims.managers;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.ClaimsMode;
-import me.ryanhamshire.GriefPrevention.enums.PistonMode;
-import me.ryanhamshire.GriefPrevention.listeners.EconomyHandler;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.ClaimsMode;
+import com.jliii.theatriaclaims.enums.PistonMode;
+import com.jliii.theatriaclaims.listeners.EconomyHandler;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -20,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ConfigManager {
 
-    private GriefPrevention griefPrevention;
+    private TheatriaClaims theatriaClaims;
     FileConfiguration config;
 
     //configuration variables, loaded/saved from a config.yml
@@ -167,9 +166,9 @@ public class ConfigManager {
     public String databaseUserName;
     public String databasePassword;
 
-    public ConfigManager(GriefPrevention griefPrevention) {
-        this.griefPrevention = griefPrevention;
-        this.config = griefPrevention.getConfig();
+    public ConfigManager(TheatriaClaims theatriaClaims) {
+        this.theatriaClaims = theatriaClaims;
+        this.config = theatriaClaims.getConfig();
     }
 
     public FileConfiguration getConfig() {

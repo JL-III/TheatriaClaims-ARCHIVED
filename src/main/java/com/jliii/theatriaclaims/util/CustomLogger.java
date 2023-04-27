@@ -19,8 +19,8 @@
 package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
@@ -63,7 +63,7 @@ public class CustomLogger {
 
     public void AddEntry(String entry, CustomLogEntryTypes entryType) {
         //if disabled, do nothing
-        int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+        int daysToKeepLogs = TheatriaClaims.instance.config_logs_daysToKeep;
         if (daysToKeepLogs == 0) return;
 
         //if entry type is not enabled, do nothing

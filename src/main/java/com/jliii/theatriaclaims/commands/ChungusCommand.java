@@ -1,24 +1,7 @@
 package com.jliii.theatriaclaims.commands;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.claim.ClaimPermission;
-import me.ryanhamshire.GriefPrevention.claim.CreateClaimResult;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.ShovelMode;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.events.TrustChangedEvent;
-import me.ryanhamshire.GriefPrevention.listeners.EconomyHandler;
-import me.ryanhamshire.GriefPrevention.listeners.PlayerEventHandler;
-import me.ryanhamshire.GriefPrevention.tasks.AutoExtendClaimTask;
-import me.ryanhamshire.GriefPrevention.tasks.WelcomeTask;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
-import me.ryanhamshire.GriefPrevention.util.Messages;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
-import me.ryanhamshire.GriefPrevention.util.PlayerName;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.VisualizationType;
+import com.jliii.theatriaclaims.listeners.EconomyHandler;
+import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.*;
 import org.bukkit.block.Block;

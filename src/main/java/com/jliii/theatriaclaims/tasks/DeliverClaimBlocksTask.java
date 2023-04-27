@@ -18,6 +18,7 @@
 
 package com.jliii.theatriaclaims.tasks;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
 import me.ryanhamshire.GriefPrevention.events.AccrueClaimBlocksEvent;
@@ -32,10 +33,10 @@ import java.util.Collection;
 //runs every 5 minutes in the main thread, grants blocks per hour / 12 to each online player who appears to be actively playing
 public class DeliverClaimBlocksTask implements Runnable {
     private final Player player;
-    private final GriefPrevention instance;
+    private final TheatriaClaims instance;
     private final int idleThresholdSquared;
 
-    public DeliverClaimBlocksTask(Player player, GriefPrevention instance) {
+    public DeliverClaimBlocksTask(Player player, TheatriaClaims instance) {
         this.player = player;
         this.instance = instance;
         this.idleThresholdSquared = instance.config_claims_accruedIdleThreshold * instance.config_claims_accruedIdleThreshold;

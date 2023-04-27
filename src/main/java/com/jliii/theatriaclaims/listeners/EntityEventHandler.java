@@ -18,6 +18,8 @@
 
 package com.jliii.theatriaclaims.listeners;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.util.DataStore;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.claim.Claim;
 import me.ryanhamshire.GriefPrevention.claim.ClaimPermission;
@@ -62,10 +64,10 @@ public class EntityEventHandler implements Listener
 {
     //convenience reference for the singleton datastore
     private final DataStore dataStore;
-    private final GriefPrevention instance;
+    private final TheatriaClaims instance;
     private final NamespacedKey luredByPlayer;
 
-    public EntityEventHandler(DataStore dataStore, GriefPrevention plugin)
+    public EntityEventHandler(DataStore dataStore, TheatriaClaims plugin)
     {
         this.dataStore = dataStore;
         instance = plugin;

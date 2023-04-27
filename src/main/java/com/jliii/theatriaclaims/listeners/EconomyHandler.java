@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.listeners;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.event.EventHandler;
@@ -13,11 +14,11 @@ import org.bukkit.plugin.RegisteredServiceProvider;
  */
 public class EconomyHandler implements Listener {
 
-    private final GriefPrevention instance;
+    private final TheatriaClaims instance;
     private boolean setupDone = false;
     private EconomyWrapper economy = null;
 
-    public EconomyHandler(GriefPrevention instance)
+    public EconomyHandler(TheatriaClaims instance)
     {
         this.instance = instance;
     }

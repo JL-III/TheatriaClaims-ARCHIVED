@@ -19,6 +19,8 @@
 package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.MessageType;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import me.ryanhamshire.GriefPrevention.claim.Claim;
 import me.ryanhamshire.GriefPrevention.claim.CreateClaimResult;
@@ -717,8 +719,7 @@ public abstract class DataStore
     //gets the claim at a specific location
     //ignoreHeight = TRUE means that a location UNDER an existing claim will return the claim
     //cachedClaim can be NULL, but will help performance if you have a reasonable guess about which claim the location is in
-    synchronized public Claim getClaimAt(Location location, boolean ignoreHeight, Claim cachedClaim)
-    {
+    synchronized public Claim getClaimAt(Location location, boolean ignoreHeight, Claim cachedClaim) {
         return getClaimAt(location, ignoreHeight, false, cachedClaim);
     }
 

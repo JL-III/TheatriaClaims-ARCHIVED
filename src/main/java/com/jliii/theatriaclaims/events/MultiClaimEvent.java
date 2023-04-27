@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.events;
 
-import me.ryanhamshire.GriefPrevention.claim.Claim;
+import com.jliii.theatriaclaims.claim.Claim;
 import org.bukkit.event.Event;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

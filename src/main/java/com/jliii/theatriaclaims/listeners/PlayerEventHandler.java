@@ -18,22 +18,9 @@
 
 package com.jliii.theatriaclaims.listeners;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.chat.SpamAnalysisResult;
-import me.ryanhamshire.GriefPrevention.chat.SpamDetector;
-import me.ryanhamshire.GriefPrevention.chat.WordFinder;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.claim.ClaimPermission;
-import me.ryanhamshire.GriefPrevention.claim.CreateClaimResult;
-import me.ryanhamshire.GriefPrevention.enums.*;
-import me.ryanhamshire.GriefPrevention.events.ClaimInspectionEvent;
-import me.ryanhamshire.GriefPrevention.tasks.AutoExtendClaimTask;
-import me.ryanhamshire.GriefPrevention.tasks.BroadcastMessageTask;
-import me.ryanhamshire.GriefPrevention.tasks.EquipShovelProcessingTask;
-import me.ryanhamshire.GriefPrevention.tasks.WelcomeTask;
-import me.ryanhamshire.GriefPrevention.util.*;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.VisualizationType;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.chat.WordFinder;
+import com.jliii.theatriaclaims.util.DataStore;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -72,7 +59,7 @@ import java.util.regex.Pattern;
 
 public class PlayerEventHandler implements Listener {
     private final DataStore dataStore;
-    private final GriefPrevention instance;
+    private final TheatriaClaims instance;
 
     //list of temporarily banned ip's
 //    private final ArrayList<IpBanInfo> tempBannedIps = new ArrayList<>();
@@ -93,7 +80,7 @@ public class PlayerEventHandler implements Listener {
     SpamDetector spamDetector = new SpamDetector();
 
     //typical constructor, yawn
-    public PlayerEventHandler(DataStore dataStore, GriefPrevention plugin)
+    public PlayerEventHandler(DataStore dataStore, TheatriaClaims plugin)
     {
         this.dataStore = dataStore;
         this.instance = plugin;

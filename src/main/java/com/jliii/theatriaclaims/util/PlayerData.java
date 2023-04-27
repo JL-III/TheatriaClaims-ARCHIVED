@@ -18,12 +18,10 @@
 
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
-import me.ryanhamshire.GriefPrevention.enums.ShovelMode;
-import me.ryanhamshire.GriefPrevention.managers.ConfigManager;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.ShovelMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;

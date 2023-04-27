@@ -1,9 +1,8 @@
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.tasks.SendPlayerMessageTask;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.enums.TextMode;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -16,7 +15,7 @@ public class Messages {
 
     //sends a color-coded message to a player
     public static void sendMessage(Player player, ChatColor color, MessageType messageID, long delayInTicks, String... args) {
-        String message = GriefPrevention.instance.dataStore.getMessage(messageID, args);
+        String message = TheatriaClaims.instance.dataStore.getMessage(messageID, args);
         sendMessage(player, color, message, delayInTicks);
     }
 
@@ -25,7 +24,7 @@ public class Messages {
         if (message == null || message.length() == 0) return;
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(color + message);
+            TheatriaClaims.AddLogEntry(color + message);
         }
         else {
             player.sendMessage(color + message);
