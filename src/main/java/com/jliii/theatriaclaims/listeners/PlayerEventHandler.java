@@ -19,8 +19,16 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.chat.SpamDetector;
 import com.jliii.theatriaclaims.chat.WordFinder;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.Messages;
+import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -58,11 +66,11 @@ import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 public class PlayerEventHandler implements Listener {
-    private final DataStore dataStore;
-    private final TheatriaClaims instance;
 
-    //list of temporarily banned ip's
-//    private final ArrayList<IpBanInfo> tempBannedIps = new ArrayList<>();
+    private final TheatriaClaims instance;
+    private final ConfigManager configManager;
+    private final CustomLogger customLogger;
+    private final DataStore dataStore;
 
     //number of milliseconds in a day
     private final long MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
@@ -79,11 +87,11 @@ public class PlayerEventHandler implements Listener {
     //spam tracker
     SpamDetector spamDetector = new SpamDetector();
 
-    //typical constructor, yawn
-    public PlayerEventHandler(DataStore dataStore, TheatriaClaims plugin)
-    {
-        this.dataStore = dataStore;
+    public PlayerEventHandler(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager, CustomLogger customLogger) {
         this.instance = plugin;
+        this.dataStore = dataStore;
+        this.configManager = configManager;
+        this.customLogger = customLogger;
         bannedWordFinder = new WordFinder(instance.dataStore.loadBannedWords());
     }
 
@@ -94,11 +102,9 @@ public class PlayerEventHandler implements Listener {
 
     //when a player chats, monitor for spam
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    synchronized void onPlayerChat(AsyncPlayerChatEvent event)
-    {
+    synchronized void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        if (!player.isOnline())
-        {
+        if (!player.isOnline()) {
             event.setCancelled(true);
             return;
         }
@@ -109,43 +115,35 @@ public class PlayerEventHandler implements Listener {
         Set<Player> recipients = event.getRecipients();
 
         //muted messages go out to only the sender
-        if (muted)
-        {
+        if (muted) {
             recipients.clear();
             recipients.add(player);
         }
 
         //soft muted messages go out to all soft muted players
-        else if (this.dataStore.isSoftMuted(player.getUniqueId()))
-        {
+        else if (this.dataStore.isSoftMuted(player.getUniqueId())) {
             String notificationMessage = "(Muted " + player.getName() + "): " + message;
             Set<Player> recipientsToKeep = new HashSet<>();
-            for (Player recipient : recipients)
-            {
-                if (this.dataStore.isSoftMuted(recipient.getUniqueId()))
-                {
+            for (Player recipient : recipients) {
+                if (this.dataStore.isSoftMuted(recipient.getUniqueId())) {
                     recipientsToKeep.add(recipient);
                 }
-                else if (recipient.hasPermission("griefprevention.eavesdrop"))
-                {
+                else if (recipient.hasPermission("griefprevention.eavesdrop")) {
                     recipient.sendMessage(ChatColor.GRAY + notificationMessage);
                 }
             }
             recipients.clear();
             recipients.addAll(recipientsToKeep);
 
-            GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.MutedChat, false);
+            customLogger.AddLogEntry(notificationMessage, CustomLogEntryTypes.MutedChat, false);
         }
 
         //troll and excessive profanity filter
-        else if (!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message))
-        {
+        else if (!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message)) {
             //allow admins to see the soft-muted text
             String notificationMessage = "(Muted " + player.getName() + "): " + message;
-            for (Player recipient : recipients)
-            {
-                if (recipient.hasPermission("griefprevention.eavesdrop"))
-                {
+            for (Player recipient : recipients) {
+                if (recipient.hasPermission("griefprevention.eavesdrop")) {
                     recipient.sendMessage(ChatColor.GRAY + notificationMessage);
                 }
             }
@@ -158,8 +156,7 @@ public class PlayerEventHandler implements Listener {
             if (!isNewToServer(player))
             {
                 PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
-                if (!playerData.profanityWarned)
-                {
+                if (!playerData.profanityWarned) {
                     playerData.profanityWarned = true;
                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoProfanity);
                     event.setCancelled(true);
@@ -168,38 +165,28 @@ public class PlayerEventHandler implements Listener {
             }
 
             //otherwise assume chat troll and mute all chat from this sender until an admin says otherwise
-            else if (instance.config_trollFilterEnabled)
-            {
-                GriefPrevention.AddLogEntry("Auto-muted new player " + player.getName() + " for profanity shortly after join.  Use /SoftMute to undo.", CustomLogEntryTypes.AdminActivity);
-                GriefPrevention.AddLogEntry(notificationMessage, CustomLogEntryTypes.MutedChat, false);
+            else if (configManager.config_trollFilterEnabled) {
+                customLogger.AddLogEntry("Auto-muted new player " + player.getName() + " for profanity shortly after join.  Use /SoftMute to undo.", CustomLogEntryTypes.AdminActivity);
+                customLogger.AddLogEntry(notificationMessage, CustomLogEntryTypes.MutedChat, false);
                 instance.dataStore.toggleSoftMute(player.getUniqueId());
             }
         }
-
         //remaining messages
-        else
-        {
+        else {
             //enter in abridged chat logs
             makeSocialLogEntry(player.getName(), message);
-
             //based on ignore lists, remove some of the audience
-            if (!player.hasPermission("griefprevention.notignorable"))
-            {
+            if (!player.hasPermission("griefprevention.notignorable")) {
                 Set<Player> recipientsToRemove = new HashSet<>();
                 PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                for (Player recipient : recipients)
-                {
-                    if (!recipient.hasPermission("griefprevention.notignorable"))
-                    {
-                        if (playerData.ignoredPlayers.containsKey(recipient.getUniqueId()))
-                        {
+                for (Player recipient : recipients) {
+                    if (!recipient.hasPermission("griefprevention.notignorable")) {
+                        if (playerData.ignoredPlayers.containsKey(recipient.getUniqueId())) {
                             recipientsToRemove.add(recipient);
                         }
-                        else
-                        {
+                        else {
                             PlayerData targetPlayerData = this.dataStore.getPlayerData(recipient.getUniqueId());
-                            if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId()))
-                            {
+                            if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId())) {
                                 recipientsToRemove.add(recipient);
                             }
                         }

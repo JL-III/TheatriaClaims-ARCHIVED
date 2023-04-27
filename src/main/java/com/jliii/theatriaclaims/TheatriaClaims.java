@@ -154,7 +154,7 @@ public class TheatriaClaims extends JavaPlugin {
         PluginManager pluginManager = this.getServer().getPluginManager();
 
         //player events
-        playerEventHandler = new PlayerEventHandler(this.dataStore, this);
+        playerEventHandler = new PlayerEventHandler(this, this.dataStore, configManager, customLogger);
         pluginManager.registerEvents(playerEventHandler, this);
 
         //block events
@@ -635,6 +635,7 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
+    //TODO these methods do nothing currently, could be import issues though
     public String allowBreak(Player player, Block block, Location location) {
         return this.allowBreak(player, block, location, new BlockBreakEvent(block, player));
     }
@@ -717,6 +718,7 @@ public class TheatriaClaims extends JavaPlugin {
         return materials;
     }
 
+    //TODO not sure if this is needed since we wont use this setting.
     public int getSeaLevel(World world) {
         Integer overrideValue = configManager.config_seaLevelOverride.get(world.getName());
         if (overrideValue == null || overrideValue == -1) {
@@ -727,6 +729,7 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
+    //TODO we arent handling bans or ips in this plugin
     public boolean containsBlockedIP(String message) {
         message = message.replace("\r\n", "");
         Pattern ipAddressPattern = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
