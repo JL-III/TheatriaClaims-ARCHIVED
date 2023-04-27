@@ -68,22 +68,6 @@ public class TheatriaClaims extends JavaPlugin {
     //how long to wait before deciding a player is staying online or staying offline, for notication messages
     public static final int NOTIFICATION_SECONDS = 20;
 
-    //adds a server log entry
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
-        if (customLogType != null && TheatriaClaims.instance.customLogger != null) {
-            TheatriaClaims.instance.customLogger.AddEntry(entry, customLogType);
-        }
-        if (!excludeFromServerLogs) log.info(entry);
-    }
-
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
-        AddLogEntry(entry, customLogType, false);
-    }
-
-    public static synchronized void AddLogEntry(String entry) {
-        AddLogEntry(entry, CustomLogEntryTypes.Debug);
-    }
-
     //initializes well...   everything
     public void onEnable() {
         //DYNMAP INTEGRATION
@@ -98,12 +82,10 @@ public class TheatriaClaims extends JavaPlugin {
         }
         instance = this;
         log = instance.getLogger();
+        customLogger = new CustomLogger(configManager, log);
         configManager = new ConfigManager(this);
         configManager.loadConfig();
-
-        this.customLogger = new CustomLogger();
-
-        AddLogEntry("Finished loading configuration.");
+        customLogger.AddLogEntry("Finished loading configuration.");
 
         //TODO this is creating flatfile datastore in more than one case, can we cut some repeated code out?
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
@@ -111,16 +93,16 @@ public class TheatriaClaims extends JavaPlugin {
             try {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(configManager.databaseUrl, configManager.databaseUserName, configManager.databasePassword);
                 if (FlatFileDataStore.hasData()) {
-                    TheatriaClaims.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
+                    customLogger.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
                     FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager);
                     this.dataStore = flatFileStore;
                     flatFileStore.migrateData(databaseStore);
-                    TheatriaClaims.AddLogEntry("Data migration process complete.");
+                    customLogger.AddLogEntry("Data migration process complete.");
                 }
                 this.dataStore = databaseStore;
             }
             catch (Exception e) {
-                TheatriaClaims.AddLogEntry("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+                customLogger.AddLogEntry("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
                 e.printStackTrace();
                 this.getServer().getPluginManager().disablePlugin(this);
                 return;
@@ -144,14 +126,14 @@ public class TheatriaClaims extends JavaPlugin {
                 this.dataStore = new FlatFileDataStore(configManager);
             }
             catch (Exception e) {
-                TheatriaClaims.AddLogEntry("Unable to initialize the file system data store.  Details:");
-                TheatriaClaims.AddLogEntry(e.getMessage());
+                customLogger.AddLogEntry("Unable to initialize the file system data store.  Details:");
+                customLogger.AddLogEntry(e.getMessage());
                 e.printStackTrace();
             }
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
-        AddLogEntry("Finished loading data " + dataMode + ".");
+        customLogger.AddLogEntry("Finished loading data " + dataMode + ".");
 
         //unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
         //20L ~ 1 second
@@ -203,7 +185,7 @@ public class TheatriaClaims extends JavaPlugin {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
-        AddLogEntry("Boot finished.");
+        customLogger.AddLogEntry("Boot finished.");
 
     }
 
@@ -289,7 +271,7 @@ public class TheatriaClaims extends JavaPlugin {
 
             //if in a creative mode world, restore the claim area
             if (TheatriaClaims.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                TheatriaClaims.AddLogEntry(player.getName() + " abandoned a claim @ " + TheatriaClaims.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                customLogger.AddLogEntry(player.getName() + " abandoned a claim @ " + TheatriaClaims.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.UnclaimCleanupWarning);
 //                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
             }
@@ -507,7 +489,7 @@ public class TheatriaClaims extends JavaPlugin {
         //dump any remaining unwritten log entries
         this.customLogger.WriteEntries();
 
-        AddLogEntry("GriefPrevention disabled.");
+        customLogger.AddLogEntry("GriefPrevention disabled.");
     }
 
     //called when a player spawns, applies protection for that player if necessary
@@ -712,13 +694,10 @@ public class TheatriaClaims extends JavaPlugin {
         //for each string in the list
         for (int i = 0; i < stringsToParse.size(); i++) {
             String string = stringsToParse.get(i);
-
             //defensive coding
             if (string == null) continue;
-
             //try to parse the string value into a material
             Material material = Material.getMaterial(string.toUpperCase());
-
             //null value returned indicates an error parsing the string from the config file
             if (material == null) {
                 //check if string has failed validity before
@@ -727,16 +706,14 @@ public class TheatriaClaims extends JavaPlugin {
                     stringsToParse.set(i, string + "     <-- can't understand this entry, see BukkitDev documentation");
 
                     //warn about invalid material in log
-                    TheatriaClaims.AddLogEntry(String.format("ERROR: Invalid material %s.  Please update your config.yml.", string));
+                    customLogger.AddLogEntry(String.format("ERROR: Invalid material %s.  Please update your config.yml.", string));
                 }
             }
-
             //otherwise material is valid, add it
             else {
                 materials.add(material);
             }
         }
-
         return materials;
     }
 

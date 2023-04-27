@@ -21,6 +21,7 @@ package com.jliii.theatriaclaims.util;
 import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
@@ -28,10 +29,14 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CustomLogger {
+
+    private final ConfigManager configManager;
+    private final Logger log;
     private final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm");
     private final SimpleDateFormat filenameFormat = new SimpleDateFormat("yyyy_MM_dd");
     private final String logFolderPath = DataStore.dataLayerFolderPath + File.separator + "Logs";
@@ -40,7 +45,9 @@ public class CustomLogger {
     //stringbuilder is not thread safe, stringbuffer is
     private final StringBuffer queuedEntries = new StringBuffer();
 
-    public CustomLogger() {
+    public CustomLogger(ConfigManager configManager, Logger log) {
+        this.configManager = configManager;
+        this.log = log;
         //ensure log folder exists
         File logFolder = new File(this.logFolderPath);
         logFolder.mkdirs();
@@ -49,13 +56,13 @@ public class CustomLogger {
         this.DeleteExpiredLogs();
 
         //unless disabled, schedule recurring tasks
-        int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+        int daysToKeepLogs = configManager.config_logs_daysToKeep;
         if (daysToKeepLogs > 0) {
-            BukkitScheduler scheduler = GriefPrevention.instance.getServer().getScheduler();
+            BukkitScheduler scheduler = TheatriaClaims.instance.getServer().getScheduler();
             final long ticksPerSecond = 20L;
             final long ticksPerDay = ticksPerSecond * 60 * 60 * 24;
-            scheduler.runTaskTimerAsynchronously(GriefPrevention.instance, new EntryWriter(), this.secondsBetweenWrites * ticksPerSecond, this.secondsBetweenWrites * ticksPerSecond);
-            scheduler.runTaskTimerAsynchronously(GriefPrevention.instance, new ExpiredLogRemover(), ticksPerDay, ticksPerDay);
+            scheduler.runTaskTimerAsynchronously(TheatriaClaims.instance, new EntryWriter(), this.secondsBetweenWrites * ticksPerSecond, this.secondsBetweenWrites * ticksPerSecond);
+            scheduler.runTaskTimerAsynchronously(TheatriaClaims.instance, new ExpiredLogRemover(), ticksPerDay, ticksPerDay);
         }
     }
 
@@ -63,7 +70,7 @@ public class CustomLogger {
 
     public void AddEntry(String entry, CustomLogEntryTypes entryType) {
         //if disabled, do nothing
-        int daysToKeepLogs = TheatriaClaims.instance.config_logs_daysToKeep;
+        int daysToKeepLogs = configManager.config_logs_daysToKeep;
         if (daysToKeepLogs == 0) return;
 
         //if entry type is not enabled, do nothing
@@ -78,14 +85,14 @@ public class CustomLogger {
 
     private boolean isEnabledType(CustomLogEntryTypes entryType) {
         if (entryType == CustomLogEntryTypes.Exception) return true;
-        if (entryType == CustomLogEntryTypes.SocialActivity && !GriefPrevention.instance.config_logs_socialEnabled)
+        if (entryType == CustomLogEntryTypes.SocialActivity && !configManager.config_logs_socialEnabled)
             return false;
-        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !GriefPrevention.instance.config_logs_suspiciousEnabled)
+        if (entryType == CustomLogEntryTypes.SuspiciousActivity && !configManager.config_logs_suspiciousEnabled)
             return false;
-        if (entryType == CustomLogEntryTypes.AdminActivity && !GriefPrevention.instance.config_logs_adminEnabled)
+        if (entryType == CustomLogEntryTypes.AdminActivity && !configManager.config_logs_adminEnabled)
             return false;
-        if (entryType == CustomLogEntryTypes.Debug && !GriefPrevention.instance.config_logs_debugEnabled) return false;
-        if (entryType == CustomLogEntryTypes.MutedChat && !GriefPrevention.instance.config_logs_mutedChatEnabled)
+        if (entryType == CustomLogEntryTypes.Debug && !configManager.config_logs_debugEnabled) return false;
+        if (entryType == CustomLogEntryTypes.MutedChat && !configManager.config_logs_mutedChatEnabled)
             return false;
 
         return true;
@@ -120,7 +127,7 @@ public class CustomLogger {
             File[] files = logFolder.listFiles();
 
             //delete any created before x days ago
-            int daysToKeepLogs = GriefPrevention.instance.config_logs_daysToKeep;
+            int daysToKeepLogs = configManager.config_logs_daysToKeep;
             Calendar expirationBoundary = Calendar.getInstance();
             expirationBoundary.add(Calendar.DATE, -daysToKeepLogs);
             for (File file : files) {
@@ -143,7 +150,7 @@ public class CustomLogger {
                 }
                 catch (NumberFormatException e) {
                     //throw this away - effectively ignoring any files without the correct filename format
-                    GriefPrevention.AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true);
+                    AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true);
                 }
             }
         }
@@ -167,5 +174,19 @@ public class CustomLogger {
         {
             DeleteExpiredLogs();
         }
+    }
+
+    //adds a server log entry
+    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
+        AddEntry(entry, customLogType);
+        if (!excludeFromServerLogs) log.info(entry);
+    }
+
+    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
+        AddLogEntry(entry, customLogType, false);
+    }
+
+    public synchronized void AddLogEntry(String entry) {
+        AddLogEntry(entry, CustomLogEntryTypes.Debug);
     }
 }
