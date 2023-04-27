@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.events;
 
-import me.ryanhamshire.GriefPrevention.claim.Claim;
+import com.jliii.theatriaclaims.claim.Claim;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;

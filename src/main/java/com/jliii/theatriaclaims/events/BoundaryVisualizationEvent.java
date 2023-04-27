@@ -1,12 +1,11 @@
 package com.jliii.theatriaclaims.events;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.util.IntVector;
-import me.ryanhamshire.GriefPrevention.visualization.Boundary;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.VisualizationProvider;
-import me.ryanhamshire.GriefPrevention.visualization.impl.AntiCheatCompatVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.impl.FakeBlockVisualization;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.visualization.Boundary;
+import com.jliii.theatriaclaims.visualization.VisualizationProvider;
+import com.jliii.theatriaclaims.visualization.impl.AntiCheatCompatVisualization;
+import com.jliii.theatriaclaims.visualization.impl.FakeBlockVisualization;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
@@ -18,12 +17,14 @@ import java.util.HashSet;
 /**
  * An {@link org.bukkit.event.Event Event} called when a {@link Player} receives {@link Boundary} visuals.
  */
-public class BoundaryVisualizationEvent extends PlayerEvent
-{
+public class BoundaryVisualizationEvent extends PlayerEvent {
 
+    private ConfigManager configManager;
+
+    //TODO static method is broken here.
     public static final VisualizationProvider DEFAULT_PROVIDER = (world, visualizeFrom, height) ->
     {
-        if (GriefPrevention.instance.config_visualizationAntiCheatCompat)
+        if (configManager.config_visualizationAntiCheatCompat)
         {
             return new AntiCheatCompatVisualization(world, visualizeFrom, height);
         }
@@ -42,12 +43,9 @@ public class BoundaryVisualizationEvent extends PlayerEvent
      * @param boundaries the {@code Boundaries} to visualize
      * @param height the height at which the visualization was initiated
      */
-    public BoundaryVisualizationEvent(
-            @NotNull Player player,
-            @NotNull Collection<Boundary> boundaries,
-            int height
-    ) {
+    public BoundaryVisualizationEvent(@NotNull Player player, @NotNull Collection<Boundary> boundaries, int height, ConfigManager configManager) {
         this(player, boundaries, height, DEFAULT_PROVIDER);
+        this.configManager = configManager;
     }
 
     /**

@@ -1,7 +1,7 @@
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -53,7 +53,7 @@ public class AutoExtendClaimTask implements Runnable {
             }
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(GriefPrevention.instance, new AutoExtendClaimTask(claim, snapshots, world.getEnvironment(), lowestLootableTile));
+        Bukkit.getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new AutoExtendClaimTask(claim, snapshots, world.getEnvironment(), lowestLootableTile));
     }
 
     private final Claim claim;
@@ -70,14 +70,14 @@ public class AutoExtendClaimTask implements Runnable {
         this.lowestExistingY = Math.min(lowestExistingY, claim.getLesserBoundaryCorner().getBlockY());
         this.minY = Math.max(
                 Objects.requireNonNull(claim.getLesserBoundaryCorner().getWorld()).getMinHeight(),
-                GriefPrevention.instance.config_claims_maxDepth);
+                configManager.config_claims_maxDepth);
     }
 
     @Override
     public void run() {
         int newY = this.getLowestBuiltY();
         if (newY < this.claim.getLesserBoundaryCorner().getBlockY()) {
-            Bukkit.getScheduler().runTask(GriefPrevention.instance, new ExecuteExtendClaimTask(claim, newY));
+            Bukkit.getScheduler().runTask(TheatriaClaims.instance, new ExecuteExtendClaimTask(claim, newY));
         }
     }
 
@@ -146,7 +146,7 @@ public class AutoExtendClaimTask implements Runnable {
     private record ExecuteExtendClaimTask(Claim claim, int newY) implements Runnable {
         @Override
         public void run() {
-            GriefPrevention.instance.dataStore.extendClaim(claim, newY);
+            TheatriaClaims.instance.dataStore.extendClaim(claim, newY);
         }
     }
 

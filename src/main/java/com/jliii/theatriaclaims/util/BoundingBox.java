@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.claim.Claim;
+import com.jliii.theatriaclaims.claim.Claim;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;

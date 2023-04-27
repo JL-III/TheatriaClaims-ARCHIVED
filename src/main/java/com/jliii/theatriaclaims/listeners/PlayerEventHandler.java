@@ -19,16 +19,22 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.chat.SpamAnalysisResult;
 import com.jliii.theatriaclaims.chat.SpamDetector;
 import com.jliii.theatriaclaims.chat.WordFinder;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
-import com.jliii.theatriaclaims.enums.MessageType;
-import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
+import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.enums.*;
+import com.jliii.theatriaclaims.events.ClaimInspectionEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.util.CustomLogger;
-import com.jliii.theatriaclaims.util.DataStore;
-import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.tasks.AutoExtendClaimTask;
+import com.jliii.theatriaclaims.tasks.BroadcastMessageTask;
+import com.jliii.theatriaclaims.tasks.EquipShovelProcessingTask;
+import com.jliii.theatriaclaims.tasks.WelcomeTask;
+import com.jliii.theatriaclaims.util.*;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
+import com.jliii.theatriaclaims.visualization.VisualizationType;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -199,41 +205,30 @@ public class PlayerEventHandler implements Listener {
     }
 
     //returns true if the message should be muted, true if it should be sent
-    private boolean handlePlayerChat(Player player, String message, PlayerEvent event)
-    {
+    private boolean handlePlayerChat(Player player, String message, PlayerEvent event) {
         //FEATURE: automatically educate players about claiming land
         //watching for message format how*claim*, and will send a link to the basics video
-        if (this.howToClaimPattern == null)
-        {
+        if (this.howToClaimPattern == null) {
             this.howToClaimPattern = Pattern.compile(this.dataStore.getMessage(MessageType.HowToClaimRegex), Pattern.CASE_INSENSITIVE);
         }
 
-        if (this.howToClaimPattern.matcher(message).matches())
-        {
-            if (instance.creativeRulesApply(player.getLocation()))
-            {
+        if (this.howToClaimPattern.matcher(message).matches()) {
+            if (instance.creativeRulesApply(player.getLocation())) {
                 Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.CreativeBasicsVideo2, 10L, DataStore.CREATIVE_VIDEO_URL);
             }
-            else
-            {
+            else {
                 Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.SurvivalBasicsVideo2, 10L, DataStore.SURVIVAL_VIDEO_URL);
             }
         }
 
         //FEATURE: automatically educate players about the /trapped command
         //check for "trapped" or "stuck" to educate players about the /trapped command
-        String trappedwords = this.dataStore.getMessage(
-                MessageType.TrappedChatKeyword
-        );
-        if (!trappedwords.isEmpty())
-        {
+        String trappedwords = this.dataStore.getMessage(MessageType.TrappedChatKeyword);
+        if (!trappedwords.isEmpty()) {
             String[] checkWords = trappedwords.split(";");
 
-            for (String checkWord : checkWords)
-            {
-                if (!message.contains("/trapped")
-                        && message.contains(checkWord))
-                {
+            for (String checkWord : checkWords) {
+                if (!message.contains("/trapped") && message.contains(checkWord)) {
                     Messages.sendMessage(
                             player,
                             TextMode.Info.getColor(),
@@ -247,7 +242,7 @@ public class PlayerEventHandler implements Listener {
 
         //FEATURE: monitor for chat and command spam
 
-        if (!instance.config_spam_enabled) return false;
+        if (!configManager.config_spam_enabled) return false;
 
         //if the player has permission to spam, don't bother even examining the message
         if (player.hasPermission("griefprevention.spam")) return false;
@@ -256,15 +251,13 @@ public class PlayerEventHandler implements Listener {
         SpamAnalysisResult result = this.spamDetector.AnalyzeMessage(player.getUniqueId(), message, System.currentTimeMillis());
 
         //apply any needed changes to message (like lowercasing all-caps)
-        if (event instanceof AsyncPlayerChatEvent)
-        {
+        if (event instanceof AsyncPlayerChatEvent) {
             ((AsyncPlayerChatEvent) event).setMessage(result.finalMessage);
         }
 
         //don't allow new players to chat after logging in until they move
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        if (playerData.noChatLocation != null)
-        {
+        if (playerData.noChatLocation != null) {
             Location currentLocation = player.getLocation();
             if (currentLocation.getBlockX() == playerData.noChatLocation.getBlockX() &&
                     currentLocation.getBlockZ() == playerData.noChatLocation.getBlockZ())
@@ -272,34 +265,29 @@ public class PlayerEventHandler implements Listener {
                 Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoChatUntilMove, 10L);
                 result.muteReason = "pre-movement chat";
             }
-            else
-            {
+            else {
                 playerData.noChatLocation = null;
             }
         }
 
         //filter IP addresses
-        if (result.muteReason == null)
-        {
-            if (instance.containsBlockedIP(message))
-            {
+        if (result.muteReason == null) {
+            if (instance.containsBlockedIP(message)) {
                 //block message
                 result.muteReason = "IP address";
             }
         }
 
-        if (result.shouldWarnChatter)
-        {
+        if (result.shouldWarnChatter) {
             //warn and log
-            Messages.sendMessage(player, TextMode.Warn.getColor(), instance.config_spam_warningMessage, 10L);
-            GriefPrevention.AddLogEntry("Warned " + player.getName() + " about spam penalties.", CustomLogEntryTypes.Debug, true);
+            Messages.sendMessage(player, TextMode.Warn.getColor(), configManager.config_spam_warningMessage, 10L);
+            customLogger.AddLogEntry("Warned " + player.getName() + " about spam penalties.", CustomLogEntryTypes.Debug, true);
         }
 
-        if (result.muteReason != null)
-        {
+        if (result.muteReason != null) {
             //mute and log
-            GriefPrevention.AddLogEntry("Muted " + result.muteReason + ".");
-            GriefPrevention.AddLogEntry("Muted " + player.getName() + " " + result.muteReason + ":" + message, CustomLogEntryTypes.Debug, true);
+            customLogger.AddLogEntry("Muted " + result.muteReason + ".");
+            customLogger.AddLogEntry("Muted " + player.getName() + " " + result.muteReason + ":" + message, CustomLogEntryTypes.Debug, true);
 
             return true;
         }
@@ -336,7 +324,7 @@ public class PlayerEventHandler implements Listener {
             }
 
             //if eavesdrop enabled and sender doesn't have the eavesdrop immunity permission, eavesdrop
-            if (instance.config_whisperNotifications && !player.hasPermission("griefprevention.eavesdropimmune"))
+            if (configManager.config_whisperNotifications && !player.hasPermission("griefprevention.eavesdropimmune"))
             {
                 //except for when the recipient has eavesdrop immunity
                 if (targetPlayer == null || !targetPlayer.hasPermission("griefprevention.eavesdropimmune"))
@@ -389,7 +377,7 @@ public class PlayerEventHandler implements Listener {
         if (playerData == null) playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
 
         //TODO take a look at the seige data here
-        if ((playerData.inPvpCombat()) && instance.config_pvp_blockedCommands.contains(command))
+        if ((playerData.inPvpCombat()) && configManager.config_pvp_blockedCommands.contains(command))
         {
             event.setCancelled(true);
             Messages.sendMessage(event.getPlayer(), TextMode.Err.getColor(), MessageType.CommandBannedInPvP);
@@ -408,7 +396,7 @@ public class PlayerEventHandler implements Listener {
         if (isMonitoredCommand)
         {
             //if anti spam enabled, check for spam
-            if (instance.config_spam_enabled)
+            if (configManager.config_spam_enabled)
             {
                 event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));
             }
@@ -434,7 +422,7 @@ public class PlayerEventHandler implements Listener {
         //if requires access trust, check for permission
         isMonitoredCommand = false;
         String lowerCaseMessage = message.toLowerCase();
-        for (String monitoredCommand : instance.config_claims_commandsRequiringAccessTrust)
+        for (String monitoredCommand : configManager.config_claims_commandsRequiringAccessTrust)
         {
             if (lowerCaseMessage.startsWith(monitoredCommand))
             {
@@ -443,8 +431,7 @@ public class PlayerEventHandler implements Listener {
             }
         }
 
-        if (isMonitoredCommand)
-        {
+        if (isMonitoredCommand) {
             Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
             if (claim != null)
             {
@@ -461,8 +448,7 @@ public class PlayerEventHandler implements Listener {
 
     private final ConcurrentHashMap<String, CommandCategory> commandCategoryMap = new ConcurrentHashMap<>();
 
-    private CommandCategory getCommandCategory(String commandName)
-    {
+    private CommandCategory getCommandCategory(String commandName) {
         if (commandName.startsWith("/")) commandName = commandName.substring(1);
 
         //if we've seen this command or alias before, return the category determined previously
@@ -473,18 +459,15 @@ public class PlayerEventHandler implements Listener {
         HashSet<String> aliases = new HashSet<>();
         aliases.add(commandName);
         aliases.add("minecraft:" + commandName);
-        for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins())
-        {
+        for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
             if (!(plugin instanceof JavaPlugin))
                 continue;
             JavaPlugin javaPlugin = (JavaPlugin) plugin;
             Command command = javaPlugin.getCommand(commandName);
-            if (command != null)
-            {
+            if (command != null) {
                 aliases.add(command.getName().toLowerCase());
                 aliases.add(plugin.getName().toLowerCase() + ":" + command.getName().toLowerCase());
-                for (String alias : command.getAliases())
-                {
+                for (String alias : command.getAliases()) {
                     aliases.add(alias.toLowerCase());
                     aliases.add(plugin.getName().toLowerCase() + ":" + alias.toLowerCase());
                 }
@@ -493,12 +476,10 @@ public class PlayerEventHandler implements Listener {
 
         //also consider vanilla commands
         Command command = Bukkit.getServer().getPluginCommand(commandName);
-        if (command != null)
-        {
+        if (command != null) {
             aliases.add(command.getName().toLowerCase());
             aliases.add("minecraft:" + command.getName().toLowerCase());
-            for (String alias : command.getAliases())
-            {
+            for (String alias : command.getAliases()) {
                 aliases.add(alias.toLowerCase());
                 aliases.add("minecraft:" + alias.toLowerCase());
             }
@@ -506,17 +487,13 @@ public class PlayerEventHandler implements Listener {
 
         //if any of those aliases are in the chat list or whisper list, then we know the category for that command
         category = CommandCategory.None;
-        for (String alias : aliases)
-        {
-            if (instance.config_eavesdrop_whisperCommands.contains("/" + alias))
-            {
+        for (String alias : aliases) {
+            if (configManager.config_eavesdrop_whisperCommands.contains("/" + alias)) {
                 category = CommandCategory.Whisper;
             }
-            else if (instance.config_spam_monitorSlashCommands.contains("/" + alias))
-            {
+            else if (configManager.config_spam_monitorSlashCommands.contains("/" + alias)) {
                 category = CommandCategory.Chat;
             }
-
             //remember the categories for later
             this.commandCategoryMap.put(alias.toLowerCase(), category);
         }
@@ -526,18 +503,16 @@ public class PlayerEventHandler implements Listener {
 
     static int longestNameLength = 10;
 
-    static void makeSocialLogEntry(String name, String message)
-    {
+    void makeSocialLogEntry(String name, String message) {
         StringBuilder entryBuilder = new StringBuilder(name);
-        for (int i = name.length(); i < longestNameLength; i++)
-        {
+        for (int i = name.length(); i < longestNameLength; i++) {
             entryBuilder.append(' ');
         }
         entryBuilder.append(": ").append(message);
 
         longestNameLength = Math.max(longestNameLength, name.length());
         //TODO: cleanup static
-        GriefPrevention.AddLogEntry(entryBuilder.toString(), CustomLogEntryTypes.SocialActivity, true);
+        customLogger.AddLogEntry(entryBuilder.toString(), CustomLogEntryTypes.SocialActivity, true);
     }
 
     private final ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<>();
@@ -549,13 +524,13 @@ public class PlayerEventHandler implements Listener {
         Player player = event.getPlayer();
 
         //all this is anti-spam code
-        if (instance.config_spam_enabled)
+        if (configManager.config_spam_enabled)
         {
             //FEATURE: login cooldown to prevent login/logout spam with custom clients
             long now = Calendar.getInstance().getTimeInMillis();
 
             //if allowed to join and login cooldown enabled
-            if (instance.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED && !player.hasPermission("griefprevention.spam"))
+            if (configManager.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED && !player.hasPermission("griefprevention.spam"))
             {
                 //determine how long since last login and cooldown remaining
                 Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
@@ -563,7 +538,7 @@ public class PlayerEventHandler implements Listener {
                 {
                     long millisecondsSinceLastLogin = now - lastLoginThisSession.getTime();
                     long secondsSinceLastLogin = millisecondsSinceLastLogin / 1000;
-                    long cooldownRemaining = instance.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
+                    long cooldownRemaining = configManager.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
 
                     //if cooldown remaining
                     if (cooldownRemaining > 0)
@@ -578,7 +553,7 @@ public class PlayerEventHandler implements Listener {
             }
 
             //if logging-in account is banned, remember IP address for later
-            if (instance.config_smartBan && event.getResult() == Result.KICK_BANNED)
+            if (configManager.config_smartBan && event.getResult() == Result.KICK_BANNED)
             {
 //                this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
             }
@@ -605,7 +580,7 @@ public class PlayerEventHandler implements Listener {
         this.lastLoginThisServerSessionMap.put(playerID, nowDate);
 
         //if newish, prevent chat until he's moved a bit to prove he's not a bot
-        if (GriefPrevention.isNewToServer(player) && !player.hasPermission("griefprevention.premovementchat"))
+        if (isNewToServer(player) && !player.hasPermission("griefprevention.premovementchat"))
         {
             playerData.noChatLocation = player.getLocation();
         }
@@ -617,10 +592,10 @@ public class PlayerEventHandler implements Listener {
             instance.checkPvpProtectionNeeded(player);
 
             //if in survival claims mode, send a message about the claim basics video (except for admins - assumed experts)
-            if (instance.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10)
+            if (configManager.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10)
             {
                 WelcomeTask task = new WelcomeTask(player);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, instance.config_claims_manualDeliveryDelaySeconds * 20L);
+                Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, configManager.config_claims_manualDeliveryDelaySeconds * 20L);
             }
         }
 
@@ -702,8 +677,8 @@ public class PlayerEventHandler implements Listener {
         InetAddress ipAddress = playerData.ipAddress;
         if (ipAddress != null)
         {
-            int ipLimit = instance.config_ipLimit;
-            if (ipLimit > 0 && GriefPrevention.isNewToServer(player))
+            int ipLimit = configManager.config_ipLimit;
+            if (ipLimit > 0 && isNewToServer(player))
             {
                 int ipCount = 0;
 
@@ -714,7 +689,7 @@ public class PlayerEventHandler implements Listener {
                     if (onlinePlayer.getUniqueId().equals(player.getUniqueId())) continue;
 
                     PlayerData otherData = instance.dataStore.getPlayerData(onlinePlayer.getUniqueId());
-                    if (ipAddress.equals(otherData.ipAddress) && GriefPrevention.isNewToServer(onlinePlayer))
+                    if (ipAddress.equals(otherData.ipAddress) && isNewToServer(onlinePlayer))
                     {
                         ipCount++;
                     }
@@ -737,7 +712,7 @@ public class PlayerEventHandler implements Listener {
                 {
                     if (player.getPortalCooldown() > 8 && player.hasMetadata("GP_PORTALRESCUE"))
                     {
-                        GriefPrevention.AddLogEntry("Rescued " + player.getName() + " from a nether portal.\nTeleported from " + player.getLocation().toString() + " to " + ((Location) player.getMetadata("GP_PORTALRESCUE").get(0).value()).toString(), CustomLogEntryTypes.Debug);
+                        customLogger.AddLogEntry("Rescued " + player.getName() + " from a nether portal.\nTeleported from " + player.getLocation().toString() + " to " + ((Location) player.getMetadata("GP_PORTALRESCUE").get(0).value()).toString(), CustomLogEntryTypes.Debug);
                         player.teleport((Location) player.getMetadata("GP_PORTALRESCUE").get(0).value());
                         player.removeMetadata("GP_PORTALRESCUE", instance);
                     }
@@ -750,7 +725,7 @@ public class PlayerEventHandler implements Listener {
 
 
         //if we're holding a logout message for this player, don't send that or this event's join message
-        if (instance.config_spam_logoutMessageDelaySeconds > 0)
+        if (configManager.config_spam_logoutMessageDelaySeconds > 0)
         {
             String joinMessage = event.getJoinMessage();
             if (joinMessage != null && !joinMessage.isEmpty())
@@ -795,7 +770,7 @@ public class PlayerEventHandler implements Listener {
         Player player = event.getEntity();
         Long lastDeathTime = this.deathTimestamps.get(player.getUniqueId());
         long now = Calendar.getInstance().getTimeInMillis();
-        if (lastDeathTime != null && now - lastDeathTime < instance.config_spam_deathMessageCooldownSeconds * 1000 && event.getDeathMessage() != null)
+        if (lastDeathTime != null && now - lastDeathTime < configManager.config_spam_deathMessageCooldownSeconds * 1000L && event.getDeathMessage() != null)
         {
             player.sendMessage(event.getDeathMessage());  //let the player assume his death message was broadcasted to everyone
             event.setDeathMessage(null);
@@ -859,7 +834,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //silence notifications when the player is banned
-        if (isBanned && instance.config_silenceBans)
+        if (isBanned && configManager.config_silenceBans)
         {
             event.setQuitMessage(null);
         }
@@ -871,7 +846,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //FEATURE: players in pvp combat when they log out will die
-        if (instance.config_pvp_punishLogout && playerData.inPvpCombat())
+        if (configManager.config_pvp_punishLogout && playerData.inPvpCombat())
         {
             player.setHealth(0);
         }
@@ -889,13 +864,13 @@ public class PlayerEventHandler implements Listener {
         this.dataStore.clearCachedPlayerData(playerID);
 
         //send quit message later, but only if the player stays offline
-        if (instance.config_spam_logoutMessageDelaySeconds > 0)
+        if (configManager.config_spam_logoutMessageDelaySeconds > 0)
         {
             String quitMessage = event.getQuitMessage();
             if (quitMessage != null && !quitMessage.isEmpty())
             {
                 BroadcastMessageTask task = new BroadcastMessageTask(quitMessage);
-                int taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, 20L * instance.config_spam_logoutMessageDelaySeconds);
+                int taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, 20L * configManager.config_spam_logoutMessageDelaySeconds);
                 this.heldLogoutMessages.put(playerID, taskID);
                 event.setQuitMessage("");
             }
@@ -905,7 +880,7 @@ public class PlayerEventHandler implements Listener {
     //determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute
     private boolean shouldSilenceNotification()
     {
-        if (instance.config_spam_loginLogoutNotificationsPerMinute <= 0)
+        if (configManager.config_spam_loginLogoutNotificationsPerMinute <= 0)
         {
             return false; // not silencing login/logout notifications
         }
@@ -930,7 +905,7 @@ public class PlayerEventHandler implements Listener {
         //add the new entry
         this.recentLoginLogoutNotifications.add(now);
 
-        return this.recentLoginLogoutNotifications.size() > instance.config_spam_loginLogoutNotificationsPerMinute;
+        return this.recentLoginLogoutNotifications.size() > configManager.config_spam_loginLogoutNotificationsPerMinute;
     }
 
     //when a player drops an item
@@ -952,7 +927,7 @@ public class PlayerEventHandler implements Listener {
         //them or give them away to other players before they are defeated
 
         //if in combat, don't let him drop it
-        if (!instance.config_pvp_allowCombatItemDrop && playerData.inPvpCombat())
+        if (!configManager.config_pvp_allowCombatItemDrop && playerData.inPvpCombat())
         {
             Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PvPNoDrop);
             event.setCancelled(true);
@@ -990,7 +965,7 @@ public class PlayerEventHandler implements Listener {
 
         //FEATURE: prevent players from using ender pearls to gain access to secured claims
         TeleportCause cause = event.getCause();
-        if (cause == TeleportCause.CHORUS_FRUIT || (cause == TeleportCause.ENDER_PEARL && instance.config_claims_enderPearlsRequireAccessTrust)) {
+        if (cause == TeleportCause.CHORUS_FRUIT || (cause == TeleportCause.ENDER_PEARL && configManager.config_claims_enderPearlsRequireAccessTrust)) {
             Claim toClaim = this.dataStore.getClaimAt(event.getTo(), false, playerData.lastClaim);
             if (toClaim != null) {
                 playerData.lastClaim = toClaim;
@@ -1037,7 +1012,7 @@ public class PlayerEventHandler implements Listener {
     //when a player triggers a raid (in a claim)
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerTriggerRaid(RaidTriggerEvent event) {
-        if (!instance.config_claims_raidTriggersRequireBuildTrust)
+        if (!configManager.config_claims_raidTriggersRequireBuildTrust)
             return;
 
         Player player = event.getPlayer();
@@ -1073,10 +1048,10 @@ public class PlayerEventHandler implements Listener {
         if (!instance.claimsEnabledForWorld(entity.getWorld())) return;
 
         //allow horse protection to be overridden to allow management from other plugins
-        if (!instance.config_claims_protectHorses && entity instanceof AbstractHorse) return;
-        if (!instance.config_claims_protectDonkeys && entity instanceof Donkey) return;
-        if (!instance.config_claims_protectDonkeys && entity instanceof Mule) return;
-        if (!instance.config_claims_protectLlamas && entity instanceof Llama) return;
+        if (!configManager.config_claims_protectHorses && entity instanceof AbstractHorse) return;
+        if (!configManager.config_claims_protectDonkeys && entity instanceof Donkey) return;
+        if (!configManager.config_claims_protectDonkeys && entity instanceof Mule) return;
+        if (!configManager.config_claims_protectLlamas && entity instanceof Llama) return;
 
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
@@ -1104,7 +1079,7 @@ public class PlayerEventHandler implements Listener {
 
                         return;
                     }
-                    if (!instance.pvpRulesApply(entity.getLocation().getWorld()) || instance.config_pvp_protectPets)
+                    if (!instance.pvpRulesApply(entity.getLocation().getWorld()) || configManager.config_pvp_protectPets)
                     {
                         //otherwise disallow
                         OfflinePlayer owner = instance.getServer().getOfflinePlayer(ownerID);
@@ -1181,7 +1156,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //if the entity is a vehicle and we're preventing theft in claims
-        if (instance.config_claims_preventTheft && entity instanceof Vehicle)
+        if (configManager.config_claims_preventTheft && entity instanceof Vehicle)
         {
             //if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
@@ -1202,7 +1177,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //if the entity is an animal, apply container rules
-        if ((instance.config_claims_preventTheft && (entity instanceof Animals || entity instanceof Fish)) || (entity.getType() == EntityType.VILLAGER && instance.config_claims_villagerTradingRequiresTrust))
+        if ((configManager.config_claims_preventTheft && (entity instanceof Animals || entity instanceof Fish)) || (entity.getType() == EntityType.VILLAGER && configManager.config_claims_villagerTradingRequiresTrust))
         {
             //if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
@@ -1226,10 +1201,10 @@ public class PlayerEventHandler implements Listener {
             }
         }
 
-        ItemStack itemInHand = instance.getItemInHand(player, event.getHand());
+        ItemStack itemInHand = GeneralUtils.getItemInHand(player, event.getHand());
 
         //if preventing theft, prevent leashing claimed creatures
-        if (instance.config_claims_preventTheft && entity instanceof Creature && itemInHand.getType() == Material.LEAD)
+        if (configManager.config_claims_preventTheft && entity instanceof Creature && itemInHand.getType() == Material.LEAD)
         {
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
             if (claim != null)
@@ -1360,7 +1335,7 @@ public class PlayerEventHandler implements Listener {
         if (!instance.pvpRulesApply(player.getWorld())) return;
 
         //if we're preventing spawn camping and the player was previously empty handed...
-        if (instance.config_pvp_protectFreshSpawns && (instance.getItemInHand(player, EquipmentSlot.HAND).getType() == Material.AIR))
+        if (configManager.config_pvp_protectFreshSpawns && (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() == Material.AIR))
         {
             //if that player is currently immune to pvp
             PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
@@ -1391,7 +1366,7 @@ public class PlayerEventHandler implements Listener {
         //if he's switching to the golden shovel
         int newSlot = event.getNewSlot();
         ItemStack newItemStack = player.getInventory().getItem(newSlot);
-        if (newItemStack != null && newItemStack.getType() == instance.config_claims_modificationTool)
+        if (newItemStack != null && newItemStack.getType() == configManager.config_claims_modificationTool)
         {
             //give the player his available claim blocks count and claiming instructions, but only if he keeps the shovel equipped for a minimum time, to avoid mouse wheel spam
             if (instance.claimsEnabledForWorld(player.getWorld()))
@@ -1498,20 +1473,20 @@ public class PlayerEventHandler implements Listener {
 
             if (makeLogEntry)
             {
-                GriefPrevention.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + GriefPrevention.getfriendlyLocationString(block.getLocation()), CustomLogEntryTypes.SuspiciousActivity, true);
+                customLogger.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + TheatriaClaims.getfriendlyLocationString(block.getLocation()), CustomLogEntryTypes.SuspiciousActivity, true);
             }
         }
     }
 
     private boolean doesAllowLavaProximityInWorld(World world)
     {
-        if (GriefPrevention.instance.pvpRulesApply(world))
+        if (instance.pvpRulesApply(world))
         {
-            return GriefPrevention.instance.config_pvp_allowLavaNearPlayers;
+            return configManager.config_pvp_allowLavaNearPlayers;
         }
         else
         {
-            return GriefPrevention.instance.config_pvp_allowLavaNearPlayers_NonPvp;
+            return configManager.config_pvp_allowLavaNearPlayers_NonPvp;
         }
     }
 
@@ -1547,8 +1522,7 @@ public class PlayerEventHandler implements Listener {
 
     //when a player interacts with the world
     @EventHandler(priority = EventPriority.LOWEST)
-    void onPlayerInteract(PlayerInteractEvent event)
-    {
+    void onPlayerInteract(PlayerInteractEvent event) {
         //not interested in left-click-on-air actions
         Action action = event.getAction();
         if (action == Action.LEFT_CLICK_AIR) return;
@@ -1624,7 +1598,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //apply rules for containers and crafting blocks
-        if (clickedBlock != null && instance.config_claims_preventTheft && (
+        if (clickedBlock != null && configManager.config_claims_preventTheft && (
                 event.getAction() == Action.RIGHT_CLICK_BLOCK && (
                         (this.isInventoryHolder(clickedBlock) && clickedBlock.getType() != Material.LECTERN) ||
                                 clickedBlockType == Material.ANVIL ||
@@ -1696,15 +1670,15 @@ public class PlayerEventHandler implements Listener {
         //otherwise apply rules for doors and beds, if configured that way
         else if (clickedBlock != null &&
 
-                (instance.config_claims_lockWoodenDoors && Tag.WOODEN_DOORS.isTagged(clickedBlockType) ||
+                (configManager.config_claims_lockWoodenDoors && Tag.WOODEN_DOORS.isTagged(clickedBlockType) ||
 
-                instance.config_claims_preventButtonsSwitches && Tag.BEDS.isTagged(clickedBlockType) ||
+                        configManager.config_claims_preventButtonsSwitches && Tag.BEDS.isTagged(clickedBlockType) ||
 
-                instance.config_claims_lockTrapDoors && Tag.WOODEN_TRAPDOORS.isTagged(clickedBlockType) ||
+                        configManager.config_claims_lockTrapDoors && Tag.WOODEN_TRAPDOORS.isTagged(clickedBlockType) ||
 
-                instance.config_claims_lecternReadingRequiresAccessTrust && clickedBlockType == Material.LECTERN ||
+                        configManager.config_claims_lecternReadingRequiresAccessTrust && clickedBlockType == Material.LECTERN ||
 
-                instance.config_claims_lockFenceGates && Tag.FENCE_GATES.isTagged(clickedBlockType)))
+                        configManager.config_claims_lockFenceGates && Tag.FENCE_GATES.isTagged(clickedBlockType)))
         {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
@@ -1723,7 +1697,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //otherwise apply rules for buttons and switches
-        else if (clickedBlock != null && instance.config_claims_preventButtonsSwitches && (Tag.BUTTONS.isTagged(clickedBlockType) || clickedBlockType == Material.LEVER))
+        else if (clickedBlock != null && configManager.config_claims_preventButtonsSwitches && (Tag.BUTTONS.isTagged(clickedBlockType) || clickedBlockType == Material.LEVER))
         {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
@@ -1742,7 +1716,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //otherwise apply rule for cake
-        else if (clickedBlock != null && instance.config_claims_preventTheft && (clickedBlockType == Material.CAKE || Tag.CANDLE_CAKES.isTagged(clickedBlockType)))
+        else if (clickedBlock != null && configManager.config_claims_preventTheft && (clickedBlockType == Material.CAKE || Tag.CANDLE_CAKES.isTagged(clickedBlockType)))
         {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
@@ -1795,7 +1769,7 @@ public class PlayerEventHandler implements Listener {
 
             //what's the player holding?
             EquipmentSlot hand = event.getHand();
-            ItemStack itemInHand = instance.getItemInHand(player, hand);
+            ItemStack itemInHand = GeneralUtils.getItemInHand(player, hand);
             Material materialInHand = itemInHand.getType();
 
             Set<Material> spawn_eggs = new HashSet<>();
@@ -1814,7 +1788,7 @@ public class PlayerEventHandler implements Listener {
             //add glowing ink sac and ink sac, due to their usage on signs
             if (clickedBlock != null && (materialInHand == Material.BONE_MEAL
                     || materialInHand == Material.ARMOR_STAND
-                    || (spawn_eggs.contains(materialInHand) && GriefPrevention.instance.config_claims_preventGlobalMonsterEggs)
+                    || (spawn_eggs.contains(materialInHand) && configManager.config_claims_preventGlobalMonsterEggs)
                     || materialInHand == Material.END_CRYSTAL
                     || materialInHand == Material.FLINT_AND_STEEL
                     || materialInHand == Material.INK_SAC
@@ -1918,7 +1892,7 @@ public class PlayerEventHandler implements Listener {
             }
 
             //if he's investigating a claim
-            else if (materialInHand == instance.config_claims_investigationTool && hand == EquipmentSlot.HAND)
+            else if (materialInHand == configManager.config_claims_investigationTool && hand == EquipmentSlot.HAND)
             {
                 //if claims are disabled in this world, do nothing
                 if (!instance.claimsEnabledForWorld(player.getWorld())) return;
@@ -2024,7 +1998,7 @@ public class PlayerEventHandler implements Listener {
             }
 
             //if it's a golden shovel
-            else if (materialInHand != instance.config_claims_modificationTool || hand != EquipmentSlot.HAND) return;
+            else if (materialInHand != configManager.config_claims_modificationTool || hand != EquipmentSlot.HAND) return;
 
             event.setCancelled(true);  //GriefPrevention exclusively reserves this tool  (e.g. no grass path creation for golden shovel)
 
@@ -2258,7 +2232,7 @@ public class PlayerEventHandler implements Listener {
                 }
 
                 newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-                newy2 = clickedBlock.getY() - instance.config_claims_claimsExtendIntoGroundDistance;
+                newy2 = clickedBlock.getY() - configManager.config_claims_claimsExtendIntoGroundDistance;
 
                 this.dataStore.resizeClaimWithChecks(player, playerData, newx1, newx2, newy1, newy2, newz1, newz2);
 
@@ -2316,10 +2290,10 @@ public class PlayerEventHandler implements Listener {
                             }
 
                             //try to create a new claim (will return null if this subdivision overlaps another)
-                            CreateClaimResult result = this.dataStore.createClaim(
+                            CreateClaimResult result = dataStore.createClaim(
                                     player.getWorld(),
                                     playerData.lastShovelLocation.getBlockX(), clickedBlock.getX(),
-                                    playerData.lastShovelLocation.getBlockY() - instance.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - instance.config_claims_claimsExtendIntoGroundDistance,
+                                    playerData.lastShovelLocation.getBlockY() - configManager.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - configManager.config_claims_claimsExtendIntoGroundDistance,
                                     playerData.lastShovelLocation.getBlockZ(), clickedBlock.getZ(),
                                     null,  //owner is not used for subdivisions
                                     playerData.claimSubdividing,
@@ -2385,9 +2359,9 @@ public class PlayerEventHandler implements Listener {
                 }
 
                 //if he's at the claim count per player limit already and doesn't have permission to bypass, display an error message
-                if (instance.config_claims_maxClaimsPerPlayer > 0 &&
+                if (configManager.config_claims_maxClaimsPerPlayer > 0 &&
                         !player.hasPermission("griefprevention.overrideclaimcountlimit") &&
-                        playerData.getClaims().size() >= instance.config_claims_maxClaimsPerPlayer)
+                        playerData.getClaims().size() >= configManager.config_claims_maxClaimsPerPlayer)
                 {
                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimCreationFailedOverClaimCountLimit);
                     return;
@@ -2425,22 +2399,22 @@ public class PlayerEventHandler implements Listener {
 
                 if (playerData.shovelMode != ShovelMode.Admin)
                 {
-                    if (newClaimWidth < instance.config_claims_minWidth || newClaimHeight < instance.config_claims_minWidth)
+                    if (newClaimWidth < configManager.config_claims_minWidth || newClaimHeight < configManager.config_claims_minWidth)
                     {
                         //this IF block is a workaround for craftbukkit bug which fires two events for one interaction
                         if (newClaimWidth != 1 && newClaimHeight != 1)
                         {
-                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NewClaimTooNarrow, String.valueOf(instance.config_claims_minWidth));
+                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NewClaimTooNarrow, String.valueOf(configManager.config_claims_minWidth));
                         }
                         return;
                     }
 
                     int newArea = newClaimWidth * newClaimHeight;
-                    if (newArea < instance.config_claims_minArea)
+                    if (newArea < configManager.config_claims_minArea)
                     {
                         if (newArea != 1)
                         {
-                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(instance.config_claims_minArea));
+                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(configManager.config_claims_minArea));
                         }
 
                         return;
@@ -2468,7 +2442,7 @@ public class PlayerEventHandler implements Listener {
                 CreateClaimResult result = this.dataStore.createClaim(
                         player.getWorld(),
                         lastShovelLocation.getBlockX(), clickedBlock.getX(),
-                        lastShovelLocation.getBlockY() - instance.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - instance.config_claims_claimsExtendIntoGroundDistance,
+                        lastShovelLocation.getBlockY() - configManager.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - configManager.config_claims_claimsExtendIntoGroundDistance,
                         lastShovelLocation.getBlockZ(), clickedBlock.getZ(),
                         playerID,
                         null, null,
@@ -2592,7 +2566,7 @@ public class PlayerEventHandler implements Listener {
         return result;
     }
 
-    public static boolean isNewToServer(Player player) {
+    public boolean isNewToServer(Player player) {
         if (player.getStatistic(Statistic.PICKUP, Material.OAK_LOG) > 0 ||
                 player.getStatistic(Statistic.PICKUP, Material.SPRUCE_LOG) > 0 ||
                 player.getStatistic(Statistic.PICKUP, Material.BIRCH_LOG) > 0 ||
@@ -2600,7 +2574,7 @@ public class PlayerEventHandler implements Listener {
                 player.getStatistic(Statistic.PICKUP, Material.ACACIA_LOG) > 0 ||
                 player.getStatistic(Statistic.PICKUP, Material.DARK_OAK_LOG) > 0) return false;
 
-        PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
         if (playerData.getClaims().size() > 0) return false;
 
         return true;

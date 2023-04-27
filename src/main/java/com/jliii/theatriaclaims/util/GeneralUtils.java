@@ -6,7 +6,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class GeneralUtils {
 
-    public ItemStack getItemInHand(Player player, EquipmentSlot hand) {
+    public static ItemStack getItemInHand(Player player, EquipmentSlot hand) {
         if (hand == EquipmentSlot.OFF_HAND) return player.getInventory().getItemInOffHand();
         return player.getInventory().getItemInMainHand();
     }

@@ -20,17 +20,8 @@ package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
 import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.CreateClaimResult;
 import com.jliii.theatriaclaims.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.claim.CreateClaimResult;
-import me.ryanhamshire.GriefPrevention.enums.ClaimsMode;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.events.*;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.VisualizationType;
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;

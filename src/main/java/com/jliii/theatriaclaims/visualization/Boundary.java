@@ -1,5 +1,7 @@
 package com.jliii.theatriaclaims.visualization;
 
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.util.BoundingBox;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

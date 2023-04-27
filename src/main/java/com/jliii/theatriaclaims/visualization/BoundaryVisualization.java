@@ -1,12 +1,11 @@
 package com.jliii.theatriaclaims.visualization;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
-import me.ryanhamshire.GriefPrevention.events.BoundaryVisualizationEvent;
-import me.ryanhamshire.GriefPrevention.util.BoundingBox;
-import me.ryanhamshire.GriefPrevention.util.IntVector;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
+import com.jliii.theatriaclaims.util.BoundingBox;
+import com.jliii.theatriaclaims.util.IntVector;
+import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -97,8 +96,8 @@ public abstract class BoundaryVisualization
      */
     protected void scheduleRevert(@NotNull Player player, @NotNull PlayerData playerData)
     {
-        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                GriefPrevention.instance,
+        TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
+                TheatriaClaims.instance,
                 () -> {
                     // Only revert if this is the active visualization.
                     if (playerData.getVisibleBoundaries() == this) revert(player);
