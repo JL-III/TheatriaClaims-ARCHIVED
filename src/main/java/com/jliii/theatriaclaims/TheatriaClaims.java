@@ -105,13 +105,14 @@ public class TheatriaClaims extends JavaPlugin {
 
         AddLogEntry("Finished loading configuration.");
 
+        //TODO this is creating flatfile datastore in more than one case, can we cut some repeated code out?
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
         if (configManager.databaseUrl.length() > 0) {
             try {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(configManager.databaseUrl, configManager.databaseUserName, configManager.databasePassword);
                 if (FlatFileDataStore.hasData()) {
                     TheatriaClaims.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
-                    FlatFileDataStore flatFileStore = new FlatFileDataStore();
+                    FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager);
                     this.dataStore = flatFileStore;
                     flatFileStore.migrateData(databaseStore);
                     TheatriaClaims.AddLogEntry("Data migration process complete.");
@@ -140,7 +141,7 @@ public class TheatriaClaims extends JavaPlugin {
                 }
             }
             try {
-                this.dataStore = new FlatFileDataStore();
+                this.dataStore = new FlatFileDataStore(configManager);
             }
             catch (Exception e) {
                 TheatriaClaims.AddLogEntry("Unable to initialize the file system data store.  Details:");

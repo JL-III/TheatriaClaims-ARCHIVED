@@ -1,7 +1,7 @@
 package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
+import com.jliii.theatriaclaims.TheatriaClaims;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -68,7 +68,7 @@ public class IgnoreLoaderThread extends Thread {
 
         //if last attempt failed, log information about the problem
         if (needRetry) {
-            GriefPrevention.AddLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": " + latestException.toString());
+            TheatriaClaims.AddLogEntry("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": " + latestException.toString());
             latestException.printStackTrace();
         }
     }

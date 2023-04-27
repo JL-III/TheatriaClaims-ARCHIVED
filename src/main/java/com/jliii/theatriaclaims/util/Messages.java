@@ -3,6 +3,7 @@ package com.jliii.theatriaclaims.util;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.tasks.SendPlayerMessageTask;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -35,7 +36,7 @@ public class Messages {
         if (message == null || message.length() == 0) return;
 
         if (player == null) {
-            GriefPrevention.AddLogEntry(textMode.getColor() + message);
+            TheatriaClaims.AddLogEntry(textMode.getColor() + message);
         }
         else {
             player.sendMessage(textMode.getColor() + message);
@@ -47,7 +48,7 @@ public class Messages {
 
         //Only schedule if there should be a delay. Otherwise, send the message right now, else the message will appear out of order.
         if (delayInTicks > 0) {
-            GriefPrevention.instance.getServer().getScheduler().runTaskLater(GriefPrevention.instance, task, delayInTicks);
+            TheatriaClaims.instance.getServer().getScheduler().runTaskLater(TheatriaClaims.instance, task, delayInTicks);
         }
         else {
             task.run();

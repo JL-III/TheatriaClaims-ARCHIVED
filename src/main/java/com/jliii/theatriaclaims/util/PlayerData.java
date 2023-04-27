@@ -18,7 +18,9 @@
 
 package com.jliii.theatriaclaims.util;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.enums.ShovelMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
@@ -144,7 +146,7 @@ public class PlayerData {
 
     //the number of claim blocks a player has available for claiming land
     public int getRemainingClaimBlocks() {
-        int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
+        int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
         for (int i = 0; i < this.getClaims().size(); i++) {
             Claim claim = this.getClaims().get(i);
             remainingBlocks -= claim.getArea();
@@ -189,7 +191,7 @@ public class PlayerData {
 
     private void loadDataFromSecondaryStorage() {
         //reach out to secondary storage to get any data there
-        PlayerData storageData = GriefPrevention.instance.dataStore.getPlayerDataFromStorage(this.playerID);
+        PlayerData storageData = TheatriaClaims.instance.dataStore.getPlayerDataFromStorage(this.playerID);
 
         if (this.accruedClaimBlocks == null) {
             if (storageData.accruedClaimBlocks != null) {
@@ -222,7 +224,7 @@ public class PlayerData {
             this.claims = new Vector<>();
 
             //find all the claims belonging to this player and note them for future reference
-            DataStore dataStore = GriefPrevention.instance.dataStore;
+            DataStore dataStore = TheatriaClaims.instance.dataStore;
             int totalClaimsArea = 0;
             for (int i = 0; i < dataStore.claims.size(); i++) {
                 Claim claim = dataStore.claims.get(i);
@@ -240,17 +242,17 @@ public class PlayerData {
             this.loadDataFromSecondaryStorage();
 
             //if total claimed area is more than total blocks available
-            int totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
+            int totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (configManager.config_advanced_fixNegativeClaimblockAmounts && totalBlocks < totalClaimsArea) {
-                OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(this.playerID);
-                GriefPrevention.AddLogEntry(player.getName() + " has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug, true);
-                GriefPrevention.AddLogEntry(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks(), CustomLogEntryTypes.Debug, true);
-                GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
+                OfflinePlayer player = TheatriaClaims.instance.getServer().getOfflinePlayer(this.playerID);
+                TheatriaClaims.AddLogEntry(player.getName() + " has more claimed land than blocks available.  Adding blocks to fix.", CustomLogEntryTypes.Debug, true);
+                TheatriaClaims.AddLogEntry(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks(), CustomLogEntryTypes.Debug, true);
+                TheatriaClaims.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
                 for (Claim claim : this.claims) {
                     if (!claim.inDataStore) continue;
-                    GriefPrevention.AddLogEntry(
-                            GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // "
-                                    + GriefPrevention.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = "
+                    TheatriaClaims.AddLogEntry(
+                            TheatriaClaims.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // "
+                                    + TheatriaClaims.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = "
                                     + claim.getArea()
                             , CustomLogEntryTypes.Debug, true);
                 }
@@ -259,23 +261,23 @@ public class PlayerData {
                 this.accruedClaimBlocks = totalClaimsArea; //Set accrued blocks to equal total claims
                 int accruedLimit = this.getAccruedClaimBlocksLimit();
                 this.accruedClaimBlocks = Math.min(accruedLimit, this.accruedClaimBlocks); //set accrued blocks to maximum limit, if it's smaller
-                GriefPrevention.AddLogEntry("New accrued blocks: " + this.accruedClaimBlocks, CustomLogEntryTypes.Debug, true);
+                TheatriaClaims.AddLogEntry("New accrued blocks: " + this.accruedClaimBlocks, CustomLogEntryTypes.Debug, true);
 
                 //Recalculate total blocks (accrued + bonus + permission group bonus)
-                totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
-                GriefPrevention.AddLogEntry("New total blocks: " + totalBlocks, CustomLogEntryTypes.Debug, true);
+                totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
+                TheatriaClaims.AddLogEntry("New total blocks: " + totalBlocks, CustomLogEntryTypes.Debug, true);
 
                 //if that didn't fix it, then make up the difference with bonus blocks
                 if (totalBlocks < totalClaimsArea) {
                     int bonusBlocksToAdd = totalClaimsArea - totalBlocks;
                     this.bonusClaimBlocks += bonusBlocksToAdd;
-                    GriefPrevention.AddLogEntry("Accrued blocks weren't enough. Adding " + bonusBlocksToAdd + " bonus blocks.", CustomLogEntryTypes.Debug, true);
+                    TheatriaClaims.AddLogEntry("Accrued blocks weren't enough. Adding " + bonusBlocksToAdd + " bonus blocks.", CustomLogEntryTypes.Debug, true);
                 }
-                GriefPrevention.AddLogEntry(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID), CustomLogEntryTypes.Debug, true);
+                TheatriaClaims.AddLogEntry(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID), CustomLogEntryTypes.Debug, true);
                 //Recalculate total blocks (accrued + bonus + permission group bonus)
-                totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(this.playerID);
-                GriefPrevention.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
-                GriefPrevention.AddLogEntry("Remaining claim blocks to use: " + this.getRemainingClaimBlocks() + " (should be 0)", CustomLogEntryTypes.Debug, true);
+                totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
+                TheatriaClaims.AddLogEntry("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea, CustomLogEntryTypes.Debug, true);
+                TheatriaClaims.AddLogEntry("Remaining claim blocks to use: " + this.getRemainingClaimBlocks() + " (should be 0)", CustomLogEntryTypes.Debug, true);
             }
         }
 

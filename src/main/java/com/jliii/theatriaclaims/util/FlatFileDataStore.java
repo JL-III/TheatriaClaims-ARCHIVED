@@ -19,9 +19,10 @@
 package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -36,6 +37,8 @@ import java.util.regex.Matcher;
 
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
+
+    private ConfigManager configManager;
     private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
     private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
     private final static String schemaVersionFilePath = dataLayerFolderPath + File.separator + "_schemaVersion";
@@ -46,8 +49,9 @@ public class FlatFileDataStore extends DataStore {
     }
 
     //initialization!
-    public FlatFileDataStore() throws Exception {
+    public FlatFileDataStore(ConfigManager configManager) throws Exception {
         this.initialize();
+        this.configManager = configManager;
     }
 
     @Override
@@ -90,7 +94,7 @@ public class FlatFileDataStore extends DataStore {
             catch (Exception e) {
                 StringWriter errors = new StringWriter();
                 e.printStackTrace(new PrintWriter(errors));
-                GriefPrevention.AddLogEntry(errors.toString(), CustomLogEntryTypes.Exception);
+                TheatriaClaims.AddLogEntry(errors.toString(), CustomLogEntryTypes.Exception);
             }
 
             try {
@@ -135,7 +139,7 @@ public class FlatFileDataStore extends DataStore {
                 fetcher.call();
             }
             catch (Exception e) {
-                GriefPrevention.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
+                TheatriaClaims.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -245,8 +249,8 @@ public class FlatFileDataStore extends DataStore {
                                 ownerID = UUIDFetcher.getUUIDOf(ownerName);
                             }
                             catch (Exception ex) {
-                                GriefPrevention.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
-                                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                                TheatriaClaims.AddLogEntry("Couldn't resolve this name to a UUID: " + ownerName + ".");
+                                TheatriaClaims.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                             }
                         }
                         else {
@@ -254,8 +258,8 @@ public class FlatFileDataStore extends DataStore {
                                 ownerID = UUID.fromString(ownerName);
                             }
                             catch (Exception ex) {
-                                GriefPrevention.AddLogEntry("Error - this is not a valid UUID: " + ownerName + ".");
-                                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                                TheatriaClaims.AddLogEntry("Error - this is not a valid UUID: " + ownerName + ".");
+                                TheatriaClaims.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                             }
                         }
 
@@ -313,14 +317,14 @@ public class FlatFileDataStore extends DataStore {
                 //if there's any problem with the file's content, log an error message and skip it
                 catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().contains("World not found")) {
-                        GriefPrevention.AddLogEntry("Failed to load a claim " + files[i].getName() + " because its world isn't loaded (yet?).  Please delete the claim file or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
+                        TheatriaClaims.AddLogEntry("Failed to load a claim " + files[i].getName() + " because its world isn't loaded (yet?).  Please delete the claim file or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
                         inStream.close();
                     }
                     else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        GriefPrevention.AddLogEntry("Failed to load claim " + files[i].getName() + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file found in GriefPreventionData/ClaimData/" + files[i].getName(), CustomLogEntryTypes.Debug, false);
-                        GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                        TheatriaClaims.AddLogEntry("Failed to load claim " + files[i].getName() + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file found in GriefPreventionData/ClaimData/" + files[i].getName(), CustomLogEntryTypes.Debug, false);
+                        TheatriaClaims.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
                     }
                 }
 
@@ -374,12 +378,12 @@ public class FlatFileDataStore extends DataStore {
                 //if there's any problem with the file's content, log an error message and skip it
                 catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().contains("World not found")) {
-                        GriefPrevention.AddLogEntry("Failed to load a claim (ID:" + claimID + ") because its world isn't loaded (yet?).  If this is not expected, delete this claim.");
+                        TheatriaClaims.AddLogEntry("Failed to load a claim (ID:" + claimID + ") because its world isn't loaded (yet?).  If this is not expected, delete this claim.");
                     }
                     else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        GriefPrevention.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                        TheatriaClaims.AddLogEntry(files[i].getName() + " " + errors.toString(), CustomLogEntryTypes.Exception);
                     }
                 }
             }
@@ -420,8 +424,8 @@ public class FlatFileDataStore extends DataStore {
                 ownerID = UUID.fromString(ownerIdentifier);
             }
             catch (Exception ex) {
-                GriefPrevention.AddLogEntry("Error - this is not a valid UUID: " + ownerIdentifier + ".");
-                GriefPrevention.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                TheatriaClaims.AddLogEntry("Error - this is not a valid UUID: " + ownerIdentifier + ".");
+                TheatriaClaims.AddLogEntry("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
             }
         }
 
@@ -497,7 +501,7 @@ public class FlatFileDataStore extends DataStore {
         catch (Exception e) {
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));
-            GriefPrevention.AddLogEntry(claimID + " " + errors.toString(), CustomLogEntryTypes.Exception);
+            TheatriaClaims.AddLogEntry(claimID + " " + errors.toString(), CustomLogEntryTypes.Exception);
         }
     }
 
@@ -509,7 +513,7 @@ public class FlatFileDataStore extends DataStore {
         //remove from disk
         File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".yml");
         if (claimFile.exists() && !claimFile.delete()) {
-            GriefPrevention.AddLogEntry("Error: Unable to delete claim file \"" + claimFile.getAbsolutePath() + "\".");
+            TheatriaClaims.AddLogEntry("Error: Unable to delete claim file \"" + claimFile.getAbsolutePath() + "\".");
         }
     }
 
@@ -517,7 +521,8 @@ public class FlatFileDataStore extends DataStore {
     public synchronized PlayerData getPlayerDataFromStorage(UUID playerID) {
         File playerFile = new File(playerDataFolderPath + File.separator + playerID.toString());
 
-        PlayerData playerData = new PlayerData();
+        //TODO Why is this called here? Could be legitimate, just check on it
+        PlayerData playerData = new PlayerData(configManager);
         playerData.playerID = playerID;
 
         //if it exists as a file, read the file
@@ -584,8 +589,8 @@ public class FlatFileDataStore extends DataStore {
             if (needRetry) {
                 StringWriter errors = new StringWriter();
                 latestException.printStackTrace(new PrintWriter(errors));
-                GriefPrevention.AddLogEntry("Failed to load PlayerData for " + playerID + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file in GriefPrevetionData/PlayerData/" + playerID, CustomLogEntryTypes.Debug, false);
-                GriefPrevention.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
+                TheatriaClaims.AddLogEntry("Failed to load PlayerData for " + playerID + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file in GriefPrevetionData/PlayerData/" + playerID, CustomLogEntryTypes.Debug, false);
+                TheatriaClaims.AddLogEntry(playerID + " " + errors.toString(), CustomLogEntryTypes.Exception);
             }
         }
 
@@ -624,7 +629,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+            TheatriaClaims.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -647,7 +652,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving next claim ID: " + e.getMessage());
+            TheatriaClaims.AddLogEntry("Unexpected exception saving next claim ID: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -676,7 +681,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
+            TheatriaClaims.AddLogEntry("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
         }
 
         try {
@@ -747,9 +752,9 @@ public class FlatFileDataStore extends DataStore {
         claimsFolder.renameTo(claimsBackupFolder);
         playersFolder.renameTo(playersBackupFolder);
 
-        GriefPrevention.AddLogEntry("Backed your file system data up to " + claimsBackupFolder.getName() + " and " + playersBackupFolder.getName() + ".");
-        GriefPrevention.AddLogEntry("If your migration encountered any problems, you can restore those data with a quick copy/paste.");
-        GriefPrevention.AddLogEntry("When you're satisfied that all your data have been safely migrated, consider deleting those folders.");
+        TheatriaClaims.AddLogEntry("Backed your file system data up to " + claimsBackupFolder.getName() + " and " + playersBackupFolder.getName() + ".");
+        TheatriaClaims.AddLogEntry("If your migration encountered any problems, you can restore those data with a quick copy/paste.");
+        TheatriaClaims.AddLogEntry("When you're satisfied that all your data have been safely migrated, consider deleting those folders.");
     }
 
     @Override
@@ -800,7 +805,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Unexpected exception saving schema version: " + e.getMessage());
+            TheatriaClaims.AddLogEntry("Unexpected exception saving schema version: " + e.getMessage());
         }
 
         //close the file
