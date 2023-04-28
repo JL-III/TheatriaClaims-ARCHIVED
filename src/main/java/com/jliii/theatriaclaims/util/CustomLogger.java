@@ -52,7 +52,7 @@ public class CustomLogger {
         logFolder.mkdirs();
 
         //delete any outdated log files immediately
-        this.DeleteExpiredLogs(configManager, logFolderPath);
+        this.DeleteExpiredLogs();
 
         //unless disabled, schedule recurring tasks
         int daysToKeepLogs = configManager.config_logs_daysToKeep;
@@ -67,13 +67,13 @@ public class CustomLogger {
 
     private static final Pattern inlineFormatterPattern = Pattern.compile("§.");
 
-    public static void AddEntry(String entry, CustomLogEntryTypes entryType, ConfigManager configManager) {
+    public void AddEntry(String entry, CustomLogEntryTypes entryType) {
         //if disabled, do nothing
         int daysToKeepLogs = configManager.config_logs_daysToKeep;
         if (daysToKeepLogs == 0) return;
 
         //if entry type is not enabled, do nothing
-        if (!isEnabledType(entryType, configManager)) return;
+        if (!isEnabledType(entryType)) return;
 
         //otherwise write to the in-memory buffer, after removing formatters
         Matcher matcher = inlineFormatterPattern.matcher(entry);
@@ -82,8 +82,7 @@ public class CustomLogger {
         queuedEntries.append(timestamp).append(' ').append(entry).append('\n');
     }
 
-    //TODO can we make this less reliant on the config manager? maybe set these values based on the config manager?
-    private static boolean isEnabledType(CustomLogEntryTypes entryType, ConfigManager configManager) {
+    private boolean isEnabledType(CustomLogEntryTypes entryType) {
         if (entryType == CustomLogEntryTypes.Exception) return true;
         if (entryType == CustomLogEntryTypes.SocialActivity && !configManager.config_logs_socialEnabled)
             return false;
@@ -120,7 +119,7 @@ public class CustomLogger {
         }
     }
 
-    private static void DeleteExpiredLogs(ConfigManager configManager, String logFolderPath) {
+    private void DeleteExpiredLogs() {
         try {
             //get list of log files
             File logFolder = new File(logFolderPath);
@@ -150,7 +149,7 @@ public class CustomLogger {
                 }
                 catch (NumberFormatException e) {
                     //throw this away - effectively ignoring any files without the correct filename format
-                    AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true, configManager);
+                    AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true);
                 }
             }
         }
@@ -172,21 +171,21 @@ public class CustomLogger {
         @Override
         public void run()
         {
-            DeleteExpiredLogs(configManager, logFolderPath);
+            DeleteExpiredLogs();
         }
     }
 
     //adds a server log entry
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs, ConfigManager configManager) {
-        AddEntry(entry, customLogType, configManager);
+    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
+        AddEntry(entry, customLogType);
         if (!excludeFromServerLogs) Bukkit.getLogger().info(entry);
     }
 
-    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, ConfigManager configManager) {
-        AddLogEntry(entry, customLogType, false, configManager);
+    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
+        AddLogEntry(entry, customLogType, false);
     }
 
-    public static synchronized void AddLogEntry(String entry, ConfigManager configManager) {
-        AddLogEntry(entry, CustomLogEntryTypes.Debug, configManager);
+    public synchronized void AddLogEntry(String entry) {
+        AddLogEntry(entry, CustomLogEntryTypes.Debug);
     }
 }
