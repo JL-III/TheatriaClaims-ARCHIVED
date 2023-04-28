@@ -12,8 +12,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.function.Consumer;
 
-public abstract class BlockBoundaryVisualization extends BoundaryVisualization
-{
+public abstract class BlockBoundaryVisualization extends BoundaryVisualization {
 
     private final int step;
     private final BoundingBox displayZoneArea;
@@ -27,8 +26,7 @@ public abstract class BlockBoundaryVisualization extends BoundaryVisualization
      * @param visualizeFrom the {@link IntVector} representing the world coordinate being visualized from
      * @param height the height of the visualization
      */
-    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height)
-    {
+    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height) {
         this(world, visualizeFrom, height, 10, 75);
     }
 
@@ -41,18 +39,10 @@ public abstract class BlockBoundaryVisualization extends BoundaryVisualization
      * @param step the distance between individual side elements
      * @param displayZoneRadius the radius in which elements are visible from the visualization location
      */
-    protected BlockBoundaryVisualization(
-            @NotNull World world,
-            @NotNull IntVector visualizeFrom,
-            int height,
-            int step,
-            int displayZoneRadius)
-    {
+    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, int step, int displayZoneRadius) {
         super(world, visualizeFrom, height);
         this.step = step;
-        this.displayZoneArea = new BoundingBox(
-                visualizeFrom.add(-displayZoneRadius, -displayZoneRadius, -displayZoneRadius),
-                visualizeFrom.add(displayZoneRadius, displayZoneRadius, displayZoneRadius));
+        this.displayZoneArea = new BoundingBox(visualizeFrom.add(-displayZoneRadius, -displayZoneRadius, -displayZoneRadius), visualizeFrom.add(displayZoneRadius, displayZoneRadius, displayZoneRadius));
     }
 
     @Override

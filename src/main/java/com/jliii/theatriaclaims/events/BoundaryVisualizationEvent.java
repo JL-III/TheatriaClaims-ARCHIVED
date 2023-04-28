@@ -21,17 +21,6 @@ import java.util.HashSet;
 public class BoundaryVisualizationEvent extends PlayerEvent {
 
     private ConfigManager configManager;
-
-    //TODO static method is broken here.
-    public static final VisualizationProvider DEFAULT_PROVIDER = (world, visualizeFrom, height) ->
-    {
-        if (configManager.config_visualizationAntiCheatCompat)
-        {
-            return new AntiCheatCompatVisualization(world, visualizeFrom, height);
-        }
-        return new FakeBlockVisualization(world, visualizeFrom, height);
-    };
-
     private final @NotNull Collection<Boundary> boundaries;
     private final int height;
     private @NotNull VisualizationProvider provider;
@@ -45,8 +34,7 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      * @param height the height at which the visualization was initiated
      */
     public BoundaryVisualizationEvent(@NotNull Player player, @NotNull Collection<Boundary> boundaries, int height, ConfigManager configManager) {
-        this(player, boundaries, height, DEFAULT_PROVIDER);
-        this.configManager = configManager;
+        this(player, boundaries, height, DEFAULT_PROVIDER, configManager);
     }
 
     /**
@@ -58,17 +46,21 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      * @param height the height at which the visualization was initiated
      * @param provider the {@link VisualizationProvider}
      */
-    public BoundaryVisualizationEvent(
-            @NotNull Player player,
-            @NotNull Collection<Boundary> boundaries,
-            int height,
-            @NotNull VisualizationProvider provider
-    ) {
+    public BoundaryVisualizationEvent(@NotNull Player player, @NotNull Collection<Boundary> boundaries, int height, @NotNull VisualizationProvider provider, ConfigManager configManager) {
         super(player);
         this.boundaries = new HashSet<>(boundaries);
         this.height = height;
+        this.configManager = configManager;
         this.provider = provider;
     }
+
+    //TODO static method is broken here.
+    public static final VisualizationProvider DEFAULT_PROVIDER = (world, visualizeFrom, height, configManager) -> {
+        if (configManager.config_visualizationAntiCheatCompat) {
+            return new AntiCheatCompatVisualization(world, visualizeFrom, height);
+        }
+        return new FakeBlockVisualization(world, visualizeFrom, height);
+    };
 
     /**
      * Get the {@link Boundary Boundaries} to visualize.
@@ -76,8 +68,7 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      *
      * @return the {@code Boundaries} to visualize
      */
-    public @NotNull Collection<Boundary> getBoundaries()
-    {
+    public @NotNull Collection<Boundary> getBoundaries() {
         return boundaries;
     }
 
@@ -86,8 +77,7 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      *
      * @return the coordinates of the center of the visualization
      */
-    public @NotNull IntVector getCenter()
-    {
+    public @NotNull IntVector getCenter() {
         return new IntVector(player.getLocation());
     }
 
@@ -96,8 +86,7 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      *
      * @return the height at which the visualization was initiated
      */
-    public int getHeight()
-    {
+    public int getHeight() {
         return height;
     }
 
@@ -106,8 +95,7 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      *
      * @return the {@code VisualizationProvider}
      */
-    public @NotNull VisualizationProvider getProvider()
-    {
+    public @NotNull VisualizationProvider getProvider() {
         return provider;
     }
 
@@ -116,22 +104,19 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
      *
      * @param provider the {@code VisualizationProvider}
      */
-    public void setProvider(@NotNull VisualizationProvider provider)
-    {
+    public void setProvider(@NotNull VisualizationProvider provider) {
         this.provider = provider;
     }
 
     // Listenable event requirements
     private static final HandlerList HANDLERS = new HandlerList();
 
-    public static HandlerList getHandlerList()
-    {
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
     @Override
-    public @NotNull HandlerList getHandlers()
-    {
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 

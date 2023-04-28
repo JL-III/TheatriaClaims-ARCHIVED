@@ -2,7 +2,9 @@ package com.jliii.theatriaclaims.visualization;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.util.PlayerData;
@@ -26,13 +28,13 @@ import java.util.stream.Stream;
  * A representation of a system for displaying rectangular {@link Boundary Boundaries} to {@link Player Players}.
  * This is used to display claim areas, visualize affected area during nature restoration, and more.
  */
-public abstract class BoundaryVisualization
-{
+public abstract class BoundaryVisualization {
 
     private final Collection<Boundary> elements = new HashSet<>();
     protected final @NotNull World world;
     protected final @NotNull IntVector visualizeFrom;
     protected final int height;
+    private final ConfigManager configManager;
 
     /**
      * Construct a new {@code BoundaryVisualization}.
@@ -41,11 +43,11 @@ public abstract class BoundaryVisualization
      * @param visualizeFrom the {@link IntVector} representing the world coordinate being visualized from
      * @param height the height of the visualization
      */
-    protected BoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height)
-    {
+    protected BoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, ConfigManager configManager)  {
         this.world = world;
         this.visualizeFrom = visualizeFrom;
         this.height = height;
+        this.configManager = configManager;
     }
 
     /**
@@ -65,14 +67,11 @@ public abstract class BoundaryVisualization
      * @param player the visualization target
      * @param playerData the {@link PlayerData} of the visualization target
      */
-    protected void apply(@NotNull Player player, @NotNull PlayerData playerData)
-    {
+    protected void apply(@NotNull Player player, @NotNull PlayerData playerData) {
         // Remember the visualization so it can be reverted.
         playerData.setVisibleBoundaries(this);
-
         // Apply all visualization elements.
         elements.forEach(element -> draw(player, element));
-
         // Schedule automatic reversion.
         scheduleRevert(player, playerData);
     }
@@ -94,8 +93,7 @@ public abstract class BoundaryVisualization
      * @param player the visualization target
      * @param playerData the {@link PlayerData} of the visualization target
      */
-    protected void scheduleRevert(@NotNull Player player, @NotNull PlayerData playerData)
-    {
+    protected void scheduleRevert(@NotNull Player player, @NotNull PlayerData playerData) {
         TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
                 TheatriaClaims.instance,
                 () -> {
@@ -110,11 +108,9 @@ public abstract class BoundaryVisualization
      *
      * @param player the visualization target
      */
-    public void revert(@Nullable Player player)
-    {
+    public void revert(@Nullable Player player) {
         // If the player cannot visualize the blocks, they should already be effectively reverted.
-        if (!canVisualize(player))
-        {
+        if (!canVisualize(player)) {
             return;
         }
 
@@ -140,11 +136,11 @@ public abstract class BoundaryVisualization
     public static void visualizeArea(
             @NotNull Player player,
             @NotNull BoundingBox boundingBox,
-            @NotNull VisualizationType type) {
+            @NotNull VisualizationType type, ConfigManager configManager) {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player,
                 Set.of(new Boundary(boundingBox, type)),
-                player.getEyeLocation().getBlockY());
-        callAndVisualize(event);
+                player.getEyeLocation().getBlockY(), configManager);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -157,9 +153,10 @@ public abstract class BoundaryVisualization
     public static void visualizeClaim(
             @NotNull Player player,
             @NotNull Claim claim,
-            @NotNull VisualizationType type)
+            @NotNull VisualizationType type,
+            ConfigManager configManager)
     {
-        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY());
+        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY(), configManager);
     }
 
     /**
@@ -174,9 +171,9 @@ public abstract class BoundaryVisualization
             @NotNull Player player,
             @NotNull Claim claim,
             @NotNull VisualizationType type,
-            @NotNull Block block)
-    {
-        visualizeClaim(player, claim, type, block.getY());
+            @NotNull Block block,
+            ConfigManager configManager) {
+        visualizeClaim(player, claim, type, block.getY(), configManager);
     }
 
     /**
@@ -187,14 +184,9 @@ public abstract class BoundaryVisualization
      * @param type the {@link VisualizationType}
      * @param height the height at which the visualization was initiated
      */
-    private static void visualizeClaim(
-            @NotNull Player player,
-            @NotNull Claim claim,
-            @NotNull VisualizationType type,
-            int height)
-    {
-        BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player, defineBoundaries(claim, type), height);
-        callAndVisualize(event);
+    private static void visualizeClaim(@NotNull Player player, @NotNull Claim claim, @NotNull VisualizationType type, int height, ConfigManager configManager) {
+        BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player, defineBoundaries(claim, type), height, configManager);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -232,7 +224,8 @@ public abstract class BoundaryVisualization
     public static void visualizeNearbyClaims(
             @NotNull Player player,
             @NotNull Collection<Claim> claims,
-            int height)
+            int height,
+            ConfigManager configManager)
     {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(
                 player,
@@ -240,8 +233,8 @@ public abstract class BoundaryVisualization
                         claim,
                         claim.isAdminClaim() ? VisualizationType.ADMIN_CLAIM :  VisualizationType.CLAIM))
                         .collect(Collectors.toSet()),
-                height);
-        callAndVisualize(event);
+                height, configManager);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -249,11 +242,11 @@ public abstract class BoundaryVisualization
      *
      * @param event the {@code BoundaryVisualizationEvent}
      */
-    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event) {
+    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event, ConfigManager configManager) {
         Bukkit.getPluginManager().callEvent(event);
 
         Player player = event.getPlayer();
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
         BoundaryVisualization currentVisualization = playerData.getVisibleBoundaries();
 
         Collection<Boundary> boundaries = event.getBoundaries();
@@ -265,7 +258,7 @@ public abstract class BoundaryVisualization
             return;
         }
 
-        BoundaryVisualization visualization = event.getProvider().create(player.getWorld(), event.getCenter(), event.getHeight());
+        BoundaryVisualization visualization = event.getProvider().create(player.getWorld(), event.getCenter(), event.getHeight(), configManager);
         visualization.elements.addAll(boundaries);
 
         // If they have a visualization active, clear it first.
@@ -274,8 +267,8 @@ public abstract class BoundaryVisualization
         // If they are online and in the same world as the visualization, display the visualization next tick.
         if (visualization.canVisualize(player))
         {
-            GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                    GriefPrevention.instance,
+            TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
+                    TheatriaClaims.instance,
                     new DelayedVisualizationTask(visualization, playerData, event),
                     1L);
         }
@@ -300,19 +293,19 @@ public abstract class BoundaryVisualization
                 if (event.getProvider() == BoundaryVisualizationEvent.DEFAULT_PROVIDER)
                 {
                     // If the provider is our own, log normally.
-                    GriefPrevention.instance.getLogger().log(Level.WARNING, "Exception visualizing claim", exception);
+                    TheatriaClaims.instance.getLogger().log(Level.WARNING, "Exception visualizing claim", exception);
                     return;
                 }
 
                 // Otherwise, add an extra hint that the problem is not with GP.
-                GriefPrevention.AddLogEntry(
+                customLogger.AddLogEntry(
                         String.format(
                                 "External visualization provider %s caused %s: %s",
                                 event.getProvider().getClass().getName(),
                                 exception.getClass().getName(),
                                 exception.getCause()),
                         CustomLogEntryTypes.Exception);
-                GriefPrevention.instance.getLogger().log(
+                TheatriaClaims.instance.getLogger().log(
                         Level.WARNING,
                         "Exception visualizing claim using external provider",
                         exception);
