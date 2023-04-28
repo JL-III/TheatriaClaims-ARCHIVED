@@ -19,6 +19,12 @@
 package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.events.AccrueClaimBlocksEvent;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;
@@ -29,24 +35,30 @@ import java.util.Collection;
 public class DeliverClaimBlocksTask implements Runnable {
     private final Player player;
     private final TheatriaClaims instance;
+    private final ConfigManager configManager;
     private final int idleThresholdSquared;
+    private final CustomLogger customLogger;
 
-    public DeliverClaimBlocksTask(Player player, TheatriaClaims instance) {
+    public DeliverClaimBlocksTask(Player player, TheatriaClaims instance, ConfigManager configManager, CustomLogger customLogger) {
         this.player = player;
         this.instance = instance;
-        this.idleThresholdSquared = instance.config_claims_accruedIdleThreshold * instance.config_claims_accruedIdleThreshold;
+        this.configManager = configManager;
+        this.customLogger = customLogger;
+        this.idleThresholdSquared = configManager.config_claims_accruedIdleThreshold * configManager.config_claims_accruedIdleThreshold;
     }
 
+
+    //TODO wtf is going on here? why are we creating more versions of this task? where is the contructor getting its input? how are we creating things based on this constructor?
     @Override
     public void run() {
         //if no player specified, this task will create a player-specific task for each online player, scheduled one tick apart
         if (this.player == null) {
             @SuppressWarnings("unchecked")
-            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) instance.getServer().getOnlinePlayers();
 
             long i = 0;
             for (Player onlinePlayer : players) {
-                DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer, instance);
+                DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer, instance, configManager, customLogger);
                 instance.getServer().getScheduler().scheduleSyncDelayedTask(instance, newTask, i++);
             }
 
@@ -77,22 +89,22 @@ public class DeliverClaimBlocksTask implements Runnable {
 
         try {
             //determine how fast blocks accrue for this player //RoboMWM: addons determine this instead
-            int accrualRate = instance.config_claims_blocksAccruedPerHour_default;
+            int accrualRate = configManager.config_claims_blocksAccruedPerHour_default;
 
             //determine idle accrual rate when idle
             if (isIdle) {
-                if (instance.config_claims_accruedIdlePercent <= 0) {
-                    GriefPrevention.AddLogEntry(player.getName() + " wasn't active enough to accrue claim blocks this round.", CustomLogEntryTypes.Debug, true);
+                if (configManager.config_claims_accruedIdlePercent <= 0) {
+                    customLogger.AddLogEntry(player.getName() + " wasn't active enough to accrue claim blocks this round.", CustomLogEntryTypes.Debug, true);
                     return; //idle accrual percentage is disabled
                 }
-                accrualRate = (int) (accrualRate * (instance.config_claims_accruedIdlePercent / 100.0D));
+                accrualRate = (int) (accrualRate * (configManager.config_claims_accruedIdlePercent / 100.0D));
             }
 
             //fire event for addons
             AccrueClaimBlocksEvent event = new AccrueClaimBlocksEvent(player, accrualRate, isIdle);
             instance.getServer().getPluginManager().callEvent(event);
             if (event.isCancelled()) {
-                GriefPrevention.AddLogEntry(player.getName() + " claim block delivery was canceled by another plugin.", CustomLogEntryTypes.Debug, true);
+                customLogger.AddLogEntry(player.getName() + " claim block delivery was canceled by another plugin.", CustomLogEntryTypes.Debug, true);
                 return; //event was cancelled
             }
 
@@ -100,14 +112,14 @@ public class DeliverClaimBlocksTask implements Runnable {
             accrualRate = event.getBlocksToAccrue();
             if (accrualRate < 0) accrualRate = 0;
             playerData.accrueBlocks(accrualRate);
-            GriefPrevention.AddLogEntry("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
+            customLogger.AddLogEntry("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
 
             //intentionally NOT saving data here to reduce overall secondary storage access frequency
             //many other operations will cause this player's data to save, including his eventual logout
             //dataStore.savePlayerData(player.getUniqueIdentifier(), playerData);
         }
         catch (Exception e) {
-            GriefPrevention.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
+            customLogger.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
             e.printStackTrace();
         }
     }

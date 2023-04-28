@@ -18,6 +18,12 @@
 
 package com.jliii.theatriaclaims.tasks;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.ClaimsMode;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Boat;
@@ -34,18 +40,21 @@ import java.util.List;
 //if any part of the tree is still there and nothing else has been built in its place, remove the remaining parts
 public class EntityCleanupTask implements Runnable {
     //where to start cleaning in the list of entities
+    private final ConfigManager configManager;
+    private final CustomLogger customLogger;
     private final double percentageStart;
 
-    public EntityCleanupTask(double percentageStart)
-    {
+    public EntityCleanupTask(ConfigManager configManager, CustomLogger customLogger, double percentageStart) {
+        this.configManager = configManager;
+        this.customLogger = customLogger;
         this.percentageStart = percentageStart;
     }
 
     @Override
     public void run() {
         ArrayList<World> worlds = new ArrayList<>();
-        for (World world : GriefPrevention.instance.getServer().getWorlds()) {
-            if (GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative) {
+        for (World world : TheatriaClaims.instance.getServer().getWorlds()) {
+            if (configManager.config_claims_worldModes.get(world) == ClaimsMode.Creative) {
                 worlds.add(world);
             }
         }
@@ -87,7 +96,7 @@ public class EntityCleanupTask implements Runnable {
 
                 //all non-player entities must be in claims
                 else if (!(entity instanceof Player)) {
-                    Claim claim = GriefPrevention.instance.dataStore.getClaimAt(entity.getLocation(), false, cachedClaim);
+                    Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(entity.getLocation(), false, cachedClaim);
                     if (claim != null) {
                         cachedClaim = claim;
                     }
@@ -97,21 +106,21 @@ public class EntityCleanupTask implements Runnable {
                 }
 
                 if (remove) {
-                    GriefPrevention.AddLogEntry("Removing entity " + entity.getType().name() + " @ " + entity.getLocation(), CustomLogEntryTypes.Debug, true);
+                    customLogger.AddLogEntry("Removing entity " + entity.getType().name() + " @ " + entity.getLocation(), CustomLogEntryTypes.Debug, true);
                     entity.remove();
                 }
             }
         }
 
         //starting and stopping point.  each execution of the task scans 5% of the server's claims
-        List<Claim> claims = GriefPrevention.instance.dataStore.claims;
+        List<Claim> claims = TheatriaClaims.instance.dataStore.claims;
         int j = (int) (claims.size() * this.percentageStart);
         int k = (int) (claims.size() * (this.percentageStart + .05));
         for (; j < claims.size() && j < k; j++) {
             Claim claim = claims.get(j);
 
             //if it's a creative mode claim
-            if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
+            if (TheatriaClaims.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
                 //check its entity count and remove any extras
                 claim.allowMoreEntities(true);
             }
@@ -123,7 +132,7 @@ public class EntityCleanupTask implements Runnable {
             nextRunPercentageStart = 0;
         }
 
-        EntityCleanupTask task = new EntityCleanupTask(nextRunPercentageStart);
-        GriefPrevention.instance.getServer().getScheduler().scheduleSyncDelayedTask(GriefPrevention.instance, task, 20L * 60 * 1);
+        EntityCleanupTask task = new EntityCleanupTask(configManager, customLogger, nextRunPercentageStart);
+        TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, task, 20L * 60 * 1);
     }
 }

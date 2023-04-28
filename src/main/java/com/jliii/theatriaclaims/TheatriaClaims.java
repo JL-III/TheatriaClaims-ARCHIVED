@@ -93,7 +93,7 @@ public class TheatriaClaims extends JavaPlugin {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(configManager, customLogger);
                 if (FlatFileDataStore.hasData()) {
                     customLogger.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
-                    FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager);
+                    FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager, customLogger);
                     this.dataStore = flatFileStore;
                     flatFileStore.migrateData(databaseStore);
                     customLogger.AddLogEntry("Data migration process complete.");
@@ -122,7 +122,7 @@ public class TheatriaClaims extends JavaPlugin {
                 }
             }
             try {
-                this.dataStore = new FlatFileDataStore(configManager);
+                this.dataStore = new FlatFileDataStore(configManager, customLogger);
             }
             catch (Exception e) {
                 customLogger.AddLogEntry("Unable to initialize the file system data store.  Details:");
@@ -137,12 +137,12 @@ public class TheatriaClaims extends JavaPlugin {
         //unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
         //20L ~ 1 second
         if (configManager.config_claims_blocksAccruedPerHour_default > 0) {
-            DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this);
+            DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this, configManager, customLogger);
             this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
         }
 
         //start the recurring cleanup event for entities in creative worlds
-        EntityCleanupTask task = new EntityCleanupTask(0);
+        EntityCleanupTask task = new EntityCleanupTask(configManager, customLogger, 0);
         this.getServer().getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, task, 20L * 60 * 2);
 
         //start recurring cleanup scan for unused claims belonging to inactive players
