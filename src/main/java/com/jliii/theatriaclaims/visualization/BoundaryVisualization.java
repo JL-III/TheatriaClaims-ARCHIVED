@@ -6,6 +6,7 @@ import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
@@ -269,7 +270,7 @@ public abstract class BoundaryVisualization {
         {
             TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
                     TheatriaClaims.instance,
-                    new DelayedVisualizationTask(visualization, playerData, event),
+                    new DelayedVisualizationTask(visualization, playerData, event, configManager, customLogger),
                     1L);
         }
     }
@@ -277,26 +278,19 @@ public abstract class BoundaryVisualization {
     private record DelayedVisualizationTask(
             @NotNull BoundaryVisualization visualization,
             @NotNull PlayerData playerData,
-            @NotNull BoundaryVisualizationEvent event)
-            implements Runnable
-    {
-
+            @NotNull BoundaryVisualizationEvent event, ConfigManager configManager, CustomLogger customLogger)
+            implements Runnable {
         @Override
-        public void run()
-        {
-            try
-            {
+        public void run() {
+            try {
                 visualization.apply(event.getPlayer(), playerData);
             }
-            catch (Exception exception)
-            {
-                if (event.getProvider() == BoundaryVisualizationEvent.DEFAULT_PROVIDER)
-                {
+            catch (Exception exception) {
+                if (event.getProvider() == BoundaryVisualizationEvent.DEFAULT_PROVIDER) {
                     // If the provider is our own, log normally.
                     TheatriaClaims.instance.getLogger().log(Level.WARNING, "Exception visualizing claim", exception);
                     return;
                 }
-
                 // Otherwise, add an extra hint that the problem is not with GP.
                 customLogger.AddLogEntry(
                         String.format(
@@ -309,15 +303,12 @@ public abstract class BoundaryVisualization {
                         Level.WARNING,
                         "Exception visualizing claim using external provider",
                         exception);
-
                 // Fall through to default provider.
                 BoundaryVisualization fallback = BoundaryVisualizationEvent.DEFAULT_PROVIDER
-                        .create(event.getPlayer().getWorld(), event.getCenter(), event.getHeight());
+                        .create(event.getPlayer().getWorld(), event.getCenter(), event.getHeight(), configManager);
                 event.getBoundaries().stream().filter(Objects::nonNull).forEach(fallback.elements::add);
                 fallback.apply(event.getPlayer(), playerData);
             }
         }
-
     }
-
 }

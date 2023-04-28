@@ -47,7 +47,6 @@ public class ConfigManager {
     public boolean config_claims_preventNonPlayerCreatedPortals;    // whether portals where we cannot determine the creating player should be prevented from creation in claims
     public boolean config_claims_enderPearlsRequireAccessTrust;        //whether teleporting into a claim with a pearl requires access trust
     public boolean config_claims_raidTriggersRequireBuildTrust;      //whether raids are triggered by a player that doesn't have build permission in that claim
-    public int config_claims_maxClaimsPerPlayer;                    //maximum number of claims per player
     public boolean config_claims_respectWorldGuard;                 //whether claim creations requires WG build permission in creation area
     public boolean config_claims_villagerTradingRequiresTrust;      //whether trading with a claimed villager requires permission
 
@@ -69,7 +68,7 @@ public class ConfigManager {
     public int config_claims_minArea;                               //minimum area for non-admin claims
 
     public int config_claims_chestClaimExpirationDays;                //number of days of inactivity before an automatic chest claim will be deleted
-    public int config_claims_unusedClaimExpirationDays;                //number of days of inactivity before an unused (nothing build) claim will be deleted
+//    public int config_claims_unusedClaimExpirationDays;                //number of days of inactivity before an unused (nothing build) claim will be deleted
     public boolean config_claims_survivalAutoNatureRestoration;        //whether survival claims will be automatically restored to nature when auto-deleted
     public boolean config_claims_allowTrappedInAdminClaims;            //whether it should be allowed to use /trapped in adminclaims.
 
@@ -77,6 +76,8 @@ public class ConfigManager {
     public Material config_claims_modificationTool;                    //which material will be used to create/resize claims with a right click
 
     public ArrayList<String> config_claims_commandsRequiringAccessTrust; //the list of slash commands requiring access trust when in a claim
+
+    //TODO replace this book with one we make
     public boolean config_claims_supplyPlayerManual;                //whether to give new players a book with land claim help in it
     public int config_claims_manualDeliveryDelaySeconds;            //how long to wait before giving a book to a new player
 
@@ -88,17 +89,12 @@ public class ConfigManager {
     public boolean config_spam_enabled;                                //whether or not to monitor for spam
     public int config_spam_loginCooldownSeconds;                    //how long players must wait between logins.  combats login spam.
     public int config_spam_loginLogoutNotificationsPerMinute;        //how many login/logout notifications to show per minute (global, not per player)
-    public ArrayList<String> config_spam_monitorSlashCommands;    //the list of slash commands monitored for spam
-    public boolean config_spam_banOffenders;                        //whether or not to ban spammers automatically
-    public String config_spam_banMessage;                            //message to show an automatically banned player
-    public String config_spam_warningMessage;                        //message to show a player who is close to spam level
-    public String config_spam_allowedIpAddresses;                    //IP addresses which will not be censored
     public int config_spam_deathMessageCooldownSeconds;                //cooldown period for death messages (per player) in seconds
     public int config_spam_logoutMessageDelaySeconds;               //delay before a logout message will be shown (only if the player stays offline that long)
 
     public HashMap<World, Boolean> config_pvp_specifiedWorlds;                //list of worlds where pvp anti-grief rules apply, according to the config file
     public boolean config_pvp_protectFreshSpawns;                    //whether to make newly spawned players immune until they pick up an item
-    public boolean config_pvp_punishLogout;                            //whether to kill players who log out during PvP combat
+//    public boolean config_pvp_punishLogout;                            //whether to kill players who log out during PvP combat
     public int config_pvp_combatTimeoutSeconds;                        //how long combat is considered to continue after the most recent damage
     public boolean config_pvp_allowCombatItemDrop;                    //whether a player can drop items during combat to hide them
     public ArrayList<String> config_pvp_blockedCommands;            //list of commands which may not be used during pvp combat
@@ -106,7 +102,7 @@ public class ConfigManager {
     public boolean config_pvp_noCombatInAdminLandClaims;            //whether players may fight in admin-owned land claims
     public boolean config_pvp_noCombatInAdminSubdivisions;          //whether players may fight in subdivisions of admin-owned land claims
     public boolean config_pvp_allowLavaNearPlayers;                 //whether players may dump lava near other players in pvp worlds
-    public boolean config_pvp_allowLavaNearPlayers_NonPvp;            //whather this applies in non-PVP rules worlds <ArchdukeLiamus>
+    public boolean config_pvp_allowLavaNearPlayers_NonPvp;            //whether this applies in non-PVP rules worlds <ArchdukeLiamus>
     public boolean config_pvp_allowFireNearPlayers;                 //whether players may start flint/steel fires near other players in pvp worlds
     public boolean config_pvp_allowFireNearPlayers_NonPvp;            //whether this applies in non-PVP rules worlds <ArchdukeLiamus>
     public boolean config_pvp_protectPets;                          //whether players may damage pets outside of land claims in pvp worlds
@@ -124,12 +120,13 @@ public class ConfigManager {
     public boolean config_blockSurfaceOtherExplosions;                //whether non-creeper explosions near or above the surface destroy blocks
     public boolean config_blockSkyTrees;                            //whether players can build trees on platforms in the sky
 
+    //TODO i think worldguard is doing this already.
     public boolean config_fireSpreads;                                //whether fire spreads outside of claims
     public boolean config_fireDestroys;                                //whether fire destroys blocks outside of claims
 
-    public boolean config_whisperNotifications;                    //whether whispered messages will broadcast to administrators in game
+//    public boolean config_whisperNotifications;                    //whether whispered messages will broadcast to administrators in game
     public boolean config_signNotifications;                        //whether sign content will broadcast to administrators in game
-    public ArrayList<String> config_eavesdrop_whisperCommands;        //list of whisper commands to eavesdrop on
+//    public ArrayList<String> config_eavesdrop_whisperCommands;        //list of whisper commands to eavesdrop on
 
     public boolean config_visualizationAntiCheatCompat;              // whether to engage compatibility mode for anti-cheat plugins
 
@@ -140,6 +137,8 @@ public class ConfigManager {
     public boolean config_rabbitsEatCrops;                          //whether or not rabbits may eat crops
     public boolean config_zombiesBreakDoors;                        //whether or not hard-mode zombies may break down wooden doors
 
+    //TODO why is this here? Lets look at it, because if this is just for the explosions above sea level then we can remove it.
+    // appears to be related to clean up of claims, which we wont be wanting/needing.
     public HashMap<String, Integer> config_seaLevelOverride;        //override for sea level, because bukkit doesn't report the right value for all situations
 
     public boolean config_limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
@@ -150,6 +149,7 @@ public class ConfigManager {
     public int config_advanced_claim_expiration_check_rate;            //How often GP should check for expired claims, amount in seconds
     public int config_advanced_offlineplayer_cache_days;            //Cache players who have logged in within the last x number of days
 
+    //TODO this is all on the chopping block, im not sure we are keeping any custom logging functions that use io other than the native bukkit logging.
     //custom log settings
     public int config_logs_daysToKeep;
     public boolean config_logs_socialEnabled;
@@ -158,6 +158,7 @@ public class ConfigManager {
     public boolean config_logs_debugEnabled;
     public boolean config_logs_mutedChatEnabled;
 
+    //TODO this needs to be looked at, the dev highly advises using the flat file, im not sure why so we need to look at it.
     public String databaseUrl;
     public String databaseUserName;
     public String databasePassword;
@@ -341,10 +342,6 @@ public class ConfigManager {
         this.config_spam_enabled = config.getBoolean("GriefPrevention.Spam.Enabled", true);
         this.config_spam_loginCooldownSeconds = config.getInt("GriefPrevention.Spam.LoginCooldownSeconds", 60);
         this.config_spam_loginLogoutNotificationsPerMinute = config.getInt("GriefPrevention.Spam.LoginLogoutNotificationsPerMinute", 5);
-        this.config_spam_warningMessage = config.getString("GriefPrevention.Spam.WarningMessage", "Please reduce your noise level.  Spammers will be banned.");
-        this.config_spam_allowedIpAddresses = config.getString("GriefPrevention.Spam.AllowedIpAddresses", "1.2.3.4; 5.6.7.8");
-        this.config_spam_banOffenders = config.getBoolean("GriefPrevention.Spam.BanOffenders", true);
-        this.config_spam_banMessage = config.getString("GriefPrevention.Spam.BanMessage", "Banned for spam.");
         String slashCommandsToMonitor = config.getString("GriefPrevention.Spam.MonitorSlashCommands", "/me;/global;/local");
         slashCommandsToMonitor = config.getString("GriefPrevention.Spam.ChatSlashCommands", slashCommandsToMonitor);
         this.config_spam_deathMessageCooldownSeconds = config.getInt("GriefPrevention.Spam.DeathMessageCooldownSeconds", 120);
@@ -501,10 +498,6 @@ public class ConfigManager {
         outConfig.set("GriefPrevention.Spam.LoginLogoutNotificationsPerMinute", this.config_spam_loginLogoutNotificationsPerMinute);
         outConfig.set("GriefPrevention.Spam.ChatSlashCommands", slashCommandsToMonitor);
         outConfig.set("GriefPrevention.Spam.WhisperSlashCommands", whisperCommandsToMonitor);
-        outConfig.set("GriefPrevention.Spam.WarningMessage", this.config_spam_warningMessage);
-        outConfig.set("GriefPrevention.Spam.BanOffenders", this.config_spam_banOffenders);
-        outConfig.set("GriefPrevention.Spam.BanMessage", this.config_spam_banMessage);
-        outConfig.set("GriefPrevention.Spam.AllowedIpAddresses", this.config_spam_allowedIpAddresses);
         outConfig.set("GriefPrevention.Spam.DeathMessageCooldownSeconds", this.config_spam_deathMessageCooldownSeconds);
         outConfig.set("GriefPrevention.Spam.Logout Message Delay In Seconds", this.config_spam_logoutMessageDelaySeconds);
 
@@ -591,14 +584,6 @@ public class ConfigManager {
             {
                 this.config_claims_commandsRequiringAccessTrust.add(command.trim().toLowerCase());
             }
-        }
-
-        //try to parse the list of commands which should be monitored for spam
-        this.config_spam_monitorSlashCommands = new ArrayList<>();
-        commands = slashCommandsToMonitor.split(";");
-        for (String command : commands)
-        {
-            this.config_spam_monitorSlashCommands.add(command.trim().toLowerCase());
         }
 
         //try to parse the list of commands which should be included in eavesdropping
