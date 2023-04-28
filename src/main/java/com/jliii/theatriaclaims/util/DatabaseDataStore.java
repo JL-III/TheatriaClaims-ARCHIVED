@@ -90,7 +90,7 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (Exception e2)
         {
-            customLogger.AddLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
+            CustomLogger.AddLogEntry("ERROR: Unable to connect to database.  Check your config file settings.", configManager);
             throw e2;
         }
 
@@ -123,8 +123,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (Exception e3)
         {
-            customLogger.AddLogEntry("ERROR: Unable to create the necessary database table.  Details:");
-            customLogger.AddLogEntry(e3.getMessage());
+            CustomLogger.AddLogEntry("ERROR: Unable to create the necessary database table.  Details:", configManager);
+            CustomLogger.AddLogEntry(e3.getMessage(), configManager);
             e3.printStackTrace();
             throw e3;
         }
@@ -195,7 +195,7 @@ public class DatabaseDataStore extends DataStore {
                 }
                 catch (Exception e)
                 {
-                    customLogger.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
+                    CustomLogger.AddLogEntry("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage(), configManager);
                     e.printStackTrace();
                 }
 

@@ -82,6 +82,7 @@ public class CustomLogger {
         queuedEntries.append(timestamp).append(' ').append(entry).append('\n');
     }
 
+    //TODO can we make this less reliant on the config manager? maybe set these values based on the config manager?
     private static boolean isEnabledType(CustomLogEntryTypes entryType, ConfigManager configManager) {
         if (entryType == CustomLogEntryTypes.Exception) return true;
         if (entryType == CustomLogEntryTypes.SocialActivity && !configManager.config_logs_socialEnabled)
@@ -185,7 +186,7 @@ public class CustomLogger {
         AddLogEntry(entry, customLogType, false, configManager);
     }
 
-    public synchronized void AddLogEntry(String entry, ConfigManager configManager) {
+    public static synchronized void AddLogEntry(String entry, ConfigManager configManager) {
         AddLogEntry(entry, CustomLogEntryTypes.Debug, configManager);
     }
 }
