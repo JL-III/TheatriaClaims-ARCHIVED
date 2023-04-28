@@ -3,9 +3,6 @@ package com.jliii.theatriaclaims.dynmap;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.util.DataStore;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -23,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
-import static me.ryanhamshire.GriefPrevention.dynmap.DynmapIntegration.ADMIN_ID;
+import static com.jliii.theatriaclaims.dynmap.DynmapIntegration.ADMIN_ID;
 
 public class UpdateProcessing {
 

@@ -1,8 +1,8 @@
 package com.jliii.theatriaclaims.visualization;
 
-import me.ryanhamshire.GriefPrevention.util.BoundingBox;
-import me.ryanhamshire.GriefPrevention.util.IntVector;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
+import com.jliii.theatriaclaims.util.BoundingBox;
+import com.jliii.theatriaclaims.util.IntVector;
+import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;

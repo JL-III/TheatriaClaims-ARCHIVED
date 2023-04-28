@@ -18,7 +18,8 @@
 
 package com.jliii.theatriaclaims.claim;
 
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
+
+import com.jliii.theatriaclaims.enums.MessageType;
 
 /**
  * Enum representing the permissions available in a {@link Claim}.

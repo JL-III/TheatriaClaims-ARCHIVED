@@ -1382,8 +1382,7 @@ public class PlayerEventHandler implements Listener {
     private final Set<Material> commonAdjacentBlocks_lava = EnumSet.of(Material.LAVA, Material.DIRT, Material.STONE);
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerBucketEmpty(PlayerBucketEmptyEvent bucketEvent)
-    {
+    public void onPlayerBucketEmpty(PlayerBucketEmptyEvent bucketEvent) {
         if (!instance.claimsEnabledForWorld(bucketEvent.getBlockClicked().getWorld())) return;
 
         Player player = bucketEvent.getPlayer();
@@ -1492,8 +1491,7 @@ public class PlayerEventHandler implements Listener {
 
     //see above
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerBucketFill(PlayerBucketFillEvent bucketEvent)
-    {
+    public void onPlayerBucketFill(PlayerBucketFillEvent bucketEvent) {
         Player player = bucketEvent.getPlayer();
         Block block = bucketEvent.getBlockClicked();
 
@@ -2243,8 +2241,7 @@ public class PlayerEventHandler implements Listener {
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), true /*ignore height*/, playerData.lastClaim);
 
             //if within an existing claim, he's not creating a new one
-            if (claim != null)
-            {
+            if (claim != null) {
                 //if the player has permission to edit the claim or subdivision
                 Supplier<String> noEditReason = claim.checkPermission(player, ClaimPermission.Edit, event, () -> instance.dataStore.getMessage(MessageType.CreateClaimFailOverlapOtherPlayer, claim.getOwnerName()));
                 if (noEditReason == null)
@@ -2349,8 +2346,7 @@ public class PlayerEventHandler implements Listener {
 
             //if he hasn't already start a claim with a previous shovel action
             Location lastShovelLocation = playerData.lastShovelLocation;
-            if (lastShovelLocation == null)
-            {
+            if (lastShovelLocation == null) {
                 //if claims are not enabled in this world and it's not an administrative claim, display an error message and stop
                 if (!instance.claimsEnabledForWorld(player.getWorld()))
                 {
@@ -2376,8 +2372,7 @@ public class PlayerEventHandler implements Listener {
             }
 
             //otherwise, he's trying to finish creating a claim by setting the other boundary corner
-            else
-            {
+            else {
                 //if last shovel location was in a different world, assume the player is starting the create-claim workflow over
                 if (!lastShovelLocation.getWorld().equals(clickedBlock.getWorld()))
                 {

@@ -14,7 +14,6 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static me.ryanhamshire.GriefPrevention.GriefPrevention.getfriendlyLocationString;
 
 public class ChungusCommand implements CommandExecutor {
 

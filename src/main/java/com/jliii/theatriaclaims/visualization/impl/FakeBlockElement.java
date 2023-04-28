@@ -1,7 +1,7 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
-import me.ryanhamshire.GriefPrevention.util.IntVector;
-import me.ryanhamshire.GriefPrevention.visualization.BlockElement;
+import com.jliii.theatriaclaims.util.IntVector;
+import com.jliii.theatriaclaims.visualization.BlockElement;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;

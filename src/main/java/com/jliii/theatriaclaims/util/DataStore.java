@@ -22,9 +22,12 @@ import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.enums.ClaimsMode;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.events.ClaimCreatedEvent;
 import com.jliii.theatriaclaims.events.ClaimDeletedEvent;
+import com.jliii.theatriaclaims.events.ClaimExtendEvent;
 import com.jliii.theatriaclaims.events.ClaimTransferEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import org.bukkit.*;
@@ -856,8 +859,8 @@ public abstract class DataStore {
         int smallx, bigx, smally, bigy, smallz, bigz;
 
         int worldMinY = world.getMinHeight();
-        y1 = Math.max(worldMinY, Math.max(GriefPrevention.instance.config_claims_maxDepth, y1));
-        y2 = Math.max(worldMinY, Math.max(GriefPrevention.instance.config_claims_maxDepth, y2));
+        y1 = Math.max(worldMinY, Math.max(configManager.config_claims_maxDepth, y1));
+        y2 = Math.max(worldMinY, Math.max(configManager.config_claims_maxDepth, y2));
 
         //determine small versus big inputs
         if (x1 < x2)
@@ -907,7 +910,7 @@ public abstract class DataStore {
         }
 
         //creative mode claims always go to bedrock
-        if (GriefPrevention.instance.config_claims_worldModes.get(world) == ClaimsMode.Creative)
+        if (configManager.config_claims_worldModes.get(world) == ClaimsMode.Creative)
         {
             smally = world.getMinHeight();
         }
@@ -949,7 +952,7 @@ public abstract class DataStore {
         }
 
         //if worldguard is installed, also prevent claims from overlapping any worldguard regions
-        if (GriefPrevention.instance.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null)
+        if (configManager.config_claims_respectWorldGuard && this.worldGuard != null && creatingPlayer != null)
         {
             if (!this.worldGuard.canBuild(newClaim.lesserBoundaryCorner, newClaim.getGreaterBoundaryCorner(), creatingPlayer))
             {
@@ -1034,7 +1037,7 @@ public abstract class DataStore {
             //if any problem, log it
             catch (Exception e)
             {
-                GriefPrevention.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+                customLogger.AddLogEntry("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -1839,16 +1842,13 @@ public abstract class DataStore {
         defaults.put(id.name(), message);
     }
 
-    synchronized public String getMessage(MessageType messageID, String... args)
-    {
+    synchronized public String getMessage(MessageType messageID, String... args) {
         String message = messages[messageID.ordinal()];
 
-        for (int i = 0; i < args.length; i++)
-        {
+        for (int i = 0; i < args.length; i++) {
             String param = args[i];
             message = message.replace("{" + i + "}", param);
         }
-
         return message;
     }
 

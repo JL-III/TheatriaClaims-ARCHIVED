@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.visualization;
 
-import me.ryanhamshire.GriefPrevention.util.IntVector;
+import com.jliii.theatriaclaims.util.IntVector;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;

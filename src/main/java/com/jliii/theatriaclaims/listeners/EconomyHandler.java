@@ -1,7 +1,6 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -68,7 +67,7 @@ public class EconomyHandler implements Listener {
         if (setupState != setupDone) return;
 
         // Are we configured to allow transactions?
-        if (!(instance.config_economy_claimBlocksPurchaseCost > 0 || instance.config_economy_claimBlocksSellValue > 0)) {
+        if (!(configManager.config_economy_claimBlocksPurchaseCost > 0 || configManager.config_economy_claimBlocksSellValue > 0)) {
             finishSetup(false, null);
             return;
         }
@@ -105,7 +104,7 @@ public class EconomyHandler implements Listener {
     private void finishSetup(boolean ready, String log) {
         if (!ready) this.economy = null;
 
-        if (log != null && !setupDone) GriefPrevention.AddLogEntry(log);
+        if (log != null && !setupDone) customLogger.AddLogEntry(log);
 
         this.setupDone = true;
     }

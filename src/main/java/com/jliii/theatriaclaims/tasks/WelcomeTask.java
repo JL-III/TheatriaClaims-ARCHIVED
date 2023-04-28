@@ -1,10 +1,5 @@
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
-import me.ryanhamshire.GriefPrevention.util.Messages;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

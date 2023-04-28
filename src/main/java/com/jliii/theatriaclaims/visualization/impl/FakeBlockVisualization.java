@@ -1,9 +1,8 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
-import me.ryanhamshire.GriefPrevention.util.IntVector;
-import me.ryanhamshire.GriefPrevention.visualization.BlockBoundaryVisualization;
-import me.ryanhamshire.GriefPrevention.visualization.Boundary;
-import me.ryanhamshire.GriefPrevention.visualization.BoundaryVisualization;
+import com.jliii.theatriaclaims.util.IntVector;
+import com.jliii.theatriaclaims.visualization.BlockBoundaryVisualization;
+import com.jliii.theatriaclaims.visualization.Boundary;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
@@ -19,8 +18,7 @@ import java.util.function.Consumer;
  * A {@link BoundaryVisualization} implementation that displays clientside blocks along
  * {@link Boundary Boundaries}.
  */
-public class FakeBlockVisualization extends BlockBoundaryVisualization
-{
+public class FakeBlockVisualization extends BlockBoundaryVisualization {
 
     protected final boolean waterTransparent;
 

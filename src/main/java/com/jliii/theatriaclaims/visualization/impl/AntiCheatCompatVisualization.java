@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
-import me.ryanhamshire.GriefPrevention.util.IntVector;
+import com.jliii.theatriaclaims.util.IntVector;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.util.BoundingBox;

@@ -18,9 +18,6 @@
 
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.util.Messages;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 

@@ -18,8 +18,6 @@
 
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
 
 import java.util.*;
 import java.util.stream.Collectors;

@@ -1,7 +1,6 @@
 package com.jliii.theatriaclaims.dynmap;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.Plugin;
@@ -50,7 +49,7 @@ public class DynmapIntegration {
 
     public void onDisable() {
         Bukkit.getLogger().info("Cancelling tasks...");
-        Bukkit.getServer().getScheduler().cancelTasks(griefPrevention);
+        Bukkit.getServer().getScheduler().cancelTasks(theatriaClaims);
 
         if(set != null) {
             Bukkit.getLogger().info("Deleting marker set...");

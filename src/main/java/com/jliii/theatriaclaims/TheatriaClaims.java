@@ -170,7 +170,7 @@ public class TheatriaClaims extends JavaPlugin {
         pluginManager.registerEvents(economyHandler, this);
 
         //register commands
-        Bukkit.getPluginCommand("gp").setExecutor(new ChungusCommand(economyHandler, playerEventHandler));
+        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, playerEventHandler));
 
         //cache offline players
         OfflinePlayer[] offlinePlayers = this.getServer().getOfflinePlayers();

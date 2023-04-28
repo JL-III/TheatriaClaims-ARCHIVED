@@ -18,14 +18,15 @@
 
 package com.jliii.theatriaclaims.claim;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.events.ClaimPermissionCheckEvent;
-import me.ryanhamshire.GriefPrevention.listeners.BlockEventHandler;
-import me.ryanhamshire.GriefPrevention.util.BoundingBox;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
-import me.ryanhamshire.GriefPrevention.util.PlayerName;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.events.ClaimPermissionCheckEvent;
+import com.jliii.theatriaclaims.listeners.BlockEventHandler;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.BoundingBox;
+import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.util.PlayerName;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -47,10 +48,17 @@ import java.util.function.Supplier;
 //represents a player claim
 //creating an instance doesn't make an effective claim
 //only claims which have been added to the datastore have any effect
-public class Claim
-{
+public class Claim {
     //two locations, which together define the boundaries of the claim
     //note that the upper Y value is always ignored, because claims ALWAYS extend up to the sky
+
+    private ConfigManager configManager;
+
+    public Claim(ConfigManager configManager) {
+        this.configManager = configManager;
+    }
+
+
     public Location lesserBoundaryCorner;
     public Location greaterBoundaryCorner;
 
@@ -138,7 +146,7 @@ public class Claim
         if (this.getArea() > 10000) return;
 
         //only in creative mode worlds
-        if (!GriefPrevention.instance.creativeRulesApply(this.lesserBoundaryCorner)) return;
+        if (!TheatriaClaims.instance.creativeRulesApply(this.lesserBoundaryCorner)) return;
 
         Location lesser = this.getLesserBoundaryCorner();
         Location greater = this.getGreaterBoundaryCorner();
@@ -149,7 +157,7 @@ public class Claim
 
         //respect sea level in normal worlds
         if (lesser.getWorld().getEnvironment() == Environment.NORMAL)
-            seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getWorld());
+            seaLevel = TheatriaClaims.instance.getSeaLevel(lesser.getWorld());
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
         {
@@ -184,7 +192,7 @@ public class Claim
 
         //respect sea level in normal worlds
         if (lesser.getWorld().getEnvironment() == Environment.NORMAL)
-            seaLevel = GriefPrevention.instance.getSeaLevel(lesser.getWorld());
+            seaLevel = TheatriaClaims.instance.getSeaLevel(lesser.getWorld());
 
         for (int x = lesser.getBlockX(); x <= greater.getBlockX(); x++)
         {
@@ -534,7 +542,7 @@ public class Claim
 
         // Claim owner and admins in ignoreclaims mode have access.
         if (uuid.equals(this.getOwnerID())
-                || GriefPrevention.instance.dataStore.getPlayerData(uuid).ignoreClaims
+                || TheatriaClaims.instance.dataStore.getPlayerData(uuid).ignoreClaims
                 && hasBypassPermission(player, permission))
             return null;
 
@@ -555,10 +563,10 @@ public class Claim
         if (permission == ClaimPermission.Build)
         {
             // No building while in PVP.
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(uuid);
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(uuid);
             if (playerData.inPvpCombat())
             {
-                return () -> GriefPrevention.instance.dataStore.getMessage(MessageType.NoBuildPvP);
+                return () -> TheatriaClaims.instance.dataStore.getMessage(MessageType.NoBuildPvP);
             }
 
             // Allow farming crops with container trust.
@@ -579,11 +587,10 @@ public class Claim
         }
 
         // Catch-all error message for all other cases.
-        return () ->
-        {
-            String reason = GriefPrevention.instance.dataStore.getMessage(permission.getDenialMessage(), this.getOwnerName());
+        return () -> {
+            String reason = TheatriaClaims.instance.dataStore.getMessage(permission.getDenialMessage(), this.getOwnerName());
             if (hasBypassPermission(player, permission))
-                reason += "  " + GriefPrevention.instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                reason += "  " + TheatriaClaims.instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
             return reason;
         };
     }
@@ -748,7 +755,7 @@ public class Claim
             return this.parent.getOwnerName();
 
         if (this.ownerID == null)
-            return GriefPrevention.instance.dataStore.getMessage(MessageType.OwnerNameForAdminClaims);
+            return TheatriaClaims.instance.dataStore.getMessage(MessageType.OwnerNameForAdminClaims);
 
         return PlayerName.lookupPlayerName(this.ownerID);
     }
@@ -827,7 +834,7 @@ public class Claim
         if (this.parent != null) return this.parent.allowMoreEntities(remove);
 
         //this rule only applies to creative mode worlds
-        if (!GriefPrevention.instance.creativeRulesApply(this.getLesserBoundaryCorner())) return null;
+        if (!TheatriaClaims.instance.creativeRulesApply(this.getLesserBoundaryCorner())) return null;
 
         //admin claims aren't restricted
         if (this.isAdminClaim()) return null;
@@ -837,7 +844,7 @@ public class Claim
 
         //determine maximum allowable entity count, based on claim size
         int maxEntities = this.getArea() / 50;
-        if (maxEntities == 0) return GriefPrevention.instance.dataStore.getMessage(MessageType.ClaimTooSmallForEntities);
+        if (maxEntities == 0) return TheatriaClaims.instance.dataStore.getMessage(MessageType.ClaimTooSmallForEntities);
 
         //count current entities (ignoring players)
         int totalEntities = 0;
@@ -856,7 +863,7 @@ public class Claim
         }
 
         if (totalEntities >= maxEntities)
-            return GriefPrevention.instance.dataStore.getMessage(MessageType.TooManyEntitiesInClaim);
+            return TheatriaClaims.instance.dataStore.getMessage(MessageType.TooManyEntitiesInClaim);
 
         return null;
     }
@@ -868,7 +875,7 @@ public class Claim
         //determine maximum allowable entity count, based on claim size
         int maxActives = this.getArea() / 100;
         if (maxActives == 0)
-            return GriefPrevention.instance.dataStore.getMessage(MessageType.ClaimTooSmallForActiveBlocks);
+            return TheatriaClaims.instance.dataStore.getMessage(MessageType.ClaimTooSmallForActiveBlocks);
 
         //count current actives
         int totalActives = 0;
@@ -889,7 +896,7 @@ public class Claim
         }
 
         if (totalActives >= maxActives)
-            return GriefPrevention.instance.dataStore.getMessage(MessageType.TooManyActiveBlocksInClaim);
+            return TheatriaClaims.instance.dataStore.getMessage(MessageType.TooManyActiveBlocksInClaim);
 
         return null;
     }

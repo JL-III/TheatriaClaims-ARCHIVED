@@ -20,15 +20,6 @@ package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.util.DataStore;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.claim.ClaimPermission;
-import me.ryanhamshire.GriefPrevention.enums.ClaimsMode;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.events.PreventPvPEvent;
-import me.ryanhamshire.GriefPrevention.events.ProtectDeathDropsEvent;
-import me.ryanhamshire.GriefPrevention.util.*;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;

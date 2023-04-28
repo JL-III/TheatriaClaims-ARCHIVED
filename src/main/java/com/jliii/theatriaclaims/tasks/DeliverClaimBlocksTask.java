@@ -19,11 +19,6 @@
 package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
-import me.ryanhamshire.GriefPrevention.events.AccrueClaimBlocksEvent;
-import me.ryanhamshire.GriefPrevention.util.DataStore;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
 import org.bukkit.entity.Player;
 
 import java.util.Collection;

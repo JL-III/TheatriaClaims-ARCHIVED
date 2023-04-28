@@ -18,10 +18,6 @@
 
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.enums.ClaimsMode;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Boat;

@@ -18,11 +18,6 @@
 
 package com.jliii.theatriaclaims.tasks;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
-import me.ryanhamshire.GriefPrevention.enums.TextMode;
-import me.ryanhamshire.GriefPrevention.util.Messages;
-import me.ryanhamshire.GriefPrevention.util.PlayerData;
 import org.bukkit.entity.Player;
 
 //sends a message to a player

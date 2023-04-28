@@ -9,6 +9,12 @@ import org.bukkit.entity.Player;
 
 public class Messages {
 
+    private CustomLogger customLogger;
+
+    public Messages(CustomLogger customLogger) {
+        this.customLogger = customLogger;
+    }
+
     //sends a color-coded message to a player
     public static void sendMessage(Player player, ChatColor color, MessageType messageID, String... args) {
         sendMessage(player, color, messageID, 0, args);

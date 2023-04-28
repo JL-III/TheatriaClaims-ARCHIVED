@@ -1,6 +1,5 @@
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Player;

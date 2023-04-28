@@ -18,7 +18,8 @@
 
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.enums.MessageType;
+
+import com.jliii.theatriaclaims.enums.MessageType;
 
 public class CustomizableMessage {
     public MessageType id;

@@ -2,6 +2,7 @@ package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Biome;
@@ -14,12 +15,31 @@ import java.util.*;
 //automatically extends a claim downward based on block types detected
 public class AutoExtendClaimTask implements Runnable {
 
+    private final Claim claim;
+    private final ArrayList<ChunkSnapshot> chunks;
+    private final Environment worldType;
+    private final Map<Biome, Set<Material>> biomePlayerMaterials = new HashMap<>();
+    private final int minY;
+    private final int lowestExistingY;
+    private final ConfigManager configManager;
+
+    private AutoExtendClaimTask(@NotNull Claim claim, @NotNull ArrayList<@NotNull ChunkSnapshot> chunks, @NotNull Environment worldType, int lowestExistingY, ConfigManager configManager) {
+        this.claim = claim;
+        this.chunks = chunks;
+        this.worldType = worldType;
+        this.lowestExistingY = Math.min(lowestExistingY, claim.getLesserBoundaryCorner().getBlockY());
+        this.minY = Math.max(
+                Objects.requireNonNull(claim.getLesserBoundaryCorner().getWorld()).getMinHeight(),
+                configManager.config_claims_maxDepth);
+        this.configManager = configManager;
+    }
+
     /**
      * Assemble information and schedule a task to update claim depth to include existing structures.
      *
      * @param claim the claim to extend the depth of
      */
-    public static void scheduleAsync(Claim claim) {
+    public void scheduleAsync(Claim claim) {
         Location lesserCorner = claim.getLesserBoundaryCorner();
         Location greaterCorner = claim.getGreaterBoundaryCorner();
         World world = lesserCorner.getWorld();
@@ -53,24 +73,7 @@ public class AutoExtendClaimTask implements Runnable {
             }
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new AutoExtendClaimTask(claim, snapshots, world.getEnvironment(), lowestLootableTile));
-    }
-
-    private final Claim claim;
-    private final ArrayList<ChunkSnapshot> chunks;
-    private final Environment worldType;
-    private final Map<Biome, Set<Material>> biomePlayerMaterials = new HashMap<>();
-    private final int minY;
-    private final int lowestExistingY;
-
-    private AutoExtendClaimTask(@NotNull Claim claim, @NotNull ArrayList<@NotNull ChunkSnapshot> chunks, @NotNull Environment worldType, int lowestExistingY) {
-        this.claim = claim;
-        this.chunks = chunks;
-        this.worldType = worldType;
-        this.lowestExistingY = Math.min(lowestExistingY, claim.getLesserBoundaryCorner().getBlockY());
-        this.minY = Math.max(
-                Objects.requireNonNull(claim.getLesserBoundaryCorner().getWorld()).getMinHeight(),
-                configManager.config_claims_maxDepth);
+        Bukkit.getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new AutoExtendClaimTask(claim, snapshots, world.getEnvironment(), lowestLootableTile, configManager));
     }
 
     @Override
