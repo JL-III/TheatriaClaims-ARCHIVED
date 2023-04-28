@@ -6,7 +6,6 @@ import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
-import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;

@@ -23,7 +23,6 @@ import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.enums.ClaimsMode;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Boat;
