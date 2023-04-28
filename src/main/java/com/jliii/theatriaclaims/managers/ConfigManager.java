@@ -4,6 +4,8 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.ClaimsMode;
 import com.jliii.theatriaclaims.enums.PistonMode;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.DataStore;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -20,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ConfigManager {
 
     private TheatriaClaims theatriaClaims;
+    private CustomLogger customLogger;
     FileConfiguration config;
 
     //configuration variables, loaded/saved from a config.yml
@@ -130,19 +133,12 @@ public class ConfigManager {
 
     public boolean config_visualizationAntiCheatCompat;              // whether to engage compatibility mode for anti-cheat plugins
 
-    public boolean config_smartBan;                                    //whether to ban accounts which very likely owned by a banned player
-
     public boolean config_endermenMoveBlocks;                        //whether or not endermen may move blocks around
     public boolean config_claims_ravagersBreakBlocks;                //whether or not ravagers may break blocks in claims
     public boolean config_silverfishBreakBlocks;                    //whether silverfish may break blocks
     public boolean config_creaturesTrampleCrops;                    //whether or not non-player entities may trample crops
     public boolean config_rabbitsEatCrops;                          //whether or not rabbits may eat crops
     public boolean config_zombiesBreakDoors;                        //whether or not hard-mode zombies may break down wooden doors
-
-    public int config_ipLimit;                                      //how many players can share an IP address
-
-    public boolean config_trollFilterEnabled;                       //whether to auto-mute new players who use banned words right after joining
-    public boolean config_silenceBans;                              //whether to remove quit messages on banned players
 
     public HashMap<String, Integer> config_seaLevelOverride;        //override for sea level, because bukkit doesn't report the right value for all situations
 
@@ -166,8 +162,9 @@ public class ConfigManager {
     public String databaseUserName;
     public String databasePassword;
 
-    public ConfigManager(TheatriaClaims theatriaClaims) {
+    public ConfigManager(TheatriaClaims theatriaClaims, CustomLogger customLogger) {
         this.theatriaClaims = theatriaClaims;
+        this.customLogger = customLogger;
         this.config = theatriaClaims.getConfig();
     }
 
@@ -182,13 +179,13 @@ public class ConfigManager {
         int configVersion = config.getInt("GriefPrevention.ConfigVersion", 0);
 
         //get (deprecated node) claims world names from the config file
-        List<World> worlds = griefPrevention.getServer().getWorlds();
+        List<World> worlds = TheatriaClaims.instance.getServer().getWorlds();
         List<String> deprecated_claimsEnabledWorldNames = config.getStringList("GriefPrevention.Claims.Worlds");
 
         //validate that list
         for (int i = 0; i < deprecated_claimsEnabledWorldNames.size(); i++) {
             String worldName = deprecated_claimsEnabledWorldNames.get(i);
-            World world = griefPrevention.getServer().getWorld(worldName);
+            World world = TheatriaClaims.instance.getServer().getWorld(worldName);
             if (world == null) {
                 deprecated_claimsEnabledWorldNames.remove(i--);
             }
@@ -200,7 +197,7 @@ public class ConfigManager {
         //validate that list
         for (int i = 0; i < deprecated_creativeClaimsEnabledWorldNames.size(); i++) {
             String worldName = deprecated_creativeClaimsEnabledWorldNames.get(i);
-            World world = griefPrevention.getServer().getWorld(worldName);
+            World world = TheatriaClaims.instance.getServer().getWorld(worldName);
             if (world == null) {
                 deprecated_claimsEnabledWorldNames.remove(i--);
             }
@@ -219,14 +216,14 @@ public class ConfigManager {
             //is it specified in the config file?
             String configSetting = config.getString("GriefPrevention.Claims.Mode." + world.getName());
             if (configSetting != null) {
-                ClaimsMode claimsMode = griefPrevention.configStringToClaimsMode(configSetting);
+                ClaimsMode claimsMode = configStringToClaimsMode(configSetting);
                 if (claimsMode != null) {
                     this.config_claims_worldModes.put(world, claimsMode);
                     if (claimsMode == ClaimsMode.Creative) this.config_creativeWorldsExist = true;
                     continue;
                 }
                 else {
-                    GriefPrevention.AddLogEntry("Error: Invalid claim mode \"" + configSetting + "\".  Options are Survival, Creative, and Disabled.");
+                    customLogger.AddLogEntry("Error: Invalid claim mode \"" + configSetting + "\".  Options are Survival, Creative, and Disabled.");
                     this.config_claims_worldModes.put(world, ClaimsMode.Creative);
                     this.config_creativeWorldsExist = true;
                 }
@@ -251,7 +248,7 @@ public class ConfigManager {
             }
 
             //decide a default based on server type and world type
-            else if (griefPrevention.getServer().getDefaultGameMode() == GameMode.CREATIVE) {
+            else if (TheatriaClaims.instance.getServer().getDefaultGameMode() == GameMode.CREATIVE) {
                 this.config_claims_worldModes.put(world, ClaimsMode.Creative);
                 this.config_creativeWorldsExist = true;
             }
@@ -316,11 +313,10 @@ public class ConfigManager {
         this.config_claims_minWidth = config.getInt("GriefPrevention.Claims.MinimumWidth", 5);
         this.config_claims_minArea = config.getInt("GriefPrevention.Claims.MinimumArea", 100);
         this.config_claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", Integer.MIN_VALUE);
-        if (configVersion < 1 && this.config_claims_maxDepth == 0)
-        {
+        if (configVersion < 1 && this.config_claims_maxDepth == 0) {
             // If MaximumDepth is untouched in an older configuration, correct it.
             this.config_claims_maxDepth = Integer.MIN_VALUE;
-            GriefPrevention.AddLogEntry("Updated default value for GriefPrevention.Claims.MaximumDepth to " + Integer.MIN_VALUE);
+            customLogger.AddLogEntry("Updated default value for GriefPrevention.Claims.MaximumDepth to " + Integer.MIN_VALUE);
         }
         this.config_claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
         this.config_claims_unusedClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.UnusedClaimDays", 14);
@@ -388,10 +384,6 @@ public class ConfigManager {
         whisperCommandsToMonitor = config.getString("GriefPrevention.Spam.WhisperSlashCommands", whisperCommandsToMonitor);
 
         this.config_visualizationAntiCheatCompat = config.getBoolean("GriefPrevention.VisualizationAntiCheatCompatMode", false);
-        this.config_smartBan = config.getBoolean("GriefPrevention.SmartBan", true);
-        this.config_trollFilterEnabled = config.getBoolean("GriefPrevention.Mute New Players Using Banned Words", true);
-        this.config_ipLimit = config.getInt("GriefPrevention.MaxPlayersPerIpAddress", 3);
-        this.config_silenceBans = config.getBoolean("GriefPrevention.SilenceBans", true);
 
         this.config_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
         this.config_silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
@@ -407,9 +399,8 @@ public class ConfigManager {
 
         //validate investigation tool
         this.config_claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
-        if (this.config_claims_investigationTool == null)
-        {
-            GriefPrevention.AddLogEntry("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
+        if (this.config_claims_investigationTool == null) {
+            customLogger.AddLogEntry("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
             this.config_claims_investigationTool = Material.STICK;
         }
 
@@ -421,9 +412,8 @@ public class ConfigManager {
 
         //validate modification tool
         this.config_claims_modificationTool = Material.getMaterial(modificationToolMaterialName);
-        if (this.config_claims_modificationTool == null)
-        {
-            GriefPrevention.AddLogEntry("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
+        if (this.config_claims_modificationTool == null) {
+            customLogger.AddLogEntry("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
             this.config_claims_modificationTool = Material.GOLDEN_SHOVEL;
         }
 
@@ -518,9 +508,8 @@ public class ConfigManager {
         outConfig.set("GriefPrevention.Spam.DeathMessageCooldownSeconds", this.config_spam_deathMessageCooldownSeconds);
         outConfig.set("GriefPrevention.Spam.Logout Message Delay In Seconds", this.config_spam_logoutMessageDelaySeconds);
 
-        for (World world : worlds)
-        {
-            outConfig.set("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), griefPrevention.pvpRulesApply(world));
+        for (World world : worlds) {
+            outConfig.set("GriefPrevention.PvP.RulesEnabledInWorld." + world.getName(), TheatriaClaims.instance.pvpRulesApply(world));
         }
         outConfig.set("GriefPrevention.PvP.ProtectFreshSpawns", this.config_pvp_protectFreshSpawns);
         outConfig.set("GriefPrevention.PvP.PunishLogout", this.config_pvp_punishLogout);
@@ -560,10 +549,6 @@ public class ConfigManager {
         outConfig.set("GriefPrevention.AdminsGetSignNotifications", this.config_signNotifications);
 
         outConfig.set("GriefPrevention.VisualizationAntiCheatCompatMode", this.config_visualizationAntiCheatCompat);
-        outConfig.set("GriefPrevention.SmartBan", this.config_smartBan);
-        outConfig.set("GriefPrevention.Mute New Players Using Banned Words", this.config_trollFilterEnabled);
-        outConfig.set("GriefPrevention.MaxPlayersPerIpAddress", this.config_ipLimit);
-        outConfig.set("GriefPrevention.SilenceBans", this.config_silenceBans);
 
         outConfig.set("GriefPrevention.EndermenMoveBlocks", this.config_endermenMoveBlocks);
         outConfig.set("GriefPrevention.SilverfishBreakBlocks", this.config_silverfishBreakBlocks);
@@ -594,7 +579,7 @@ public class ConfigManager {
         }
         catch (IOException exception)
         {
-            GriefPrevention.AddLogEntry("Unable to write to the configuration file at \"" + DataStore.configFilePath + "\"");
+            customLogger.AddLogEntry("Unable to write to the configuration file at \"" + DataStore.configFilePath + "\"");
         }
 
         //try to parse the list of commands requiring access trust in land claims
@@ -630,6 +615,25 @@ public class ConfigManager {
         for (String command : commands)
         {
             this.config_pvp_blockedCommands.add(command.trim().toLowerCase());
+        }
+    }
+
+    //TODO looks like this could be an enum with value of string? i forget the method.
+    public ClaimsMode configStringToClaimsMode(String configSetting) {
+        if (configSetting.equalsIgnoreCase("Survival")) {
+            return ClaimsMode.Survival;
+        }
+        else if (configSetting.equalsIgnoreCase("Creative")) {
+            return ClaimsMode.Creative;
+        }
+        else if (configSetting.equalsIgnoreCase("Disabled")) {
+            return ClaimsMode.Disabled;
+        }
+        else if (configSetting.equalsIgnoreCase("SurvivalRequiringClaims")) {
+            return ClaimsMode.SurvivalRequiringClaims;
+        }
+        else {
+            return null;
         }
     }
 

@@ -61,7 +61,6 @@ public class TheatriaClaims extends JavaPlugin {
 
     ConfigManager configManager;
 
-
     //how far away to search from a tree trunk for its branch blocks
     public static final int TREE_RADIUS = 5;
 
@@ -188,27 +187,6 @@ public class TheatriaClaims extends JavaPlugin {
         customLogger.AddLogEntry("Boot finished.");
 
     }
-
-    //TODO looks like this could be an enum with value of string? i forget the method.
-    public ClaimsMode configStringToClaimsMode(String configSetting) {
-        if (configSetting.equalsIgnoreCase("Survival")) {
-            return ClaimsMode.Survival;
-        }
-        else if (configSetting.equalsIgnoreCase("Creative")) {
-            return ClaimsMode.Creative;
-        }
-        else if (configSetting.equalsIgnoreCase("Disabled")) {
-            return ClaimsMode.Disabled;
-        }
-        else if (configSetting.equalsIgnoreCase("SurvivalRequiringClaims")) {
-            return ClaimsMode.SurvivalRequiringClaims;
-        }
-        else {
-            return null;
-        }
-    }
-
-
 
     public void setIgnoreStatus(OfflinePlayer ignorer, OfflinePlayer ignoree, IgnoreMode mode) {
         PlayerData playerData = this.dataStore.getPlayerData(ignorer.getUniqueId());
