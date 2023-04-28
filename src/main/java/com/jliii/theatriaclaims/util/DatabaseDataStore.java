@@ -18,9 +18,6 @@
 
 package com.jliii.theatriaclaims.util;
 
-import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import me.ryanhamshire.GriefPrevention.claim.Claim;
-import me.ryanhamshire.GriefPrevention.enums.CustomLogEntryTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -34,8 +31,7 @@ import java.util.Date;
 import java.util.*;
 
 //manages data stored in the file system
-public class DatabaseDataStore extends DataStore
-{
+public class DatabaseDataStore extends DataStore {
 
     private static final String SQL_UPDATE_NAME =
             "UPDATE griefprevention_playerdata SET name = ? WHERE name = ?";
@@ -86,7 +82,7 @@ public class DatabaseDataStore extends DataStore
         }
         catch (Exception e2)
         {
-            GriefPrevention.AddLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
+            customLogger.AddLogEntry("ERROR: Unable to connect to database.  Check your config file settings.");
             throw e2;
         }
 

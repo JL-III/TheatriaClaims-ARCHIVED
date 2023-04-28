@@ -19,9 +19,14 @@
 package com.jliii.theatriaclaims.util;
 
 import com.google.common.io.Files;
+import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.events.ClaimDeletedEvent;
+import com.jliii.theatriaclaims.events.ClaimTransferEvent;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import org.bukkit.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -39,8 +44,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 //singleton class which manages all GriefPrevention data (except for config options)
-public abstract class DataStore
-{
+public abstract class DataStore {
+
+    private ConfigManager configManager;
+    private CustomLogger customLogger;
+
+    public DataStore(ConfigManager configManager, CustomLogger customLogger) {
+        this.customLogger = customLogger;
+        this.configManager = configManager;
+    }
 
     //in-memory cache for player data
     protected ConcurrentHashMap<UUID, PlayerData> playerNameToPlayerDataMap = new ConcurrentHashMap<>();
@@ -92,38 +104,33 @@ public abstract class DataStore
     //world guard reference, if available
     private WorldGuardWrapper worldGuard = null;
 
-    protected int getSchemaVersion()
-    {
-        if (this.currentSchemaVersion >= 0)
-        {
+    protected int getSchemaVersion() {
+        if (this.currentSchemaVersion >= 0) {
             return this.currentSchemaVersion;
         }
-        else
-        {
+        else {
             this.currentSchemaVersion = this.getSchemaVersionFromStorage();
             return this.currentSchemaVersion;
         }
     }
 
-    protected void setSchemaVersion(int versionToSet)
-    {
+    protected void setSchemaVersion(int versionToSet) {
         this.currentSchemaVersion = versionToSet;
         this.updateSchemaVersionInStorage(versionToSet);
     }
 
     //initialization!
-    void initialize() throws Exception
-    {
-        GriefPrevention.AddLogEntry(this.claims.size() + " total claims loaded.");
+    void initialize() throws Exception {
+        customLogger.AddLogEntry(this.claims.size() + " total claims loaded.");
 
         //RoboMWM: ensure the nextClaimID is greater than any other claim ID. If not, data corruption occurred (out of storage space, usually).
         for (Claim claim : this.claims)
         {
             if (claim.id >= nextClaimID)
             {
-                GriefPrevention.instance.getLogger().severe("nextClaimID was lesser or equal to an already-existing claim ID!\n" +
+                TheatriaClaims.instance.getLogger().severe("nextClaimID was lesser or equal to an already-existing claim ID!\n" +
                         "This usually happens if you ran out of storage space.");
-                GriefPrevention.AddLogEntry("Changing nextClaimID from " + nextClaimID + " to " + claim.id, CustomLogEntryTypes.Debug, false);
+                customLogger.AddLogEntry("Changing nextClaimID from " + nextClaimID + " to " + claim.id, CustomLogEntryTypes.Debug, false);
                 nextClaimID = claim.id + 1;
             }
         }
@@ -137,12 +144,12 @@ public abstract class DataStore
 
         //load up all the messages from messages.yml
         this.loadMessages();
-        GriefPrevention.AddLogEntry("Customizable messages loaded.");
+        customLogger.AddLogEntry("Customizable messages loaded.");
 
         //if converting up from an earlier schema version, write all claims back to storage using the latest format
         if (this.getSchemaVersion() < latestSchemaVersion)
         {
-            GriefPrevention.AddLogEntry("Please wait.  Updating data format.");
+            customLogger.AddLogEntry("Please wait.  Updating data format.");
 
             for (Claim claim : this.claims)
             {
@@ -161,7 +168,7 @@ public abstract class DataStore
                 UUIDFetcher.correctedNames.clear();
             }
 
-            GriefPrevention.AddLogEntry("Update finished.");
+            customLogger.AddLogEntry("Update finished.");
         }
 
         //load list of soft mutes
@@ -174,7 +181,7 @@ public abstract class DataStore
         try
         {
             this.worldGuard = new WorldGuardWrapper();
-            GriefPrevention.AddLogEntry("Successfully hooked into WorldGuard.");
+            customLogger.AddLogEntry("Successfully hooked into WorldGuard.");
         }
         //if failed, world guard compat features will just be disabled.
         catch (IllegalStateException | IllegalArgumentException | ClassCastException | NoClassDefFoundError ignored) { }
@@ -204,7 +211,7 @@ public abstract class DataStore
                     catch (Exception e)
                     {
                         playerID = null;
-                        GriefPrevention.AddLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
+                        customLogger.AddLogEntry("Failed to parse soft mute entry as a UUID: " + nextID);
                     }
 
                     //push it into the map
@@ -219,7 +226,7 @@ public abstract class DataStore
             }
             catch (Exception e)
             {
-                GriefPrevention.AddLogEntry("Failed to read from the soft mute data file: " + e.toString());
+                customLogger.AddLogEntry("Failed to read from the soft mute data file: " + e.toString());
                 e.printStackTrace();
             }
 
@@ -250,7 +257,7 @@ public abstract class DataStore
         }
         catch (Exception e)
         {
-            GriefPrevention.AddLogEntry("Failed to read from the banned words data file: " + e.toString());
+            customLogger.AddLogEntry("Failed to read from the banned words data file: " + e.toString());
             e.printStackTrace();
             return new ArrayList<>();
         }
@@ -303,7 +310,7 @@ public abstract class DataStore
         //if any problem, log it
         catch (Exception e)
         {
-            GriefPrevention.AddLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
+            customLogger.AddLogEntry("Unexpected exception saving soft mute data: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -326,7 +333,7 @@ public abstract class DataStore
     //this will return 0 when he's offline, and the correct number when online.
     synchronized public int getGroupBonusBlocks(UUID playerID)
     {
-        Player player = GriefPrevention.instance.getServer().getPlayer(playerID);
+        Player player = TheatriaClaims.instance.getServer().getPlayer(playerID);
 
         if (player == null) return 0;
 
@@ -516,8 +523,7 @@ public abstract class DataStore
     }
 
     //turns a location string back into a location
-    Location locationFromString(String string, List<World> validWorlds) throws Exception
-    {
+    Location locationFromString(String string, List<World> validWorlds) throws Exception {
         //split the input string on the space
         String[] elements = string.split(locationStringDelimiter);
 
@@ -581,15 +587,13 @@ public abstract class DataStore
 
     //retrieves player data from memory or secondary storage, as necessary
     //if the player has never been on the server before, this will return a fresh player data with default values
-    synchronized public PlayerData getPlayerData(UUID playerID)
-    {
+    synchronized public PlayerData getPlayerData(UUID playerID) {
         //first, look in memory
         PlayerData playerData = this.playerNameToPlayerDataMap.get(playerID);
 
         //if not there, build a fresh instance with some blanks for what may be in secondary storage
-        if (playerData == null)
-        {
-            playerData = new PlayerData();
+        if (playerData == null) {
+            playerData = new PlayerData(configManager);
             playerData.playerID = playerID;
 
             //shove that new player data into the hash map cache
@@ -608,22 +612,18 @@ public abstract class DataStore
     }
 
     //deletes a claim or subdivision
-    synchronized public void deleteClaim(Claim claim, boolean releasePets)
-    {
+    synchronized public void deleteClaim(Claim claim, boolean releasePets) {
         this.deleteClaim(claim, true, releasePets);
     }
 
-    public synchronized void deleteClaim(Claim claim, boolean fireEvent, boolean releasePets)
-    {
+    public synchronized void deleteClaim(Claim claim, boolean fireEvent, boolean releasePets) {
         //delete any children
-        for (int j = 1; (j - 1) < claim.children.size(); j++)
-        {
+        for (int j = 1; (j - 1) < claim.children.size(); j++) {
             this.deleteClaim(claim.children.get(j - 1), true);
         }
 
         //subdivisions must also be removed from the parent claim child list
-        if (claim.parent != null)
-        {
+        if (claim.parent != null) {
             Claim parentClaim = claim.parent;
             parentClaim.children.remove(claim);
         }
@@ -632,10 +632,8 @@ public abstract class DataStore
         claim.inDataStore = false;
 
         //remove from memory
-        for (int i = 0; i < this.claims.size(); i++)
-        {
-            if (claims.get(i).id.equals(claim.id))
-            {
+        for (int i = 0; i < this.claims.size(); i++) {
+            if (claims.get(i).id.equals(claim.id)) {
                 this.claims.remove(i);
                 break;
             }
@@ -647,13 +645,10 @@ public abstract class DataStore
         this.deleteClaimFromSecondaryStorage(claim);
 
         //update player data
-        if (claim.ownerID != null)
-        {
+        if (claim.ownerID != null) {
             PlayerData ownerData = this.getPlayerData(claim.ownerID);
-            for (int i = 0; i < ownerData.getClaims().size(); i++)
-            {
-                if (ownerData.getClaims().get(i).id.equals(claim.id))
-                {
+            for (int i = 0; i < ownerData.getClaims().size(); i++) {
+                if (ownerData.getClaims().get(i).id.equals(claim.id)) {
                     ownerData.getClaims().remove(i);
                     break;
                 }
@@ -661,8 +656,7 @@ public abstract class DataStore
             this.savePlayerData(claim.ownerID, ownerData);
         }
 
-        if (fireEvent)
-        {
+        if (fireEvent) {
             ClaimDeletedEvent ev = new ClaimDeletedEvent(claim);
             Bukkit.getPluginManager().callEvent(ev);
         }
