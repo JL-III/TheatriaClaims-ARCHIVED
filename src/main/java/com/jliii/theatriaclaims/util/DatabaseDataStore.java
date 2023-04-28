@@ -69,12 +69,12 @@ public class DatabaseDataStore extends DataStore {
     private final ConfigManager configManager;
     private final CustomLogger customLogger;
 
-    public DatabaseDataStore(String url, String userName, String password, ConfigManager configManager, CustomLogger customLogger) throws Exception
+    public DatabaseDataStore(ConfigManager configManager, CustomLogger customLogger) throws Exception
     {
         super(configManager, customLogger);
-        this.databaseUrl = url;
-        this.userName = userName;
-        this.password = password;
+        this.databaseUrl = configManager.databaseUrl;
+        this.userName = configManager.databaseUserName;
+        this.password = configManager.databasePassword;
         this.configManager = configManager;
         this.customLogger = customLogger;
 

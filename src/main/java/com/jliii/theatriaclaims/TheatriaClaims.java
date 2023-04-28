@@ -82,7 +82,7 @@ public class TheatriaClaims extends JavaPlugin {
         instance = this;
         log = instance.getLogger();
         customLogger = new CustomLogger(configManager, log);
-        configManager = new ConfigManager(this);
+        configManager = new ConfigManager(this, customLogger);
         configManager.loadConfig();
         customLogger.AddLogEntry("Finished loading configuration.");
 
@@ -90,7 +90,7 @@ public class TheatriaClaims extends JavaPlugin {
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
         if (configManager.databaseUrl.length() > 0) {
             try {
-                DatabaseDataStore databaseStore = new DatabaseDataStore(configManager.databaseUrl, configManager.databaseUserName, configManager.databasePassword);
+                DatabaseDataStore databaseStore = new DatabaseDataStore(configManager, customLogger);
                 if (FlatFileDataStore.hasData()) {
                     customLogger.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
                     FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager);
@@ -218,10 +218,6 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
-    public static String getfriendlyLocationString(Location location) {
-        return location.getWorld().getName() + ": x" + location.getBlockX() + ", z" + location.getBlockZ();
-    }
-
     //TODO theres some creative mode stuff in here that needs to be addressed, ensure that things that were cut out arent breaking it.
     public boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
@@ -249,7 +245,7 @@ public class TheatriaClaims extends JavaPlugin {
 
             //if in a creative mode world, restore the claim area
             if (TheatriaClaims.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                customLogger.AddLogEntry(player.getName() + " abandoned a claim @ " + TheatriaClaims.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                customLogger.AddLogEntry(player.getName() + " abandoned a claim @ " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.UnclaimCleanupWarning);
 //                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
             }
