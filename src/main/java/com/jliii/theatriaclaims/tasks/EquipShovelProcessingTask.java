@@ -18,6 +18,8 @@
 
 package com.jliii.theatriaclaims.tasks;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.util.GeneralUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 
@@ -36,7 +38,7 @@ public class EquipShovelProcessingTask implements Runnable {
     @Override
     public void run() {
         //if he's not holding the golden shovel anymore, do nothing
-        if (GriefPrevention.instance.getItemInHand(player, EquipmentSlot.HAND).getType() != GriefPrevention.instance.config_claims_modificationTool)
+        if (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() != GriefPrevention.instance.config_claims_modificationTool)
             return;
         PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
         //reset any work he might have been doing

@@ -19,6 +19,9 @@
 package com.jliii.theatriaclaims.tasks;
 
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,12 +51,12 @@ public class FindUnusedClaimsTask implements Runnable {
             return;
         }
 
-        GriefPrevention.instance.getServer().getScheduler().runTaskAsynchronously(GriefPrevention.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next()));
+        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next()));
     }
 
     public void refreshUUIDs() {
         // Fetch owner UUIDs from list of claims
-        claimOwnerUUIDs = GriefPrevention.instance.dataStore.claims.stream().map(claim -> claim.ownerID)
+        claimOwnerUUIDs = TheatriaClaims.instance.dataStore.claims.stream().map(claim -> claim.ownerID)
                 .distinct().filter(Objects::nonNull).collect(Collectors.toList());
 
         if (!claimOwnerUUIDs.isEmpty()) {

@@ -62,7 +62,7 @@ class CleanupUnusedClaimPreTask implements Runnable {
         //skip claims belonging to exempted players based on block totals in config
         int bonusBlocks = ownerData.getBonusClaimBlocks();
         if (bonusBlocks >= configManager.config_claims_expirationExemptionBonusBlocks || bonusBlocks + ownerData.getAccruedClaimBlocks() >= configManager.config_claims_expirationExemptionTotalBlocks) {
-            customLogger.AddLogEntry("Player exempt from claim expiration based on claim block counts vs. config file settings.", CustomLogEntryTypes.Debug, true);
+            CustomLogger.AddLogEntry("Player exempt from claim expiration based on claim block counts vs. config file settings.", CustomLogEntryTypes.Debug, true);
             return;
         }
         Claim claimToExpire = null;

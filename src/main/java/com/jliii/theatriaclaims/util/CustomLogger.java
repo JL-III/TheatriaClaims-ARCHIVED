@@ -22,6 +22,7 @@ import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitScheduler;
 
 import java.io.File;
@@ -36,24 +37,22 @@ import java.util.regex.Pattern;
 public class CustomLogger {
 
     private final ConfigManager configManager;
-    private final Logger log;
-    private final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm");
+    private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm");
     private final SimpleDateFormat filenameFormat = new SimpleDateFormat("yyyy_MM_dd");
     private final String logFolderPath = DataStore.dataLayerFolderPath + File.separator + "Logs";
     private final int secondsBetweenWrites = 300;
 
     //stringbuilder is not thread safe, stringbuffer is
-    private final StringBuffer queuedEntries = new StringBuffer();
+    private static final StringBuffer queuedEntries = new StringBuffer();
 
-    public CustomLogger(ConfigManager configManager, Logger log) {
+    public CustomLogger(ConfigManager configManager) {
         this.configManager = configManager;
-        this.log = log;
         //ensure log folder exists
         File logFolder = new File(this.logFolderPath);
         logFolder.mkdirs();
 
         //delete any outdated log files immediately
-        this.DeleteExpiredLogs();
+        this.DeleteExpiredLogs(configManager, logFolderPath);
 
         //unless disabled, schedule recurring tasks
         int daysToKeepLogs = configManager.config_logs_daysToKeep;
@@ -68,22 +67,22 @@ public class CustomLogger {
 
     private static final Pattern inlineFormatterPattern = Pattern.compile("§.");
 
-    public void AddEntry(String entry, CustomLogEntryTypes entryType) {
+    public static void AddEntry(String entry, CustomLogEntryTypes entryType, ConfigManager configManager) {
         //if disabled, do nothing
         int daysToKeepLogs = configManager.config_logs_daysToKeep;
         if (daysToKeepLogs == 0) return;
 
         //if entry type is not enabled, do nothing
-        if (!this.isEnabledType(entryType)) return;
+        if (!isEnabledType(entryType, configManager)) return;
 
         //otherwise write to the in-memory buffer, after removing formatters
         Matcher matcher = inlineFormatterPattern.matcher(entry);
         entry = matcher.replaceAll("");
-        String timestamp = this.timestampFormat.format(new Date());
-        this.queuedEntries.append(timestamp).append(' ').append(entry).append('\n');
+        String timestamp = timestampFormat.format(new Date());
+        queuedEntries.append(timestamp).append(' ').append(entry).append('\n');
     }
 
-    private boolean isEnabledType(CustomLogEntryTypes entryType) {
+    private static boolean isEnabledType(CustomLogEntryTypes entryType, ConfigManager configManager) {
         if (entryType == CustomLogEntryTypes.Exception) return true;
         if (entryType == CustomLogEntryTypes.SocialActivity && !configManager.config_logs_socialEnabled)
             return false;
@@ -120,10 +119,10 @@ public class CustomLogger {
         }
     }
 
-    private void DeleteExpiredLogs() {
+    private static void DeleteExpiredLogs(ConfigManager configManager, String logFolderPath) {
         try {
             //get list of log files
-            File logFolder = new File(this.logFolderPath);
+            File logFolder = new File(logFolderPath);
             File[] files = logFolder.listFiles();
 
             //delete any created before x days ago
@@ -150,7 +149,7 @@ public class CustomLogger {
                 }
                 catch (NumberFormatException e) {
                     //throw this away - effectively ignoring any files without the correct filename format
-                    AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true);
+                    AddLogEntry("Ignoring an unexpected file in the abridged logs folder: " + file.getName(), CustomLogEntryTypes.Debug, true, configManager);
                 }
             }
         }
@@ -172,21 +171,21 @@ public class CustomLogger {
         @Override
         public void run()
         {
-            DeleteExpiredLogs();
+            DeleteExpiredLogs(configManager, logFolderPath);
         }
     }
 
     //adds a server log entry
-    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs) {
-        AddEntry(entry, customLogType);
-        if (!excludeFromServerLogs) log.info(entry);
+    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, boolean excludeFromServerLogs, ConfigManager configManager) {
+        AddEntry(entry, customLogType, configManager);
+        if (!excludeFromServerLogs) Bukkit.getLogger().info(entry);
     }
 
-    public synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType) {
-        AddLogEntry(entry, customLogType, false);
+    public static synchronized void AddLogEntry(String entry, CustomLogEntryTypes customLogType, ConfigManager configManager) {
+        AddLogEntry(entry, customLogType, false, configManager);
     }
 
-    public synchronized void AddLogEntry(String entry) {
-        AddLogEntry(entry, CustomLogEntryTypes.Debug);
+    public synchronized void AddLogEntry(String entry, ConfigManager configManager) {
+        AddLogEntry(entry, CustomLogEntryTypes.Debug, configManager);
     }
 }
