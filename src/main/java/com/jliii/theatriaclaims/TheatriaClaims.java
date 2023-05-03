@@ -665,7 +665,6 @@ public class TheatriaClaims extends JavaPlugin {
 
     public Set<Material> parseMaterialListFromConfig(List<String> stringsToParse) {
         Set<Material> materials = EnumSet.noneOf(Material.class);
-
         //for each string in the list
         for (int i = 0; i < stringsToParse.size(); i++) {
             String string = stringsToParse.get(i);
@@ -679,9 +678,8 @@ public class TheatriaClaims extends JavaPlugin {
                 if (!string.contains("can't")) {
                     //update string, which will go out to config file to help user find the error entry
                     stringsToParse.set(i, string + "     <-- can't understand this entry, see BukkitDev documentation");
-
                     //warn about invalid material in log
-                    customLogger.AddLogEntry(String.format("ERROR: Invalid material %s.  Please update your config.yml.", string));
+                    Bukkit.getLogger().info(String.format("ERROR: Invalid material %s.  Please update your config.yml.", string));
                 }
             }
             //otherwise material is valid, add it
@@ -701,21 +699,6 @@ public class TheatriaClaims extends JavaPlugin {
         else {
             return overrideValue;
         }
-    }
-
-    //TODO we arent handling bans or ips in this plugin
-    public boolean containsBlockedIP(String message) {
-        message = message.replace("\r\n", "");
-        Pattern ipAddressPattern = Pattern.compile("([0-9]{1,3}\\.){3}[0-9]{1,3}");
-        Matcher matcher = ipAddressPattern.matcher(message);
-        //if it looks like an IP address
-        if (matcher.find()) {
-            //and it's not in the list of allowed IP addresses
-            if (!configManager.config_spam_allowedIpAddresses.contains(matcher.group())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public boolean pvpRulesApply(World world) {

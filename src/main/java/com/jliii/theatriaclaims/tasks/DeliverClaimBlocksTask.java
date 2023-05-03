@@ -22,6 +22,7 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.AccrueClaimBlocksEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.DataStore;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.entity.Player;

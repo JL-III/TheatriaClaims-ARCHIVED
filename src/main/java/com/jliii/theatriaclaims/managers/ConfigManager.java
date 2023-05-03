@@ -4,6 +4,7 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.ClaimsMode;
 import com.jliii.theatriaclaims.enums.PistonMode;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.DataStore;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
