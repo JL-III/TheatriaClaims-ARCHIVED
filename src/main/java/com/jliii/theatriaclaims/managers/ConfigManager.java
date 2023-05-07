@@ -9,19 +9,24 @@ import com.jliii.theatriaclaims.config.SystemConfig;
 import com.jliii.theatriaclaims.config.WorldConfig;
 import com.jliii.theatriaclaims.util.CustomLogger;
 
-import scala.languageFeature.reflectiveCalls;
+import lombok.Getter;
 
 import org.bukkit.configuration.file.FileConfiguration;
-
 
 public class ConfigManager {
 
     FileConfiguration config;
+    @Getter
     private ClaimsConfig claimsConfig;
+    @Getter
     private DatabaseConfig databaseConfig;
+    @Getter
     private DynmapConfig dynmapConfig;
+    @Getter
     private EconomyConfig economyConfig;
+    @Getter
     private SystemConfig systemConfig;
+    @Getter
     private WorldConfig worldConfig;
 
 

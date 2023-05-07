@@ -87,7 +87,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         //TODO this is creating flatfile datastore in more than one case, can we cut some repeated code out?
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
-        if (configManager.databaseUrl.length() > 0) {
+        if (configManager.getDatabaseConfig().databaseUrl.length() > 0) {
             try {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(configManager, customLogger);
                 if (FlatFileDataStore.hasData()) {
@@ -135,7 +135,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         //unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
         //20L ~ 1 second
-        if (configManager.config_claims_blocksAccruedPerHour_default > 0) {
+        if (configManager.getSystemConfig().blocksAccruedPerHour_default > 0) {
             DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this, configManager, customLogger);
             this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
         }
@@ -146,7 +146,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         //start recurring cleanup scan for unused claims belonging to inactive players
         FindUnusedClaimsTask task2 = new FindUnusedClaimsTask();
-        this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * configManager.config_advanced_claim_expiration_check_rate);
+        this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * configManager.getSystemConfig().advanced_claim_expiration_check_rate);
 
         //register for events
         PluginManager pluginManager = this.getServer().getPluginManager();
@@ -250,8 +250,8 @@ public class TheatriaClaims extends JavaPlugin {
             }
 
             //adjust claim blocks when abandoning a top level claim
-            if (configManager.config_claims_abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {
-                playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - configManager.config_claims_abandonReturnRatio))));
+            if (configManager.getSystemConfig().abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {
+                playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - configManager.getSystemConfig().abandonReturnRatio))));
             }
 
             //tell the player how many claim blocks he has left
@@ -433,7 +433,7 @@ public class TheatriaClaims extends JavaPlugin {
                     //if the player has been seen in the last 90 days, cache his name/UUID pair
                     long diff = now - lastSeen;
                     long daysDiff = diff / millisecondsPerDay;
-                    if (daysDiff <= configManager.config_advanced_offlineplayer_cache_days) {
+                    if (daysDiff <= configManager.getSystemConfig().advanced_offlineplayer_cache_days) {
                         String playerName = player.getName();
                         if (playerName == null) continue;
                         this.playerNameToIDMap.put(playerName, playerID);
@@ -464,8 +464,6 @@ public class TheatriaClaims extends JavaPlugin {
 
     //called when a player spawns, applies protection for that player if necessary
     public void checkPvpProtectionNeeded(Player player) {
-        //if anti spawn camping feature is not enabled, do nothing
-        if (!configManager.config_pvp_protectFreshSpawns) return;
 
         //if pvp is disabled, do nothing
         if (!pvpRulesApply(player.getWorld())) return;
@@ -544,14 +542,7 @@ public class TheatriaClaims extends JavaPlugin {
 
     //checks whether players can create claims in a world
     public boolean claimsEnabledForWorld(World world) {
-        ClaimsMode mode = configManager.config_claims_worldModes.get(world);
-        return mode != null && mode != ClaimsMode.Disabled;
-    }
-
-    //determines whether creative anti-grief rules apply at a location
-    public boolean creativeRulesApply(Location location) {
-        if (!configManager.config_creativeWorldsExist) return false;
-        return configManager.config_claims_worldModes.get((location.getWorld())) == ClaimsMode.Creative;
+        return configManager.getSystemConfig().claimWorldNames.contains(world.getName());
     }
 
     public String allowBuild(Player player, Location location) {
@@ -567,29 +558,6 @@ public class TheatriaClaims extends JavaPlugin {
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
-
-        //wilderness rules
-        if (claim == null) {
-            //no building in the wilderness in creative mode
-            if (this.creativeRulesApply(location) || configManager.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims) {
-                //exception: when chest claims are enabled, players who have zero land claims and are placing a chest
-                if (material != Material.CHEST || playerData.getClaims().size() > 0 || configManager.config_claims_automaticClaimsForNewPlayersRadius == -1) {
-                    String reason = this.dataStore.getMessage(MessageType.NoBuildOutsideClaims);
-                    if (player.hasPermission("griefprevention.ignoreclaims"))
-                        reason += "  " + this.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
-                    reason += "  " + this.dataStore.getMessage(MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-                    return reason;
-                }
-                else {
-                    return null;
-                }
-            }
-
-            //but it's fine in survival mode
-            else {
-                return null;
-            }
-        }
 
         //if not in the wilderness, then apply claim rules (permissions, etc)
         else {
@@ -623,24 +591,7 @@ public class TheatriaClaims extends JavaPlugin {
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
 
-        //wilderness rules
-        if (claim == null){
-            //no building in the wilderness in creative mode
-            if (this.creativeRulesApply(location) || configManager.config_claims_worldModes.get(location.getWorld()) == ClaimsMode.SurvivalRequiringClaims) {
-                String reason = this.dataStore.getMessage(MessageType.NoBuildOutsideClaims);
-                if (player.hasPermission("griefprevention.ignoreclaims"))
-                    reason += "  " + this.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
-                reason += "  " + this.dataStore.getMessage(MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-                return reason;
-            }
-
-            //but it's fine in survival mode
-            else {
-                return null;
-            }
-        }
-        else
-        {
+        else {
             //cache the claim for later reference
             playerData.lastClaim = claim;
 
@@ -649,8 +600,7 @@ public class TheatriaClaims extends JavaPlugin {
             if (cancel != null && breakEvent != null) {
                 PreventBlockBreakEvent preventionEvent = new PreventBlockBreakEvent(breakEvent);
                 Bukkit.getPluginManager().callEvent(preventionEvent);
-                if (preventionEvent.isCancelled())
-                {
+                if (preventionEvent.isCancelled()) {
                     cancel = null;
                 }
             }
@@ -685,25 +635,5 @@ public class TheatriaClaims extends JavaPlugin {
         }
         return materials;
     }
-
-    //TODO not sure if this is needed since we wont use this setting.
-    public int getSeaLevel(World world) {
-        Integer overrideValue = configManager.config_seaLevelOverride.get(world.getName());
-        if (overrideValue == null || overrideValue == -1) {
-            return world.getSeaLevel();
-        }
-        else {
-            return overrideValue;
-        }
-    }
-
-    public boolean pvpRulesApply(World world) {
-        Boolean configSetting = configManager.config_pvp_specifiedWorlds.get(world);
-        if (configSetting != null) return configSetting;
-        return world.getPVP();
-    }
-
-    //Track scheduled "rescues" so we can cancel them if the player happens to teleport elsewhere so we can cancel it.
-    public ConcurrentHashMap<UUID, BukkitTask> portalReturnTaskMap = new ConcurrentHashMap<>();
 
 }

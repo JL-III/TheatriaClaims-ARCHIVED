@@ -1,5 +1,9 @@
 config-version: 1
 greifprevention:
+  worldnames:
+  - world
+  - world_nether
+  - world_the_end
   claims:
     investigation-tool: STICK
     modification-tool: GOLDEN_SHOVEL

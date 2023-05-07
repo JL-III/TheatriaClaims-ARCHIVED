@@ -11,7 +11,7 @@ public class WorldConfig {
     public boolean fireDestroys;                                //whether fire destroys blocks outside of claims
     public PistonMode pistonMovement;                            //Setting for piston check options
     public boolean pistonExplosionSound;                     //whether pistons make an explosion sound when they get removed
-    public boolean claims_respectWorldGuard;                 //whether claim creations requires WG build permission in creation area
+    public boolean respectWorldGuard;                 //whether claim creations requires WG build permission in creation area
     public boolean silverfishBreakBlocks;                    //whether silverfish may break blocks
     public boolean creaturesTrampleCrops;                    //whether or not non-player entities may trample crops
     public boolean rabbitsEatCrops;                          //whether or not rabbits may eat crops
@@ -22,7 +22,7 @@ public class WorldConfig {
     }
 
     public void loadConfigurationValues() {
-        claims_respectWorldGuard = config.getBoolean("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", true);
+        respectWorldGuard = config.getBoolean("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", true);
         fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
         fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
         pistonExplosionSound = config.getBoolean("GriefPrevention.PistonExplosionSound", true);
