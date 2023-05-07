@@ -3,15 +3,26 @@ greifprevention:
   claims:
     investigation-tool: STICK
     modification-tool: GOLDEN_SHOVEL
+    #whether monster eggs can be placed regardless of trust.
     prevent-global-monster-eggs: true
+    #whether containers and crafting blocks are protect-able
     prevent-theft: true
+    #whether claimed animals may be injured by players without permission
     protect-creatures: true
+    # //whether horses on a claim should be protected by that claim's rules
     protect-horses: true
+    #//whether donkeys on a claim should be protected by that claim's rules
     protect-donkeys: true
+    #//whether llamas on a claim should be protected by that claim's rules
     protect-llamas: true
+    #//whether buttons and switches are protectable
     prevent-button-switches: true
+    #//whether wooden doors should be locked by default (require /accesstrust)
     lock-wooden-doors: false
+    #//whether trap doors should be locked by default (require /accesstrust)
     lock-trap-doors: false
+    #//whether fence gates should be locked by default (require /accesstrust)
+    lock-fence-gates: false
     prevent-nonplayer-created-portals: false
     enderpearls-require-access-trust: true
     raid-triggers-require-build-trust: true
@@ -46,41 +57,10 @@ greifprevention:
         days-inactive: 60
         except-when-owner-has-total-claim-blocks: 10000
         except-when-owner-has-bonus-claim-blocks: 5000
-  spam:
-    enabled: true
-    login-cooldown-seconds: 60
-    login-logout-notifications-per-minute: 5
-    warning-message: "Please reduce your noise level, Spammers will be banned."
-    allowed-ip-addresses: "1.2.3.4; 5.6.7.8"
-    ban-offenders: true
-    ban-message: "Banned for spam."
-    chat-slash-commands: "/me;/global;/local"
-    death-message-cooldown-seconds: 120
-    logout-delay-message-in-seconds: 0
-  pvp:
-    protect-players-in-land-claims:
-      player-owned-claims: true
-      administrative-claims: true
-      administrative-subdivisions: true
-    allow-lava-dump-near-other-players:
-      pvp-worlds: true
-      non-pvp-worlds: false
-    allow-flint-and-steel-near-other-players:
-      pvp-worlds: true
-      non-pvp-worlds: false
-    protect-pets-outside-land-claims: false
-    protect-freshpspawns: true
-    punish-logout: true
-    combat-timeout-seconds: 15
-    allow-combat-itemdrop: false
-    blocked-slash-commands: "/home;/vanish;/spawn;/tpa"
   economy:
     claimblocks-max-bonus: 0
     claimblocks-purchase-cost: 0
     claimblocks-sell-value: 0
-  protect-items-dropped-on-death:
-    pvp-worlds: false
-    non-pvp-worlds: true
   block-land-claim-explosions: true
   block-surface-creeper-explosions: true
   block-surface-other-explosions: true
