@@ -40,7 +40,7 @@ public abstract class BlockBoundaryVisualization extends BoundaryVisualization {
      * @param displayZoneRadius the radius in which elements are visible from the visualization location
      */
     protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, int step, int displayZoneRadius) {
-        super(world, visualizeFrom, height);
+        super(world, visualizeFrom, height, configManager);
         this.step = step;
         this.displayZoneArea = new BoundingBox(visualizeFrom.add(-displayZoneRadius, -displayZoneRadius, -displayZoneRadius), visualizeFrom.add(displayZoneRadius, displayZoneRadius, displayZoneRadius));
     }

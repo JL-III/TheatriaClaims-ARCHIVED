@@ -80,11 +80,10 @@ public class TheatriaClaims extends JavaPlugin {
 
         }
         instance = this;
-        log = instance.getLogger();
-        customLogger = new CustomLogger(configManager, log);
+        customLogger = new CustomLogger(configManager);
         configManager = new ConfigManager(this, customLogger);
         configManager.loadConfig();
-        customLogger.AddLogEntry("Finished loading configuration.");
+        customLogger.log("Finished loading configuration.");
 
         //TODO this is creating flatfile datastore in more than one case, can we cut some repeated code out?
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
@@ -92,16 +91,16 @@ public class TheatriaClaims extends JavaPlugin {
             try {
                 DatabaseDataStore databaseStore = new DatabaseDataStore(configManager, customLogger);
                 if (FlatFileDataStore.hasData()) {
-                    customLogger.AddLogEntry("There appears to be some data on the hard drive.  Migrating those data to the database...");
+                    customLogger.log("There appears to be some data on the hard drive.  Migrating those data to the database...");
                     FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager, customLogger);
                     this.dataStore = flatFileStore;
                     flatFileStore.migrateData(databaseStore);
-                    customLogger.AddLogEntry("Data migration process complete.");
+                    customLogger.log("Data migration process complete.");
                 }
                 this.dataStore = databaseStore;
             }
             catch (Exception e) {
-                customLogger.AddLogEntry("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+                customLogger.log("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
                 e.printStackTrace();
                 this.getServer().getPluginManager().disablePlugin(this);
                 return;
@@ -125,14 +124,14 @@ public class TheatriaClaims extends JavaPlugin {
                 this.dataStore = new FlatFileDataStore(configManager, customLogger);
             }
             catch (Exception e) {
-                customLogger.AddLogEntry("Unable to initialize the file system data store.  Details:");
-                customLogger.AddLogEntry(e.getMessage());
+                customLogger.log("Unable to initialize the file system data store.  Details:");
+                customLogger.log(e.getMessage());
                 e.printStackTrace();
             }
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
-        customLogger.AddLogEntry("Finished loading data " + dataMode + ".");
+        customLogger.log("Finished loading data " + dataMode + ".");
 
         //unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
         //20L ~ 1 second
@@ -184,7 +183,7 @@ public class TheatriaClaims extends JavaPlugin {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
-        customLogger.AddLogEntry("Boot finished.");
+        customLogger.log("Boot finished.");
 
     }
 
@@ -245,7 +244,7 @@ public class TheatriaClaims extends JavaPlugin {
 
             //if in a creative mode world, restore the claim area
             if (TheatriaClaims.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                customLogger.AddLogEntry(player.getName() + " abandoned a claim @ " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                customLogger.log(player.getName() + " abandoned a claim @ " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.UnclaimCleanupWarning);
 //                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
             }
@@ -460,10 +459,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         this.dataStore.close();
 
-        //dump any remaining unwritten log entries
-        this.customLogger.WriteEntries();
-
-        customLogger.AddLogEntry("GriefPrevention disabled.");
+        customLogger.log("GriefPrevention disabled.");
     }
 
     //called when a player spawns, applies protection for that player if necessary

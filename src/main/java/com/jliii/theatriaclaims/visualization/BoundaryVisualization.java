@@ -6,6 +6,7 @@ import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
@@ -136,11 +137,11 @@ public abstract class BoundaryVisualization {
     public static void visualizeArea(
             @NotNull Player player,
             @NotNull BoundingBox boundingBox,
-            @NotNull VisualizationType type, ConfigManager configManager) {
+            @NotNull VisualizationType type, ConfigManager configManager, CustomLogger customLogger) {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player,
                 Set.of(new Boundary(boundingBox, type)),
                 player.getEyeLocation().getBlockY(), configManager);
-        callAndVisualize(event, configManager);
+        callAndVisualize(event, configManager, customLogger);
     }
 
     /**
@@ -154,9 +155,10 @@ public abstract class BoundaryVisualization {
             @NotNull Player player,
             @NotNull Claim claim,
             @NotNull VisualizationType type,
-            ConfigManager configManager)
+            ConfigManager configManager,
+            CustomLogger customLogger)
     {
-        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY(), configManager);
+        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY(), configManager, customLogger);
     }
 
     /**
@@ -172,8 +174,9 @@ public abstract class BoundaryVisualization {
             @NotNull Claim claim,
             @NotNull VisualizationType type,
             @NotNull Block block,
-            ConfigManager configManager) {
-        visualizeClaim(player, claim, type, block.getY(), configManager);
+            ConfigManager configManager,
+            CustomLogger customLogger) {
+        visualizeClaim(player, claim, type, block.getY(), configManager, customLogger);
     }
 
     /**
@@ -184,9 +187,9 @@ public abstract class BoundaryVisualization {
      * @param type the {@link VisualizationType}
      * @param height the height at which the visualization was initiated
      */
-    private static void visualizeClaim(@NotNull Player player, @NotNull Claim claim, @NotNull VisualizationType type, int height, ConfigManager configManager) {
+    private static void visualizeClaim(@NotNull Player player, @NotNull Claim claim, @NotNull VisualizationType type, int height, ConfigManager configManager, CustomLogger customLogger) {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player, defineBoundaries(claim, type), height, configManager);
-        callAndVisualize(event, configManager);
+        callAndVisualize(event, configManager, customLogger);
     }
 
     /**
@@ -225,7 +228,7 @@ public abstract class BoundaryVisualization {
             @NotNull Player player,
             @NotNull Collection<Claim> claims,
             int height,
-            ConfigManager configManager)
+            ConfigManager configManager, CustomLogger customLogger)
     {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(
                 player,
@@ -234,7 +237,7 @@ public abstract class BoundaryVisualization {
                         claim.isAdminClaim() ? VisualizationType.ADMIN_CLAIM :  VisualizationType.CLAIM))
                         .collect(Collectors.toSet()),
                 height, configManager);
-        callAndVisualize(event, configManager);
+        callAndVisualize(event, configManager, customLogger);
     }
 
     /**
@@ -242,7 +245,7 @@ public abstract class BoundaryVisualization {
      *
      * @param event the {@code BoundaryVisualizationEvent}
      */
-    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event, ConfigManager configManager) {
+    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event, ConfigManager configManager, CustomLogger customLogger) {
         Bukkit.getPluginManager().callEvent(event);
 
         Player player = event.getPlayer();
