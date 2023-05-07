@@ -19,9 +19,7 @@ public class ConfigManager {
     private TheatriaClaims theatriaClaims;
     private CustomLogger customLogger;
     FileConfiguration config;
-
-    //configuration variables, loaded/saved from a config.yml
-    //claim mode for each world
+    private EconomyHandler economyHandler;
     public ConcurrentHashMap<World, ClaimsMode> claims_worldModes;
     public boolean creativeWorldsExist;                     //note on whether there are any creative mode worlds, to save cpu cycles on a common hash lookup
 
@@ -66,22 +64,16 @@ public class ConfigManager {
     public int claims_chestClaimExpirationDays;                //number of days of inactivity before an automatic chest claim will be deleted
     public boolean claims_survivalAutoNatureRestoration;        //whether survival claims will be automatically restored to nature when auto-deleted
     public boolean claims_allowTrappedInAdminClaims;            //whether it should be allowed to use /trapped in adminclaims.
-
     public Material claims_investigationTool;                //which material will be used to investigate claims with a right click
     public Material claims_modificationTool;                    //which material will be used to create/resize claims with a right click
-
     public ArrayList<String> claims_commandsRequiringAccessTrust; //the list of slash commands requiring access trust when in a claim
-
     //TODO replace this book with one we make
     public boolean claims_supplyPlayerManual;                //whether to give new players a book with land claim help in it
     public int claims_manualDeliveryDelaySeconds;            //how long to wait before giving a book to a new player
-
     public boolean claims_firespreads;                        //whether fire will spread in claims
     public boolean claims_firedamages;                        //whether fire will damage in claims
-
     public boolean claims_lecternReadingRequiresAccessTrust;                    //reading lecterns requires access trust
 
-    private EconomyHandler economyHandler;
     public int economy_claimBlocksMaxBonus;                  //max "bonus" blocks a player can buy.  set to zero for no limit.
     public double economy_claimBlocksPurchaseCost;            //cost to purchase a claim block.  set to zero to disable purchase.
     public double economy_claimBlocksSellValue;                //return on a sold claim block.  set to zero to disable sale.
@@ -89,7 +81,6 @@ public class ConfigManager {
     public boolean blockClaimExplosions;                     //whether explosions may destroy claimed blocks
     public boolean blockSurfaceCreeperExplosions;            //whether creeper explosions near or above the surface destroy blocks
     public boolean blockSurfaceOtherExplosions;                //whether non-creeper explosions near or above the surface destroy blocks
-    public boolean blockSkyTrees;                            //whether players can build trees on platforms in the sky
 
     //TODO i think worldguard is doing this already.
     public boolean fireSpreads;                                //whether fire spreads outside of claims
@@ -97,7 +88,7 @@ public class ConfigManager {
 
     public boolean visualizationAntiCheatCompat;              // whether to engage compatibility mode for anti-cheat plugins
 
-    public boolean endermenMoveBlocks;                        //whether or not endermen may move blocks around
+    public boolean claims_endermenMoveBlocks;                        //whether or not endermen may move blocks around
     public boolean claims_ravagersBreakBlocks;                //whether or not ravagers may break blocks in claims
     public boolean silverfishBreakBlocks;                    //whether silverfish may break blocks
     public boolean creaturesTrampleCrops;                    //whether or not non-player entities may trample crops
@@ -123,7 +114,7 @@ public class ConfigManager {
     public ConfigManager(TheatriaClaims theatriaClaims, CustomLogger customLogger) {
         this.theatriaClaims = theatriaClaims;
         this.customLogger = customLogger;
-        this.config = theatriaClaims.getConfig();
+        config = theatriaClaims.getConfig();
     }
 
     public FileConfiguration getConfig() {
@@ -160,141 +151,138 @@ public class ConfigManager {
         }
 
         //decide claim mode for each world
-        this.claims_worldModes = new ConcurrentHashMap<>();
-        this.creativeWorldsExist = false;
-        for (World world : worlds)
-        {
+        claims_worldModes = new ConcurrentHashMap<>();
+        creativeWorldsExist = false;
+        for (World world : worlds) {
             //is it specified in the config file?
             String configSetting = config.getString("GriefPrevention.Claims.Mode." + world.getName());
             if (configSetting != null) {
                 ClaimsMode claimsMode = configStringToClaimsMode(configSetting);
                 if (claimsMode != null) {
-                    this.claims_worldModes.put(world, claimsMode);
-                    if (claimsMode == ClaimsMode.Creative) this.creativeWorldsExist = true;
+                    claims_worldModes.put(world, claimsMode);
+                    if (claimsMode == ClaimsMode.Creative) creativeWorldsExist = true;
                     continue;
                 }
                 else {
                     customLogger.log("Error: Invalid claim mode \"" + configSetting + "\".  Options are Survival, Creative, and Disabled.");
-                    this.claims_worldModes.put(world, ClaimsMode.Creative);
-                    this.creativeWorldsExist = true;
+                    claims_worldModes.put(world, ClaimsMode.Creative);
+                    creativeWorldsExist = true;
                 }
             }
 
             //was it specified in a deprecated config node?
             if (deprecated_creativeClaimsEnabledWorldNames.contains(world.getName())) {
-                this.claims_worldModes.put(world, ClaimsMode.Creative);
-                this.creativeWorldsExist = true;
+                claims_worldModes.put(world, ClaimsMode.Creative);
+                creativeWorldsExist = true;
             }
             else if (deprecated_claimsEnabledWorldNames.contains(world.getName())) {
-                this.claims_worldModes.put(world, ClaimsMode.Survival);
+                claims_worldModes.put(world, ClaimsMode.Survival);
             }
 
             //does the world's name indicate its purpose?
             else if (world.getName().toLowerCase().contains("survival")) {
-                this.claims_worldModes.put(world, ClaimsMode.Survival);
+                claims_worldModes.put(world, ClaimsMode.Survival);
             }
             else if (world.getName().toLowerCase().contains("creative")) {
-                this.claims_worldModes.put(world, ClaimsMode.Creative);
-                this.creativeWorldsExist = true;
+                claims_worldModes.put(world, ClaimsMode.Creative);
+                creativeWorldsExist = true;
             }
 
             //decide a default based on server type and world type
             else if (TheatriaClaims.instance.getServer().getDefaultGameMode() == GameMode.CREATIVE) {
-                this.claims_worldModes.put(world, ClaimsMode.Creative);
-                this.creativeWorldsExist = true;
+                claims_worldModes.put(world, ClaimsMode.Creative);
+                creativeWorldsExist = true;
             }
             else if (world.getEnvironment() == Environment.NORMAL) {
-                this.claims_worldModes.put(world, ClaimsMode.Survival);
+                claims_worldModes.put(world, ClaimsMode.Survival);
             }
             else {
-                this.claims_worldModes.put(world, ClaimsMode.Disabled);
+                claims_worldModes.put(world, ClaimsMode.Disabled);
             }
 
             //if the setting WOULD be disabled but this is a server upgrading from the old config format,
             //then default to survival mode for safety's sake (to protect any admin claims which may 
             //have been created there)
-            if (this.claims_worldModes.get(world) == ClaimsMode.Disabled && deprecated_claimsEnabledWorldNames.size() > 0) {
-                this.claims_worldModes.put(world, ClaimsMode.Survival);
+            if (claims_worldModes.get(world) == ClaimsMode.Disabled && deprecated_claimsEnabledWorldNames.size() > 0) {
+                claims_worldModes.put(world, ClaimsMode.Survival);
             }
         }
 
-        this.claims_preventGlobalMonsterEggs = config.getBoolean("GriefPrevention.Claims.PreventGlobalMonsterEggs", true);
-        this.claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
-        this.claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
-        this.claims_protectHorses = config.getBoolean("GriefPrevention.Claims.ProtectHorses", true);
-        this.claims_protectDonkeys = config.getBoolean("GriefPrevention.Claims.ProtectDonkeys", true);
-        this.claims_protectLlamas = config.getBoolean("GriefPrevention.Claims.ProtectLlamas", true);
-        this.claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
-        this.claims_lockWoodenDoors = config.getBoolean("GriefPrevention.Claims.LockWoodenDoors", false);
-        this.claims_lockTrapDoors = config.getBoolean("GriefPrevention.Claims.LockTrapDoors", false);
-        this.claims_lockFenceGates = config.getBoolean("GriefPrevention.Claims.LockFenceGates", true);
-        this.claims_preventNonPlayerCreatedPortals = config.getBoolean("GriefPrevention.Claims.PreventNonPlayerCreatedPortals", false);
-        this.claims_enderPearlsRequireAccessTrust = config.getBoolean("GriefPrevention.Claims.EnderPearlsRequireAccessTrust", true);
-        this.claims_raidTriggersRequireBuildTrust = config.getBoolean("GriefPrevention.Claims.RaidTriggersRequireBuildTrust", true);
-        this.claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
-        this.claims_blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
-        this.claims_blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.Claim Blocks Accrued Per Hour.Default", claims_blocksAccruedPerHour_default);
-        this.claims_maxAccruedBlocks_default = config.getInt("GriefPrevention.Claims.MaxAccruedBlocks", 80000);
-        this.claims_maxAccruedBlocks_default = config.getInt("GriefPrevention.Claims.Max Accrued Claim Blocks.Default", this.claims_maxAccruedBlocks_default);
-        this.claims_accruedIdleThreshold = config.getInt("GriefPrevention.Claims.AccruedIdleThreshold", 0);
-        this.claims_accruedIdleThreshold = config.getInt("GriefPrevention.Claims.Accrued Idle Threshold", this.claims_accruedIdleThreshold);
-        this.claims_accruedIdlePercent = config.getInt("GriefPrevention.Claims.AccruedIdlePercent", 0);
-        this.claims_abandonReturnRatio = config.getDouble("GriefPrevention.Claims.AbandonReturnRatio", 1.0D);
-        this.claims_automaticClaimsForNewPlayersRadius = config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", 4);
-        this.claims_automaticClaimsForNewPlayersRadiusMin = Math.max(0, Math.min(this.claims_automaticClaimsForNewPlayersRadius,
-                config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadiusMinimum", 0)));
-        this.claims_claimsExtendIntoGroundDistance = Math.abs(config.getInt("GriefPrevention.Claims.ExtendIntoGroundDistance", 5));
-        this.claims_minWidth = config.getInt("GriefPrevention.Claims.MinimumWidth", 5);
-        this.claims_minArea = config.getInt("GriefPrevention.Claims.MinimumArea", 100);
-        this.claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", Integer.MIN_VALUE);
-        if (configVersion < 1 && this.claims_maxDepth == 0) {
+        claims_preventGlobalMonsterEggs = config.getBoolean("GriefPrevention.Claims.PreventGlobalMonsterEggs", true);
+        claims_preventTheft = config.getBoolean("GriefPrevention.Claims.PreventTheft", true);
+        claims_protectCreatures = config.getBoolean("GriefPrevention.Claims.ProtectCreatures", true);
+        claims_protectHorses = config.getBoolean("GriefPrevention.Claims.ProtectHorses", true);
+        claims_protectDonkeys = config.getBoolean("GriefPrevention.Claims.ProtectDonkeys", true);
+        claims_protectLlamas = config.getBoolean("GriefPrevention.Claims.ProtectLlamas", true);
+        claims_preventButtonsSwitches = config.getBoolean("GriefPrevention.Claims.PreventButtonsSwitches", true);
+        claims_lockWoodenDoors = config.getBoolean("GriefPrevention.Claims.LockWoodenDoors", false);
+        claims_lockTrapDoors = config.getBoolean("GriefPrevention.Claims.LockTrapDoors", false);
+        claims_lockFenceGates = config.getBoolean("GriefPrevention.Claims.LockFenceGates", true);
+        claims_preventNonPlayerCreatedPortals = config.getBoolean("GriefPrevention.Claims.PreventNonPlayerCreatedPortals", false);
+        claims_enderPearlsRequireAccessTrust = config.getBoolean("GriefPrevention.Claims.EnderPearlsRequireAccessTrust", true);
+        claims_raidTriggersRequireBuildTrust = config.getBoolean("GriefPrevention.Claims.RaidTriggersRequireBuildTrust", true);
+        claims_initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
+        claims_blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
+        claims_blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.Claim Blocks Accrued Per Hour.Default", claims_blocksAccruedPerHour_default);
+        claims_maxAccruedBlocks_default = config.getInt("GriefPrevention.Claims.MaxAccruedBlocks", 80000);
+        claims_maxAccruedBlocks_default = config.getInt("GriefPrevention.Claims.Max Accrued Claim Blocks.Default", claims_maxAccruedBlocks_default);
+        claims_accruedIdleThreshold = config.getInt("GriefPrevention.Claims.AccruedIdleThreshold", 0);
+        claims_accruedIdleThreshold = config.getInt("GriefPrevention.Claims.Accrued Idle Threshold", claims_accruedIdleThreshold);
+        claims_accruedIdlePercent = config.getInt("GriefPrevention.Claims.AccruedIdlePercent", 0);
+        claims_abandonReturnRatio = config.getDouble("GriefPrevention.Claims.AbandonReturnRatio", 1.0D);
+        claims_automaticClaimsForNewPlayersRadius = config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadius", 4);
+        claims_automaticClaimsForNewPlayersRadiusMin = Math.max(0, Math.min(claims_automaticClaimsForNewPlayersRadius, config.getInt("GriefPrevention.Claims.AutomaticNewPlayerClaimsRadiusMinimum", 0)));
+        claims_claimsExtendIntoGroundDistance = Math.abs(config.getInt("GriefPrevention.Claims.ExtendIntoGroundDistance", 5));
+        claims_minWidth = config.getInt("GriefPrevention.Claims.MinimumWidth", 5);
+        claims_minArea = config.getInt("GriefPrevention.Claims.MinimumArea", 100);
+        claims_maxDepth = config.getInt("GriefPrevention.Claims.MaximumDepth", Integer.MIN_VALUE);
+        if (configVersion < 1 && claims_maxDepth == 0) {
             // If MaximumDepth is untouched in an older configuration, correct it.
-            this.claims_maxDepth = Integer.MIN_VALUE;
+            claims_maxDepth = Integer.MIN_VALUE;
             customLogger.log("Updated default value for GriefPrevention.Claims.MaximumDepth to " + Integer.MIN_VALUE);
         }
-        this.claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
-        this.claims_expirationDays = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.DaysInactive", 60);
-        this.claims_expirationExemptionTotalBlocks = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.ExceptWhenOwnerHasTotalClaimBlocks", 10000);
-        this.claims_expirationExemptionBonusBlocks = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.ExceptWhenOwnerHasBonusClaimBlocks", 5000);
-        this.claims_survivalAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", false);
-        this.claims_allowTrappedInAdminClaims = config.getBoolean("GriefPrevention.Claims.AllowTrappedInAdminClaims", false);
+        claims_chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
+        claims_expirationDays = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.DaysInactive", 60);
+        claims_expirationExemptionTotalBlocks = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.ExceptWhenOwnerHasTotalClaimBlocks", 10000);
+        claims_expirationExemptionBonusBlocks = config.getInt("GriefPrevention.Claims.Expiration.AllClaims.ExceptWhenOwnerHasBonusClaimBlocks", 5000);
+        claims_survivalAutoNatureRestoration = config.getBoolean("GriefPrevention.Claims.Expiration.AutomaticNatureRestoration.SurvivalWorlds", false);
+        claims_allowTrappedInAdminClaims = config.getBoolean("GriefPrevention.Claims.AllowTrappedInAdminClaims", false);
 
-        this.claims_respectWorldGuard = config.getBoolean("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", true);
-        this.claims_villagerTradingRequiresTrust = config.getBoolean("GriefPrevention.Claims.VillagerTradingRequiresPermission", true);
+        claims_respectWorldGuard = config.getBoolean("GriefPrevention.Claims.CreationRequiresWorldGuardBuildPermission", true);
+        claims_villagerTradingRequiresTrust = config.getBoolean("GriefPrevention.Claims.VillagerTradingRequiresPermission", true);
         String accessTrustSlashCommands = config.getString("GriefPrevention.Claims.CommandsRequiringAccessTrust", "/sethome");
-        this.claims_supplyPlayerManual = config.getBoolean("GriefPrevention.Claims.DeliverManuals", true);
-        this.claims_manualDeliveryDelaySeconds = config.getInt("GriefPrevention.Claims.ManualDeliveryDelaySeconds", 30);
-        this.claims_ravagersBreakBlocks = config.getBoolean("GriefPrevention.Claims.RavagersBreakBlocks", true);
-        this.claims_firespreads = config.getBoolean("GriefPrevention.Claims.FireSpreadsInClaims", false);
-        this.claims_firedamages = config.getBoolean("GriefPrevention.Claims.FireDamagesInClaims", false);
-        this.claims_lecternReadingRequiresAccessTrust = config.getBoolean("GriefPrevention.Claims.LecternReadingRequiresAccessTrust", true);
+        claims_supplyPlayerManual = config.getBoolean("GriefPrevention.Claims.DeliverManuals", true);
+        claims_manualDeliveryDelaySeconds = config.getInt("GriefPrevention.Claims.ManualDeliveryDelaySeconds", 30);
+        claims_ravagersBreakBlocks = config.getBoolean("GriefPrevention.Claims.RavagersBreakBlocks", true);
+        claims_firespreads = config.getBoolean("GriefPrevention.Claims.FireSpreadsInClaims", false);
+        claims_firedamages = config.getBoolean("GriefPrevention.Claims.FireDamagesInClaims", false);
+        claims_lecternReadingRequiresAccessTrust = config.getBoolean("GriefPrevention.Claims.LecternReadingRequiresAccessTrust", true);
 
-        this.economy_claimBlocksMaxBonus = config.getInt("GriefPrevention.Economy.ClaimBlocksMaxBonus", 0);
-        this.economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
-        this.economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
+        economy_claimBlocksMaxBonus = config.getInt("GriefPrevention.Economy.ClaimBlocksMaxBonus", 0);
+        economy_claimBlocksPurchaseCost = config.getDouble("GriefPrevention.Economy.ClaimBlocksPurchaseCost", 0);
+        economy_claimBlocksSellValue = config.getDouble("GriefPrevention.Economy.ClaimBlocksSellValue", 0);
 
-        this.blockClaimExplosions = config.getBoolean("GriefPrevention.BlockLandClaimExplosions", true);
-        this.blockSurfaceCreeperExplosions = config.getBoolean("GriefPrevention.BlockSurfaceCreeperExplosions", true);
-        this.blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
-        this.blockSkyTrees = config.getBoolean("GriefPrevention.LimitSkyTrees", true);
-        this.limitTreeGrowth = config.getBoolean("GriefPrevention.LimitTreeGrowth", false);
-        this.pistonExplosionSound = config.getBoolean("GriefPrevention.PistonExplosionSound", true);
-        this.pistonMovement = PistonMode.of(config.getString("GriefPrevention.PistonMovement", "CLAIMS_ONLY"));
+        blockClaimExplosions = config.getBoolean("GriefPrevention.BlockLandClaimExplosions", true);
+        blockSurfaceCreeperExplosions = config.getBoolean("GriefPrevention.BlockSurfaceCreeperExplosions", true);
+        blockSurfaceOtherExplosions = config.getBoolean("GriefPrevention.BlockSurfaceOtherExplosions", true);
+        limitTreeGrowth = config.getBoolean("GriefPrevention.LimitTreeGrowth", false);
+        pistonExplosionSound = config.getBoolean("GriefPrevention.PistonExplosionSound", true);
+        pistonMovement = PistonMode.of(config.getString("GriefPrevention.PistonMovement", "CLAIMS_ONLY"));
         if (config.isBoolean("GriefPrevention.LimitPistonsToLandClaims") && !config.getBoolean("GriefPrevention.LimitPistonsToLandClaims"))
-            this.pistonMovement = PistonMode.EVERYWHERE_SIMPLE;
+            pistonMovement = PistonMode.EVERYWHERE_SIMPLE;
         if (config.isBoolean("GriefPrevention.CheckPistonMovement") && !config.getBoolean("GriefPrevention.CheckPistonMovement"))
-            this.pistonMovement = PistonMode.IGNORED;
+            pistonMovement = PistonMode.IGNORED;
 
-        this.fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
-        this.fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
+        fireSpreads = config.getBoolean("GriefPrevention.FireSpreads", false);
+        fireDestroys = config.getBoolean("GriefPrevention.FireDestroys", false);
 
-        this.visualizationAntiCheatCompat = config.getBoolean("GriefPrevention.VisualizationAntiCheatCompatMode", false);
+        visualizationAntiCheatCompat = config.getBoolean("GriefPrevention.VisualizationAntiCheatCompatMode", false);
 
-        this.endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
-        this.silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
-        this.creaturesTrampleCrops = config.getBoolean("GriefPrevention.CreaturesTrampleCrops", false);
-        this.rabbitsEatCrops = config.getBoolean("GriefPrevention.RabbitsEatCrops", true);
-        this.zombiesBreakDoors = config.getBoolean("GriefPrevention.HardModeZombiesBreakDoors", false);
+        claims_endermenMoveBlocks = config.getBoolean("GriefPrevention.EndermenMoveBlocks", false);
+        silverfishBreakBlocks = config.getBoolean("GriefPrevention.SilverfishBreakBlocks", false);
+        creaturesTrampleCrops = config.getBoolean("GriefPrevention.CreaturesTrampleCrops", false);
+        rabbitsEatCrops = config.getBoolean("GriefPrevention.RabbitsEatCrops", true);
+        zombiesBreakDoors = config.getBoolean("GriefPrevention.HardModeZombiesBreakDoors", false);
 
         //default for claim investigation tool
         String investigationToolMaterialName = Material.STICK.name();
@@ -303,10 +291,10 @@ public class ConfigManager {
         investigationToolMaterialName = config.getString("GriefPrevention.Claims.InvestigationTool", investigationToolMaterialName);
 
         //validate investigation tool
-        this.claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
-        if (this.claims_investigationTool == null) {
+        claims_investigationTool = Material.getMaterial(investigationToolMaterialName);
+        if (claims_investigationTool == null) {
             customLogger.log("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
-            this.claims_investigationTool = Material.STICK;
+            claims_investigationTool = Material.STICK;
         }
 
         //default for claim creation/modification tool
@@ -316,30 +304,30 @@ public class ConfigManager {
         modificationToolMaterialName = config.getString("GriefPrevention.Claims.ModificationTool", modificationToolMaterialName);
 
         //validate modification tool
-        this.claims_modificationTool = Material.getMaterial(modificationToolMaterialName);
-        if (this.claims_modificationTool == null) {
+        claims_modificationTool = Material.getMaterial(modificationToolMaterialName);
+        if (claims_modificationTool == null) {
             customLogger.log("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
-            this.claims_modificationTool = Material.GOLDEN_SHOVEL;
+            claims_modificationTool = Material.GOLDEN_SHOVEL;
         }
 
         List<String> breakableBlocksList;
 
         //optional database settings
-        this.databaseUrl = config.getString("GriefPrevention.Database.URL", "");
-        this.databaseUserName = config.getString("GriefPrevention.Database.UserName", "");
-        this.databasePassword = config.getString("GriefPrevention.Database.Password", "");
+        databaseUrl = config.getString("GriefPrevention.Database.URL", "");
+        databaseUserName = config.getString("GriefPrevention.Database.UserName", "");
+        databasePassword = config.getString("GriefPrevention.Database.Password", "");
 
-        this.advanced_fixNegativeClaimblockAmounts = config.getBoolean("GriefPrevention.Advanced.fixNegativeClaimblockAmounts", true);
-        this.advanced_claim_expiration_check_rate = config.getInt("GriefPrevention.Advanced.ClaimExpirationCheckRate", 60);
-        this.advanced_offlineplayer_cache_days = config.getInt("GriefPrevention.Advanced.OfflinePlayer_cache_days", 90);
+        advanced_fixNegativeClaimblockAmounts = config.getBoolean("GriefPrevention.Advanced.fixNegativeClaimblockAmounts", true);
+        advanced_claim_expiration_check_rate = config.getInt("GriefPrevention.Advanced.ClaimExpirationCheckRate", 60);
+        advanced_offlineplayer_cache_days = config.getInt("GriefPrevention.Advanced.OfflinePlayer_cache_days", 90);
 
 
         //try to parse the list of commands requiring access trust in land claims
-        this.claims_commandsRequiringAccessTrust = new ArrayList<>();
+        claims_commandsRequiringAccessTrust = new ArrayList<>();
         String[] commands = accessTrustSlashCommands.split(";");
         for (String command : commands) {
             if (!command.isEmpty()) {
-                this.claims_commandsRequiringAccessTrust.add(command.trim().toLowerCase());
+                claims_commandsRequiringAccessTrust.add(command.trim().toLowerCase());
             }
         }
 
