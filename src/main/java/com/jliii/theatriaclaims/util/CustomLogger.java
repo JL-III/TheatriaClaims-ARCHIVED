@@ -8,15 +8,14 @@ public class CustomLogger {
 
     private final ConfigManager configManager;
 
-    private String pluginPrefix() {
-        return configManager.config_plugin_prefix;
-    }
+    private final String pluginPrefix;
 
     public CustomLogger(ConfigManager configManager) {
         this.configManager = configManager;
+        this.pluginPrefix = configManager.getPluginPrefix();
     }
 
     public void log(String message) {
-        Bukkit.getConsoleSender().sendMessage(pluginPrefix() + message);
+        Bukkit.getConsoleSender().sendMessage(pluginPrefix + message);
     }
 }
