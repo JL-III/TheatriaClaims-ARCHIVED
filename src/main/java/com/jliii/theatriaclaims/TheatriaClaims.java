@@ -4,8 +4,7 @@ import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.commands.ChungusCommand;
 import com.jliii.theatriaclaims.dynmap.DynmapIntegration;
-import com.jliii.theatriaclaims.enums.ClaimsMode;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.enums.IgnoreMode;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
@@ -18,7 +17,6 @@ import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.tasks.DeliverClaimBlocksTask;
 import com.jliii.theatriaclaims.tasks.EntityCleanupTask;
 import com.jliii.theatriaclaims.tasks.FindUnusedClaimsTask;
-import com.jliii.theatriaclaims.tasks.PvPImmunityValidationTask;
 import com.jliii.theatriaclaims.util.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -31,15 +29,12 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class TheatriaClaims extends JavaPlugin {
     //for convenience, a reference to the instance of this plugin
@@ -140,10 +135,6 @@ public class TheatriaClaims extends JavaPlugin {
             this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
         }
 
-        //start the recurring cleanup event for entities in creative worlds
-        EntityCleanupTask task = new EntityCleanupTask(configManager, customLogger, 0);
-        this.getServer().getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, task, 20L * 60 * 2);
-
         //start recurring cleanup scan for unused claims belonging to inactive players
         FindUnusedClaimsTask task2 = new FindUnusedClaimsTask();
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * configManager.getSystemConfig().advanced_claim_expiration_check_rate);
@@ -203,11 +194,6 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
-    //TODO wtf move this to the enums
-    public enum IgnoreMode {
-        None, StandardIgnore, AdminIgnore
-    }
-
     public String trustEntryToPlayerName(String entry) {
         if (entry.startsWith("[") || entry.equals("public")) {
             return entry;
@@ -217,7 +203,6 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
-    //TODO theres some creative mode stuff in here that needs to be addressed, ensure that things that were cut out arent breaking it.
     public boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
@@ -241,13 +226,6 @@ public class TheatriaClaims extends JavaPlugin {
             //delete it
             claim.removeSurfaceFluids(null);
             this.dataStore.deleteClaim(claim, true, false);
-
-            //if in a creative mode world, restore the claim area
-            if (TheatriaClaims.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-                customLogger.log(player.getName() + " abandoned a claim @ " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
-                Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.UnclaimCleanupWarning);
-//                GriefPrevention.instance.restoreClaim(claim, 20L * 60 * 2);
-            }
 
             //adjust claim blocks when abandoning a top level claim
             if (configManager.getSystemConfig().abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {
@@ -460,33 +438,6 @@ public class TheatriaClaims extends JavaPlugin {
         this.dataStore.close();
 
         customLogger.log("GriefPrevention disabled.");
-    }
-
-    //called when a player spawns, applies protection for that player if necessary
-    public void checkPvpProtectionNeeded(Player player) {
-
-        //if pvp is disabled, do nothing
-        if (!pvpRulesApply(player.getWorld())) return;
-
-        //if player is in creative mode, do nothing
-        if (player.getGameMode() == GameMode.CREATIVE) return;
-
-        //if the player has the damage any player permission enabled, do nothing
-        if (player.hasPermission("griefprevention.nopvpimmunity")) return;
-
-        //check inventory for well, anything
-        if (TheatriaClaims.isInventoryEmpty(player)) {
-            //if empty, apply immunity
-            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-            playerData.pvpImmune = true;
-
-            //inform the player after he finishes respawning
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.PvPImmunityStart, 5L);
-
-            //start a task to re-check this player's inventory every minute until his immunity is gone
-            PvPImmunityValidationTask task = new PvPImmunityValidationTask(player);
-            this.getServer().getScheduler().scheduleSyncDelayedTask(this, task, 1200L);
-        }
     }
 
     public static boolean isInventoryEmpty(Player player) {
