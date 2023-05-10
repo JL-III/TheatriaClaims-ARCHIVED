@@ -484,46 +484,6 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
-    //ensures a piece of the managed world is loaded into server memory
-    //(generates the chunk if necessary)
-    private static void GuaranteeChunkLoaded(Location location) {
-        Chunk chunk = location.getChunk();
-        while (!chunk.isLoaded() || !chunk.load(true)) ;
-    }
-
-    //checks whether players can create claims in a world
-    public boolean claimsEnabledForWorld(World world) {
-        return configManager.getSystemConfig().claimWorldNames.contains(world.getName());
-    }
-
-    public String allowBuild(Player player, Location location) {
-        // TODO check all derivatives and rework API
-        return this.allowBuild(player, location, location.getBlock().getType());
-    }
-
-    public String allowBuild(Player player, Location location, Material material) {
-        if (!TheatriaClaims.instance.claimsEnabledForWorld(location.getWorld())) return null;
-
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
-
-        //exception: administrators in ignore claims mode
-        if (playerData.ignoreClaims) return null;
-
-        //if not in the wilderness, then apply claim rules (permissions, etc)
-        else {
-            //cache the claim for later reference
-            playerData.lastClaim = claim;
-            Block block = location.getBlock();
-
-            Supplier<String> supplier = claim.checkPermission(player, ClaimPermission.Build, new BlockPlaceEvent(block, block.getState(), block, new ItemStack(material), player, true, EquipmentSlot.HAND));
-
-            if (supplier == null) return null;
-
-            return supplier.get();
-        }
-    }
-
     //TODO these methods do nothing currently, could be import issues though
     public String allowBreak(Player player, Block block, Location location) {
         return this.allowBreak(player, block, location, new BlockBreakEvent(block, player));
@@ -534,7 +494,7 @@ public class TheatriaClaims extends JavaPlugin {
     }
 
     public String allowBreak(Player player, Block block, Location location, BlockBreakEvent breakEvent) {
-        if (!TheatriaClaims.instance.claimsEnabledForWorld(location.getWorld())) return null;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);

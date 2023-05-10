@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 
 public class SystemConfig {
@@ -112,4 +113,10 @@ public class SystemConfig {
     public String getPluginPrefix() {
         return plugin_prefix;
     }
+
+    //checks whether players can create claims in a world
+    public boolean claimsEnabledForWorld(World world) {
+        return claimWorldNames.contains(world.getName());
+    }
+
 }

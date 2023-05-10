@@ -18,7 +18,9 @@
 
 package com.jliii.theatriaclaims.listeners;
 
+import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.Messages;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.*;
@@ -89,71 +91,11 @@ public class BlockEventHandler implements Listener {
         Block block = breakEvent.getBlock();
 
         //make sure the player is allowed to break at the location
-        String noBuildReason = GriefPrevention.instance.allowBreak(player, block, block.getLocation(), breakEvent);
+        String noBuildReason = allowBreak(player, block, block.getLocation(), breakEvent);
         if (noBuildReason != null) {
             Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
             breakEvent.setCancelled(true);
             return;
-        }
-    }
-
-    //when a player changes the text of a sign...
-    @EventHandler(ignoreCancelled = true)
-    public void onSignChanged(SignChangeEvent event) {
-        Player player = event.getPlayer();
-        Block sign = event.getBlock();
-
-        if (player == null || sign == null) return;
-
-        String noBuildReason = GriefPrevention.instance.allowBuild(player, sign.getLocation(), sign.getType());
-        if (noBuildReason != null) {
-            Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
-            event.setCancelled(true);
-            return;
-        }
-
-        //send sign content to online administrators
-        if (!GriefPrevention.instance.config_signNotifications) return;
-
-        StringBuilder lines = new StringBuilder(" placed a sign @ " + GriefPrevention.getfriendlyLocationString(event.getBlock().getLocation()));
-        boolean notEmpty = false;
-        for (int i = 0; i < event.getLines().length; i++) {
-            String withoutSpaces = event.getLine(i).replace(" ", "");
-            if (!withoutSpaces.isEmpty()) {
-                notEmpty = true;
-                lines.append("\n  ").append(event.getLine(i));
-            }
-        }
-
-        String signMessage = lines.toString();
-
-        //prevent signs with blocked IP addresses
-        if (!player.hasPermission("griefprevention.spam") && GriefPrevention.instance.containsBlockedIP(signMessage)) {
-            event.setCancelled(true);
-            return;
-        }
-
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        //if not empty and wasn't the same as the last sign, log it and remember it for later
-        //This has been temporarily removed since `signMessage` includes location, not just the message. Waste of memory IMO
-        //if(notEmpty && (playerData.lastSignMessage == null || !playerData.lastSignMessage.equals(signMessage)))
-        if (notEmpty) {
-            GriefPrevention.AddLogEntry(player.getName() + lines.toString().replace("\n  ", ";"), null);
-            PlayerEventHandler.makeSocialLogEntry(player.getName(), signMessage);
-            //playerData.lastSignMessage = signMessage;
-
-            if (!player.hasPermission("griefprevention.eavesdropsigns"))
-            {
-                @SuppressWarnings("unchecked")
-                Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getServer().getOnlinePlayers();
-                for (Player otherPlayer : players)
-                {
-                    if (otherPlayer.hasPermission("griefprevention.eavesdropsigns"))
-                    {
-                        otherPlayer.sendMessage(ChatColor.GRAY + player.getName() + signMessage);
-                    }
-                }
-            }
         }
     }
 
@@ -163,7 +105,7 @@ public class BlockEventHandler implements Listener {
         Player player = placeEvent.getPlayer();
 
         //don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
 
         //make sure the player is allowed to build at the location
         for (BlockState block : placeEvent.getReplacedBlockStates()) {

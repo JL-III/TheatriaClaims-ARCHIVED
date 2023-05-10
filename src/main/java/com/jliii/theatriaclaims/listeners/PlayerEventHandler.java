@@ -19,7 +19,6 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.chat.SpamAnalysisResult;
 import com.jliii.theatriaclaims.chat.SpamDetector;
 import com.jliii.theatriaclaims.chat.WordFinder;
 import com.jliii.theatriaclaims.claim.Claim;
@@ -49,6 +48,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -114,135 +114,25 @@ public class PlayerEventHandler implements Listener {
 
         String command = args[0].toLowerCase();
 
-        CommandCategory category = this.getCommandCategory(command);
-
         Player player = event.getPlayer();
         PlayerData playerData = null;
 
-        //if a whisper
-        if (category == CommandCategory.Whisper && args.length > 1)
-        {
-            //determine target player, might be NULL
-
-            Player targetPlayer = instance.getServer().getPlayer(args[1]);
-
-            //softmute feature
-            if (this.dataStore.isSoftMuted(player.getUniqueId()) && targetPlayer != null && !this.dataStore.isSoftMuted(targetPlayer.getUniqueId()))
-            {
-                event.setCancelled(true);
-                return;
-            }
-
-            //if eavesdrop enabled and sender doesn't have the eavesdrop immunity permission, eavesdrop
-            if (configManager.config_whisperNotifications && !player.hasPermission("griefprevention.eavesdropimmune"))
-            {
-                //except for when the recipient has eavesdrop immunity
-                if (targetPlayer == null || !targetPlayer.hasPermission("griefprevention.eavesdropimmune"))
-                {
-                    StringBuilder logMessageBuilder = new StringBuilder();
-                    logMessageBuilder.append("[[").append(event.getPlayer().getName()).append("]] ");
-
-                    for (int i = 1; i < args.length; i++)
-                    {
-                        logMessageBuilder.append(args[i]).append(" ");
-                    }
-
-                    String logMessage = logMessageBuilder.toString();
-
-                    @SuppressWarnings("unchecked")
-                    Collection<Player> players = (Collection<Player>) instance.getServer().getOnlinePlayers();
-                    for (Player onlinePlayer : players)
-                    {
-                        if (onlinePlayer.hasPermission("griefprevention.eavesdrop") && !onlinePlayer.equals(targetPlayer) && !onlinePlayer.equals(player))
-                        {
-                            onlinePlayer.sendMessage(ChatColor.GRAY + logMessage);
-                        }
-                    }
-                }
-            }
-
-            //ignore feature
-            if (targetPlayer != null && targetPlayer.isOnline())
-            {
-                //if either is ignoring the other, cancel this command
-                playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                if (playerData.ignoredPlayers.containsKey(targetPlayer.getUniqueId()) && !targetPlayer.hasPermission("griefprevention.notignorable"))
-                {
-                    event.setCancelled(true);
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.IsIgnoringYou);
-                    return;
-                }
-
-                PlayerData targetPlayerData = this.dataStore.getPlayerData(targetPlayer.getUniqueId());
-                if (targetPlayerData.ignoredPlayers.containsKey(player.getUniqueId()) && !player.hasPermission("griefprevention.notignorable"))
-                {
-                    event.setCancelled(true);
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.IsIgnoringYou);
-                    return;
-                }
-            }
-        }
-
-        //if in pvp, block any pvp-banned slash commands
-        if (playerData == null) playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
-
-        //TODO take a look at the seige data here
-        if ((playerData.inPvpCombat()) && configManager.config_pvp_blockedCommands.contains(command))
-        {
-            event.setCancelled(true);
-            Messages.sendMessage(event.getPlayer(), TextMode.Err.getColor(), MessageType.CommandBannedInPvP);
-            return;
-        }
-
-        //soft mute for chat slash commands
-        if (category == CommandCategory.Chat && this.dataStore.isSoftMuted(player.getUniqueId()))
-        {
-            event.setCancelled(true);
-            return;
-        }
 
         //if the slash command used is in the list of monitored commands, treat it like a chat message (see above)
-        boolean isMonitoredCommand = (category == CommandCategory.Chat || category == CommandCategory.Whisper);
-        if (isMonitoredCommand)
-        {
-            //if anti spam enabled, check for spam
-            if (configManager.config_spam_enabled)
-            {
-                event.setCancelled(this.handlePlayerChat(event.getPlayer(), event.getMessage(), event));
-            }
-
-            if (!player.hasPermission("griefprevention.spam") && this.bannedWordFinder.hasMatch(message))
-            {
-                event.setCancelled(true);
-            }
-
-            //unless cancelled, log in abridged logs
-            if (!event.isCancelled())
-            {
-                StringBuilder builder = new StringBuilder();
-                for (String arg : args)
-                {
-                    builder.append(arg).append(' ');
-                }
-
-                makeSocialLogEntry(event.getPlayer().getName(), builder.toString());
-            }
-        }
+        boolean isMonitoredCommand;
 
         //if requires access trust, check for permission
         isMonitoredCommand = false;
         String lowerCaseMessage = message.toLowerCase();
-        for (String monitoredCommand : configManager.config_claims_commandsRequiringAccessTrust)
-        {
-            if (lowerCaseMessage.startsWith(monitoredCommand))
-            {
+        for (String monitoredCommand : configManager.getSystemConfig().commandsRequiringAccessTrust) {
+            if (lowerCaseMessage.startsWith(monitoredCommand)) {
                 isMonitoredCommand = true;
                 break;
             }
         }
 
         if (isMonitoredCommand) {
-            Claim claim = this.dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
+            Claim claim = dataStore.getClaimAt(player.getLocation(), false, playerData.lastClaim);
             if (claim != null)
             {
                 playerData.lastClaim = claim;
@@ -258,127 +148,12 @@ public class PlayerEventHandler implements Listener {
 
     private final ConcurrentHashMap<String, CommandCategory> commandCategoryMap = new ConcurrentHashMap<>();
 
-    private CommandCategory getCommandCategory(String commandName) {
-        if (commandName.startsWith("/")) commandName = commandName.substring(1);
-
-        //if we've seen this command or alias before, return the category determined previously
-        CommandCategory category = this.commandCategoryMap.get(commandName);
-        if (category != null) return category;
-
-        //otherwise build a list of all the aliases of this command across all installed plugins
-        HashSet<String> aliases = new HashSet<>();
-        aliases.add(commandName);
-        aliases.add("minecraft:" + commandName);
-        for (Plugin plugin : Bukkit.getServer().getPluginManager().getPlugins()) {
-            if (!(plugin instanceof JavaPlugin))
-                continue;
-            JavaPlugin javaPlugin = (JavaPlugin) plugin;
-            Command command = javaPlugin.getCommand(commandName);
-            if (command != null) {
-                aliases.add(command.getName().toLowerCase());
-                aliases.add(plugin.getName().toLowerCase() + ":" + command.getName().toLowerCase());
-                for (String alias : command.getAliases()) {
-                    aliases.add(alias.toLowerCase());
-                    aliases.add(plugin.getName().toLowerCase() + ":" + alias.toLowerCase());
-                }
-            }
-        }
-
-        //also consider vanilla commands
-        Command command = Bukkit.getServer().getPluginCommand(commandName);
-        if (command != null) {
-            aliases.add(command.getName().toLowerCase());
-            aliases.add("minecraft:" + command.getName().toLowerCase());
-            for (String alias : command.getAliases()) {
-                aliases.add(alias.toLowerCase());
-                aliases.add("minecraft:" + alias.toLowerCase());
-            }
-        }
-
-        //if any of those aliases are in the chat list or whisper list, then we know the category for that command
-        category = CommandCategory.None;
-        for (String alias : aliases) {
-            if (configManager.config_eavesdrop_whisperCommands.contains("/" + alias)) {
-                category = CommandCategory.Whisper;
-            }
-            else if (configManager.config_spam_monitorSlashCommands.contains("/" + alias)) {
-                category = CommandCategory.Chat;
-            }
-            //remember the categories for later
-            this.commandCategoryMap.put(alias.toLowerCase(), category);
-        }
-
-        return category;
-    }
-
     static int longestNameLength = 10;
-
-    void makeSocialLogEntry(String name, String message) {
-        StringBuilder entryBuilder = new StringBuilder(name);
-        for (int i = name.length(); i < longestNameLength; i++) {
-            entryBuilder.append(' ');
-        }
-        entryBuilder.append(": ").append(message);
-
-        longestNameLength = Math.max(longestNameLength, name.length());
-        //TODO: cleanup static
-        customLogger.AddLogEntry(entryBuilder.toString(), CustomLogEntryTypes.SocialActivity, true);
-    }
 
     private final ConcurrentHashMap<UUID, Date> lastLoginThisServerSessionMap = new ConcurrentHashMap<>();
 
-    //when a player attempts to join the server...
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onPlayerLogin(PlayerLoginEvent event)
-    {
-        Player player = event.getPlayer();
-
-        //all this is anti-spam code
-        if (configManager.config_spam_enabled)
-        {
-            //FEATURE: login cooldown to prevent login/logout spam with custom clients
-            long now = Calendar.getInstance().getTimeInMillis();
-
-            //if allowed to join and login cooldown enabled
-            if (configManager.config_spam_loginCooldownSeconds > 0 && event.getResult() == Result.ALLOWED && !player.hasPermission("griefprevention.spam"))
-            {
-                //determine how long since last login and cooldown remaining
-                Date lastLoginThisSession = lastLoginThisServerSessionMap.get(player.getUniqueId());
-                if (lastLoginThisSession != null)
-                {
-                    long millisecondsSinceLastLogin = now - lastLoginThisSession.getTime();
-                    long secondsSinceLastLogin = millisecondsSinceLastLogin / 1000;
-                    long cooldownRemaining = configManager.config_spam_loginCooldownSeconds - secondsSinceLastLogin;
-
-                    //if cooldown remaining
-                    if (cooldownRemaining > 0)
-                    {
-                        //DAS BOOT!
-                        event.setResult(Result.KICK_OTHER);
-                        event.setKickMessage("You must wait " + cooldownRemaining + " seconds before logging-in again.");
-                        event.disallow(event.getResult(), event.getKickMessage());
-                        return;
-                    }
-                }
-            }
-
-            //if logging-in account is banned, remember IP address for later
-            if (configManager.config_smartBan && event.getResult() == Result.KICK_BANNED)
-            {
-//                this.tempBannedIps.add(new IpBanInfo(event.getAddress(), now + this.MILLISECONDS_IN_DAY, player.getName()));
-            }
-        }
-
-        //remember the player's ip address
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        playerData.ipAddress = event.getAddress();
-    }
-
-    //when a player successfully joins the server...
-
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    void onPlayerJoin(PlayerJoinEvent event)
-    {
+    void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         UUID playerID = player.getUniqueId();
 
@@ -395,377 +170,10 @@ public class PlayerEventHandler implements Listener {
             playerData.noChatLocation = player.getLocation();
         }
 
-        //if player has never played on the server before...
-        if (!player.hasPlayedBefore())
-        {
-            //may need pvp protection
-            instance.checkPvpProtectionNeeded(player);
-
-            //if in survival claims mode, send a message about the claim basics video (except for admins - assumed experts)
-            if (configManager.config_claims_worldModes.get(player.getWorld()) == ClaimsMode.Survival && !player.hasPermission("griefprevention.adminclaims") && this.dataStore.claims.size() > 10)
-            {
-                WelcomeTask task = new WelcomeTask(player);
-                Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, configManager.config_claims_manualDeliveryDelaySeconds * 20L);
-            }
-        }
-
-        //silence notifications when they're coming too fast
-        if (event.getJoinMessage() != null && this.shouldSilenceNotification())
-        {
-            event.setJoinMessage(null);
-        }
-
-        //FEATURE: auto-ban accounts who use an IP address which was very recently used by another banned account
-//        if (instance.config_smartBan && !player.hasPlayedBefore())
-//        {
-//            //search temporarily banned IP addresses for this one
-//            for (int i = 0; i < this.tempBannedIps.size(); i++)
-//            {
-//                IpBanInfo info = this.tempBannedIps.get(i);
-//                String address = info.address.toString();
-//
-//                //eliminate any expired entries
-//                if (now > info.expirationTimestamp)
-//                {
-//                    this.tempBannedIps.remove(i--);
-//                }
-//
-//                //if we find a match
-//                else if (address.equals(playerData.ipAddress.toString()))
-//                {
-//                    //if the account associated with the IP ban has been pardoned, remove all ip bans for that ip and we're done
-//                    OfflinePlayer bannedPlayer = instance.getServer().getOfflinePlayer(info.bannedAccountName);
-//                    if (!bannedPlayer.isBanned())
-//                    {
-//                        for (int j = 0; j < this.tempBannedIps.size(); j++)
-//                        {
-//                            IpBanInfo info2 = this.tempBannedIps.get(j);
-//                            if (info2.address.toString().equals(address))
-//                            {
-//                                OfflinePlayer bannedAccount = instance.getServer().getOfflinePlayer(info2.bannedAccountName);
-//                                instance.getServer().getBanList(BanList.Type.NAME).pardon(bannedAccount.getName());
-//                                this.tempBannedIps.remove(j--);
-//                            }
-//                        }
-//
-//                        break;
-//                    }
-//
-//                    //otherwise if that account is still banned, ban this account, too
-//                    else
-//                    {
-//                        GriefPrevention.AddLogEntry("Auto-banned new player " + player.getName() + " because that account is using an IP address very recently used by banned player " + info.bannedAccountName + " (" + info.address.toString() + ").", CustomLogEntryTypes.AdminActivity);
-//
-//                        //notify any online ops
-//                        @SuppressWarnings("unchecked")
-//                        Collection<Player> players = (Collection<Player>) instance.getServer().getOnlinePlayers();
-//                        for (Player otherPlayer : players)
-//                        {
-//                            if (otherPlayer.isOp())
-//                            {
-//                                GriefPrevention.sendMessage(otherPlayer, TextMode.Success, Messages.AutoBanNotify, player.getName(), info.bannedAccountName);
-//                            }
-//                        }
-//
-//                        //ban player
-//                        PlayerKickBanTask task = new PlayerKickBanTask(player, "", "GriefPrevention Smart Ban - Shared Login:" + info.bannedAccountName, true);
-//                        instance.getServer().getScheduler().scheduleSyncDelayedTask(instance, task, 10L);
-//
-//                        //silence join message
-//                        event.setJoinMessage("");
-//
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-
         //in case player has changed his name, on successful login, update UUID > Name mapping
         PlayerName.cacheUUIDNamePair(player.getUniqueId(), player.getName());
 
-        //ensure we're not over the limit for this IP address
-        InetAddress ipAddress = playerData.ipAddress;
-        if (ipAddress != null)
-        {
-            int ipLimit = configManager.config_ipLimit;
-            if (ipLimit > 0 && isNewToServer(player))
-            {
-                int ipCount = 0;
-
-                @SuppressWarnings("unchecked")
-                Collection<Player> players = (Collection<Player>) instance.getServer().getOnlinePlayers();
-                for (Player onlinePlayer : players)
-                {
-                    if (onlinePlayer.getUniqueId().equals(player.getUniqueId())) continue;
-
-                    PlayerData otherData = instance.dataStore.getPlayerData(onlinePlayer.getUniqueId());
-                    if (ipAddress.equals(otherData.ipAddress) && isNewToServer(onlinePlayer))
-                    {
-                        ipCount++;
-                    }
-                }
-            }
-        }
-
-        //create a thread to load ignore information
-        new IgnoreLoaderThread(playerID, playerData.ignoredPlayers).start();
-
-        //is he stuck in a portal frame?
-        if (player.hasMetadata("GP_PORTALRESCUE"))
-        {
-            //If so, let him know and rescue him in 10 seconds. If he is in fact not trapped, hopefully chunks will have loaded by this time so he can walk out.
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.NetherPortalTrapDetectionMessage, 20L);
-            new BukkitRunnable()
-            {
-                @Override
-                public void run()
-                {
-                    if (player.getPortalCooldown() > 8 && player.hasMetadata("GP_PORTALRESCUE"))
-                    {
-                        customLogger.AddLogEntry("Rescued " + player.getName() + " from a nether portal.\nTeleported from " + player.getLocation().toString() + " to " + ((Location) player.getMetadata("GP_PORTALRESCUE").get(0).value()).toString(), CustomLogEntryTypes.Debug);
-                        player.teleport((Location) player.getMetadata("GP_PORTALRESCUE").get(0).value());
-                        player.removeMetadata("GP_PORTALRESCUE", instance);
-                    }
-                }
-            }.runTaskLater(instance, 200L);
-        }
-        //Otherwise just reset cooldown, just in case they happened to logout again...
-        else
-            player.setPortalCooldown(0);
-
-
-        //if we're holding a logout message for this player, don't send that or this event's join message
-        if (configManager.config_spam_logoutMessageDelaySeconds > 0)
-        {
-            String joinMessage = event.getJoinMessage();
-            if (joinMessage != null && !joinMessage.isEmpty())
-            {
-                Integer taskID = this.heldLogoutMessages.get(player.getUniqueId());
-                if (taskID != null && Bukkit.getScheduler().isQueued(taskID))
-                {
-                    Bukkit.getScheduler().cancelTask(taskID);
-                    player.sendMessage(event.getJoinMessage());
-                    event.setJoinMessage("");
-                }
-            }
-        }
     }
-
-    //when a player spawns, conditionally apply temporary pvp protection
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    void onPlayerRespawn(PlayerRespawnEvent event)
-    {
-        Player player = event.getPlayer();
-        PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
-        playerData.lastSpawn = Calendar.getInstance().getTimeInMillis();
-        playerData.lastPvpTimestamp = 0;  //no longer in pvp combat
-
-        //also send him any messaged from grief prevention he would have received while dead
-        if (playerData.messageOnRespawn != null)
-        {
-            Messages.sendMessage(player, ChatColor.RESET /*color is alrady embedded in message in this case*/, playerData.messageOnRespawn, 40L);
-            playerData.messageOnRespawn = null;
-        }
-
-        instance.checkPvpProtectionNeeded(player);
-    }
-
-    //when a player dies...
-    private final HashMap<UUID, Long> deathTimestamps = new HashMap<>();
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onPlayerDeath(PlayerDeathEvent event)
-    {
-        //FEATURE: prevent death message spam by implementing a "cooldown period" for death messages
-        Player player = event.getEntity();
-        Long lastDeathTime = this.deathTimestamps.get(player.getUniqueId());
-        long now = Calendar.getInstance().getTimeInMillis();
-        if (lastDeathTime != null && now - lastDeathTime < configManager.config_spam_deathMessageCooldownSeconds * 1000L && event.getDeathMessage() != null)
-        {
-            player.sendMessage(event.getDeathMessage());  //let the player assume his death message was broadcasted to everyone
-            event.setDeathMessage(null);
-        }
-
-        this.deathTimestamps.put(player.getUniqueId(), now);
-
-        //these are related to locking dropped items on death to prevent theft
-        PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
-        playerData.dropsAreUnlocked = false;
-        playerData.receivedDropUnlockAdvertisement = false;
-    }
-
-    //when a player gets kicked...
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onPlayerKicked(PlayerKickEvent event)
-    {
-        Player player = event.getPlayer();
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        playerData.wasKicked = true;
-    }
-
-    //when a player quits...
-    private final HashMap<UUID, Integer> heldLogoutMessages = new HashMap<>();
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    void onPlayerQuit(PlayerQuitEvent event)
-    {
-        Player player = event.getPlayer();
-        UUID playerID = player.getUniqueId();
-        PlayerData playerData = this.dataStore.getPlayerData(playerID);
-        boolean isBanned;
-
-        //If player is not trapped in a portal and has a pending rescue task, remove the associated metadata
-        //Why 9? No idea why, but this is decremented by 1 when the player disconnects.
-        if (player.getPortalCooldown() < 9)
-        {
-            player.removeMetadata("GP_PORTALRESCUE", instance);
-        }
-
-        if (playerData.wasKicked)
-        {
-            isBanned = player.isBanned();
-        }
-        else
-        {
-            isBanned = false;
-        }
-
-        //if banned, add IP to the temporary IP ban list
-        if (isBanned && playerData.ipAddress != null)
-        {
-//            long now = Calendar.getInstance().getTimeInMillis();
-//            this.tempBannedIps.add(new IpBanInfo(playerData.ipAddress, now + this.MILLISECONDS_IN_DAY, player.getName()));
-        }
-
-        //silence notifications when they're coming too fast
-        if (event.getQuitMessage() != null && this.shouldSilenceNotification())
-        {
-            event.setQuitMessage(null);
-        }
-
-        //silence notifications when the player is banned
-        if (isBanned && configManager.config_silenceBans)
-        {
-            event.setQuitMessage(null);
-        }
-
-        //make sure his data is all saved - he might have accrued some claim blocks while playing that were not saved immediately
-        else
-        {
-            this.dataStore.savePlayerData(player.getUniqueId(), playerData);
-        }
-
-        //FEATURE: players in pvp combat when they log out will die
-        if (configManager.config_pvp_punishLogout && playerData.inPvpCombat())
-        {
-            player.setHealth(0);
-        }
-
-        //FEATURE: during a siege, any player who logs out dies and forfeits the siege
-
-        //if player was involved in a siege, he forfeits
-//        if (playerData.siegeData != null)
-//        {
-//            if (player.getHealth() > 0)
-//                player.setHealth(0);  //might already be zero from above, this avoids a double death message
-//        }
-
-        //drop data about this player
-        this.dataStore.clearCachedPlayerData(playerID);
-
-        //send quit message later, but only if the player stays offline
-        if (configManager.config_spam_logoutMessageDelaySeconds > 0)
-        {
-            String quitMessage = event.getQuitMessage();
-            if (quitMessage != null && !quitMessage.isEmpty())
-            {
-                BroadcastMessageTask task = new BroadcastMessageTask(quitMessage);
-                int taskID = Bukkit.getScheduler().scheduleSyncDelayedTask(instance, task, 20L * configManager.config_spam_logoutMessageDelaySeconds);
-                this.heldLogoutMessages.put(playerID, taskID);
-                event.setQuitMessage("");
-            }
-        }
-    }
-
-    //determines whether or not a login or logout notification should be silenced, depending on how many there have been in the last minute
-    private boolean shouldSilenceNotification()
-    {
-        if (configManager.config_spam_loginLogoutNotificationsPerMinute <= 0)
-        {
-            return false; // not silencing login/logout notifications
-        }
-
-        final long ONE_MINUTE = 60000;
-        Long now = Calendar.getInstance().getTimeInMillis();
-
-        //eliminate any expired entries (longer than a minute ago)
-        for (int i = 0; i < this.recentLoginLogoutNotifications.size(); i++)
-        {
-            Long notificationTimestamp = this.recentLoginLogoutNotifications.get(i);
-            if (now - notificationTimestamp > ONE_MINUTE)
-            {
-                this.recentLoginLogoutNotifications.remove(i--);
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        //add the new entry
-        this.recentLoginLogoutNotifications.add(now);
-
-        return this.recentLoginLogoutNotifications.size() > configManager.config_spam_loginLogoutNotificationsPerMinute;
-    }
-
-    //when a player drops an item
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerDropItem(PlayerDropItemEvent event)
-    {
-        Player player = event.getPlayer();
-
-        //in creative worlds, dropping items is blocked
-        if (instance.creativeRulesApply(player.getLocation()))
-        {
-            event.setCancelled(true);
-            return;
-        }
-
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-        //FEATURE: players under siege or in PvP combat, can't throw items on the ground to hide
-        //them or give them away to other players before they are defeated
-
-        //if in combat, don't let him drop it
-        if (!configManager.config_pvp_allowCombatItemDrop && playerData.inPvpCombat())
-        {
-            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PvPNoDrop);
-            event.setCancelled(true);
-        }
-
-        //if he's under siege, don't let him drop it
-//        else if (playerData.siegeData != null)
-//        {
-//            GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoDrop);
-//            event.setCancelled(true);
-//        }
-    }
-
-//    //when a player teleports via a portal
-//    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGH)
-//    void onPlayerPortal(PlayerPortalEvent event) {
-//        //if the player isn't going anywhere, take no action
-//        if (event.getTo() == null || event.getTo().getWorld() == null) return;
-//
-////        Player player = event.getPlayer();
-//        if (event.getCause() == TeleportCause.NETHER_PORTAL) {
-//            //FEATURE: when players get trapped in a nether portal, send them back through to the other side
-////            instance.startRescueTask(player, player.getLocation());
-//
-//            //don't track in worlds where claims are not enabled
-//            if (!instance.claimsEnabledForWorld(event.getTo().getWorld())) return;
-//        }
-//    }
 
     //when a player teleports
     @EventHandler(priority = EventPriority.LOWEST)
@@ -775,7 +183,7 @@ public class PlayerEventHandler implements Listener {
 
         //FEATURE: prevent players from using ender pearls to gain access to secured claims
         TeleportCause cause = event.getCause();
-        if (cause == TeleportCause.CHORUS_FRUIT || (cause == TeleportCause.ENDER_PEARL && configManager.config_claims_enderPearlsRequireAccessTrust)) {
+        if (cause == TeleportCause.CHORUS_FRUIT || (cause == TeleportCause.ENDER_PEARL && configManager.getClaimsConfig().enderPearlsRequireAccessTrust)) {
             Claim toClaim = this.dataStore.getClaimAt(event.getTo(), false, playerData.lastClaim);
             if (toClaim != null) {
                 playerData.lastClaim = toClaim;
@@ -789,40 +197,12 @@ public class PlayerEventHandler implements Listener {
             }
         }
 
-        //FEATURE: prevent teleport abuse to win sieges
-//
-//        //these rules only apply to siege worlds only
-//        if (!instance.config_siege_enabledWorlds.contains(player.getWorld())) return;
-//
-//        //these rules do not apply to admins
-//        if (player.hasPermission("griefprevention.siegeteleport")) return;
-//
-//        //Ignore vanilla teleports (usually corrective teleports? See issue #210)
-//        if (event.getCause() == TeleportCause.UNKNOWN) return;
-//
-//        Location source = event.getFrom();
-//        Claim sourceClaim = this.dataStore.getClaimAt(source, false, playerData.lastClaim);
-//        if (sourceClaim != null)
-//        {
-//            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.SiegeNoTeleport);
-//            event.setCancelled(true);
-//            return;
-//        }
-//
-//        Location destination = event.getTo();
-//        Claim destinationClaim = this.dataStore.getClaimAt(destination, false, null);
-//        if (destinationClaim != null)
-//        {
-//            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.BesiegedNoTeleport);
-//            event.setCancelled(true);
-//            return;
-//        }
     }
 
     //when a player triggers a raid (in a claim)
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerTriggerRaid(RaidTriggerEvent event) {
-        if (!configManager.config_claims_raidTriggersRequireBuildTrust)
+        if (!configManager.getClaimsConfig().raidTriggersRequireBuildTrust)
             return;
 
         Player player = event.getPlayer();
@@ -850,37 +230,31 @@ public class PlayerEventHandler implements Listener {
 
     //when a player interacts with an entity...
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerInteractEntity(PlayerInteractEntityEvent event)
-    {
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
         Entity entity = event.getRightClicked();
 
-        if (!instance.claimsEnabledForWorld(entity.getWorld())) return;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(entity.getWorld())) return;
 
         //allow horse protection to be overridden to allow management from other plugins
-        if (!configManager.config_claims_protectHorses && entity instanceof AbstractHorse) return;
-        if (!configManager.config_claims_protectDonkeys && entity instanceof Donkey) return;
-        if (!configManager.config_claims_protectDonkeys && entity instanceof Mule) return;
-        if (!configManager.config_claims_protectLlamas && entity instanceof Llama) return;
+        if (!configManager.getClaimsConfig().protectHorses && entity instanceof AbstractHorse) return;
+        if (!configManager.getClaimsConfig().protectDonkeys && entity instanceof Donkey) return;
+        if (!configManager.getClaimsConfig().protectDonkeys && entity instanceof Mule) return;
+        if (!configManager.getClaimsConfig().protectLlamas && entity instanceof Llama) return;
 
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
         //if entity is tameable and has an owner, apply special rules
-        if (entity instanceof Tameable)
-        {
+        if (entity instanceof Tameable) {
             Tameable tameable = (Tameable) entity;
-            if (tameable.isTamed())
-            {
-                if (tameable.getOwner() != null)
-                {
+            if (tameable.isTamed()) {
+                if (tameable.getOwner() != null) {
                     UUID ownerID = tameable.getOwner().getUniqueId();
 
                     //if the player interacting is the owner or an admin in ignore claims mode, always allow
-                    if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims)
-                    {
+                    if (player.getUniqueId().equals(ownerID) || playerData.ignoreClaims) {
                         //if giving away pet, do that instead
-                        if (playerData.petGiveawayRecipient != null)
-                        {
+                        if (playerData.petGiveawayRecipient != null) {
                             tameable.setOwner(playerData.petGiveawayRecipient);
                             playerData.petGiveawayRecipient = null;
                             Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.PetGiveawayConfirmation);
@@ -889,23 +263,19 @@ public class PlayerEventHandler implements Listener {
 
                         return;
                     }
-                    if (!instance.pvpRulesApply(entity.getLocation().getWorld()) || configManager.config_pvp_protectPets)
-                    {
-                        //otherwise disallow
-                        OfflinePlayer owner = instance.getServer().getOfflinePlayer(ownerID);
-                        String ownerName = owner.getName();
-                        if (ownerName == null) ownerName = "someone";
-                        String message = instance.dataStore.getMessage(MessageType.NotYourPet, ownerName);
-                        if (player.hasPermission("griefprevention.ignoreclaims"))
-                            message += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
-                        Messages.sendMessage(player, TextMode.Err.getColor(), message);
-                        event.setCancelled(true);
-                        return;
-                    }
+                    OfflinePlayer owner = instance.getServer().getOfflinePlayer(ownerID);
+                    String ownerName = owner.getName();
+                    if (ownerName == null) ownerName = "someone";
+                    String message = instance.dataStore.getMessage(MessageType.NotYourPet, ownerName);
+                    if (player.hasPermission("griefprevention.ignoreclaims"))
+                        message += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                    Messages.sendMessage(player, TextMode.Err.getColor(), message);
+                    event.setCancelled(true);
+                    return;
                 }
             }
-            else  //world repair code for a now-fixed GP bug //TODO: necessary anymore?
-            {
+            //world repair code for a now-fixed GP bug //TODO: necessary anymore?
+            else {
                 //ensure this entity can be tamed by players
                 tameable.setOwner(null);
                 if (tameable instanceof InventoryHolder)
@@ -917,28 +287,10 @@ public class PlayerEventHandler implements Listener {
         }
 
         //don't allow interaction with item frames or armor stands in claimed areas without build permission
-        if (entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging)
-        {
-            String noBuildReason = instance.allowBuild(player, entity.getLocation(), Material.ITEM_FRAME);
-            if (noBuildReason != null)
-            {
+        if (entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging) {
+            String noBuildReason = allowBuild(player, entity.getLocation(), Material.ITEM_FRAME);
+            if (noBuildReason != null) {
                 Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
-                event.setCancelled(true);
-                return;
-            }
-        }
-
-        //limit armor placements when entity count is too high
-        if (entity.getType() == EntityType.ARMOR_STAND && instance.creativeRulesApply(player.getLocation()))
-        {
-            if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
-            Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
-            if (claim == null) return;
-
-            String noEntitiesReason = claim.allowMoreEntities(false);
-            if (noEntitiesReason != null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), noEntitiesReason);
                 event.setCancelled(true);
                 return;
             }
@@ -947,37 +299,15 @@ public class PlayerEventHandler implements Listener {
         //always allow interactions when player is in ignore claims mode
         if (playerData.ignoreClaims) return;
 
-        //don't allow container access during pvp combat
-        if ((entity instanceof StorageMinecart || entity instanceof PoweredMinecart))
-        {
-//            if (playerData.siegeData != null)
-//            {
-//                GriefPrevention.sendMessage(player, TextMode.Err, Messages.SiegeNoContainers);
-//                event.setCancelled(true);
-//                return;
-//            }
-
-            if (playerData.inPvpCombat())
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PvPNoContainers);
-                event.setCancelled(true);
-                return;
-            }
-        }
-
         //if the entity is a vehicle and we're preventing theft in claims
-        if (configManager.config_claims_preventTheft && entity instanceof Vehicle)
-        {
+        if (configManager.getClaimsConfig().preventTheft && entity instanceof Vehicle) {
             //if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
-            if (claim != null)
-            {
+            if (claim != null) {
                 //for storage entities, apply container rules (this is a potential theft)
-                if (entity instanceof InventoryHolder)
-                {
+                if (entity instanceof InventoryHolder) {
                     Supplier<String> noContainersReason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-                    if (noContainersReason != null)
-                    {
+                    if (noContainersReason != null) {
                         Messages.sendMessage(player, TextMode.Err.getColor(), noContainersReason.get());
                         event.setCancelled(true);
                         return;
@@ -987,7 +317,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //if the entity is an animal, apply container rules
-        if ((configManager.config_claims_preventTheft && (entity instanceof Animals || entity instanceof Fish)) || (entity.getType() == EntityType.VILLAGER && configManager.config_claims_villagerTradingRequiresTrust))
+        if ((configManager.getClaimsConfig().preventTheft && (entity instanceof Animals || entity instanceof Fish)) || (entity.getType() == EntityType.VILLAGER && configManager.getClaimsConfig().villagerTradingRequiresTrust))
         {
             //if the entity is in a claim
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, null);
@@ -1014,14 +344,11 @@ public class PlayerEventHandler implements Listener {
         ItemStack itemInHand = GeneralUtils.getItemInHand(player, event.getHand());
 
         //if preventing theft, prevent leashing claimed creatures
-        if (configManager.config_claims_preventTheft && entity instanceof Creature && itemInHand.getType() == Material.LEAD)
-        {
+        if (configManager.getClaimsConfig().preventTheft && entity instanceof Creature && itemInHand.getType() == Material.LEAD) {
             Claim claim = this.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 Supplier<String> failureReason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-                if (failureReason != null)
-                {
+                if (failureReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), failureReason.get());
                     return;
@@ -1030,14 +357,11 @@ public class PlayerEventHandler implements Listener {
         }
 
         // Name tags may only be used on entities that the player is allowed to kill.
-        if (itemInHand.getType() == Material.NAME_TAG)
-        {
+        if (itemInHand.getType() == Material.NAME_TAG) {
             EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.CUSTOM, 0);
             instance.entityEventHandler.onEntityDamage(damageEvent);
-            if (damageEvent.isCancelled())
-            {
+            if (damageEvent.isCancelled()) {
                 event.setCancelled(true);
-                // Don't print message - damage event handler should have handled it.
                 return;
             }
         }
@@ -1045,8 +369,7 @@ public class PlayerEventHandler implements Listener {
 
     //when a player throws an egg
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerThrowEgg(PlayerEggThrowEvent event)
-    {
+    public void onPlayerThrowEgg(PlayerEggThrowEvent event) {
         Player player = event.getPlayer();
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(event.getEgg().getLocation(), false, playerData.lastClaim);
@@ -1055,11 +378,9 @@ public class PlayerEventHandler implements Listener {
         if (playerData.ignoreClaims || claim == null) return;
 
         Supplier<String> failureReason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-        if (failureReason != null)
-        {
+        if (failureReason != null) {
             String reason = failureReason.get();
-            if (player.hasPermission("griefprevention.ignoreclaims"))
-            {
+            if (player.hasPermission("griefprevention.ignoreclaims")) {
                 reason += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
             }
 
@@ -1069,8 +390,7 @@ public class PlayerEventHandler implements Listener {
             event.setHatching(false);
 
             //only give the egg back if player is in survival or adventure
-            if (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE)
-            {
+            if (player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE) {
                 player.getInventory().addItem(event.getEgg().getItem());
             }
         }
@@ -1099,70 +419,6 @@ public class PlayerEventHandler implements Listener {
                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoDamageClaimedEntity, claim.getOwnerName());
                     return;
                 }
-            }
-        }
-    }
-
-    //when a player picks up an item...
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
-        Player player = event.getPlayer();
-
-        //FEATURE: lock dropped items to player who dropped them
-
-        //who owns this stack?
-        Item item = event.getItem();
-        List<MetadataValue> data = item.getMetadata("GP_ITEMOWNER");
-        if (data != null && data.size() > 0) {
-            UUID ownerID = (UUID) data.get(0).value();
-
-            //has that player unlocked his drops?
-            OfflinePlayer owner = instance.getServer().getOfflinePlayer(ownerID);
-            String ownerName = PlayerName.lookupPlayerName(ownerID);
-            if (owner.isOnline() && !player.equals(owner))
-            {
-                PlayerData playerData = this.dataStore.getPlayerData(ownerID);
-
-                //if locked, don't allow pickup
-                if (!playerData.dropsAreUnlocked)
-                {
-                    event.setCancelled(true);
-
-                    //if hasn't been instructed how to unlock, send explanatory messages
-                    if (!playerData.receivedDropUnlockAdvertisement)
-                    {
-                        Messages.sendMessage(owner.getPlayer(), TextMode.Instr.getColor(), MessageType.DropUnlockAdvertisement);
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PickupBlockedExplanation, ownerName);
-                        playerData.receivedDropUnlockAdvertisement = true;
-                    }
-
-                    return;
-                }
-            }
-        }
-
-        //the rest of this code is specific to pvp worlds
-        if (!instance.pvpRulesApply(player.getWorld())) return;
-
-        //if we're preventing spawn camping and the player was previously empty handed...
-        if (configManager.config_pvp_protectFreshSpawns && (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() == Material.AIR))
-        {
-            //if that player is currently immune to pvp
-            PlayerData playerData = this.dataStore.getPlayerData(event.getPlayer().getUniqueId());
-            if (playerData.pvpImmune)
-            {
-                //if it's been less than 10 seconds since the last time he spawned, don't pick up the item
-                long now = Calendar.getInstance().getTimeInMillis();
-                long elapsedSinceLastSpawn = now - playerData.lastSpawn;
-                if (elapsedSinceLastSpawn < 10000)
-                {
-                    event.setCancelled(true);
-                    return;
-                }
-
-                //otherwise take away his immunity. he may be armed now.  at least, he's worth killing for some loot
-                playerData.pvpImmune = false;
-                Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.PvPImmunityEnd);
             }
         }
     }
@@ -2383,5 +1639,40 @@ public class PlayerEventHandler implements Listener {
         if (playerData.getClaims().size() > 0) return false;
 
         return true;
+    }
+
+    //ensures a piece of the managed world is loaded into server memory
+    //(generates the chunk if necessary)
+    private static void GuaranteeChunkLoaded(Location location) {
+        Chunk chunk = location.getChunk();
+        while (!chunk.isLoaded() || !chunk.load(true)) ;
+    }
+
+    public String allowBuild(Player player, Location location) {
+        // TODO check all derivatives and rework API
+        return this.allowBuild(player, location, location.getBlock().getType());
+    }
+
+    public String allowBuild(Player player, Location location, Material material) {
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
+
+        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
+        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+
+        //exception: administrators in ignore claims mode
+        if (playerData.ignoreClaims) return null;
+
+            //if not in the wilderness, then apply claim rules (permissions, etc)
+        else {
+            //cache the claim for later reference
+            playerData.lastClaim = claim;
+            Block block = location.getBlock();
+
+            Supplier<String> supplier = claim.checkPermission(player, ClaimPermission.Build, new BlockPlaceEvent(block, block.getState(), block, new ItemStack(material), player, true, EquipmentSlot.HAND));
+
+            if (supplier == null) return null;
+
+            return supplier.get();
+        }
     }
 }
