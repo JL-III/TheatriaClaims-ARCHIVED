@@ -15,4 +15,8 @@ public class CustomLogger {
     public void log(String message) {
         Bukkit.getConsoleSender().sendMessage(pluginPrefix + message);
     }
+
+    public static void logBare(String message) {
+        Bukkit.getConsoleSender().sendMessage(message);
+    }
 }
