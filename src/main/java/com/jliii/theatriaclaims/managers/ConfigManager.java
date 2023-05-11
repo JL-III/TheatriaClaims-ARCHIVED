@@ -5,6 +5,7 @@ import com.jliii.theatriaclaims.config.ClaimsConfig;
 import com.jliii.theatriaclaims.config.DatabaseConfig;
 import com.jliii.theatriaclaims.config.DynmapConfig;
 import com.jliii.theatriaclaims.config.EconomyConfig;
+import com.jliii.theatriaclaims.config.MessagesConfig;
 import com.jliii.theatriaclaims.config.SystemConfig;
 import com.jliii.theatriaclaims.config.WorldConfig;
 import com.jliii.theatriaclaims.util.CustomLogger;
@@ -26,6 +27,8 @@ public class ConfigManager {
     private SystemConfig systemConfig;
     @Getter
     private WorldConfig worldConfig;
+    @Getter
+    private MessagesConfig messagesConfig;
 
     //TODO this needs a reload method
 
@@ -37,6 +40,7 @@ public class ConfigManager {
         economyConfig = new EconomyConfig(config);
         systemConfig = new SystemConfig(config, customLogger);
         worldConfig = new WorldConfig(config);
+        messagesConfig = new MessagesConfig(customLogger);
     }
 
     public FileConfiguration getConfig() {
@@ -50,6 +54,7 @@ public class ConfigManager {
         economyConfig.loadConfigurationValues();
         systemConfig.loadConfigurationValues();
         worldConfig.loadConfigurationValues();
+        messagesConfig.loadMessages();
     }
 
 }
