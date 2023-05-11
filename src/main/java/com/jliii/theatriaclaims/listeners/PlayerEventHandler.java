@@ -449,7 +449,7 @@ public class PlayerEventHandler implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
     public void onPlayerBucketEmpty(PlayerBucketEmptyEvent bucketEvent) {
-        if (!instance.claimsEnabledForWorld(bucketEvent.getBlockClicked().getWorld())) return;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(bucketEvent.getBlockClicked().getWorld())) return;
 
         Player player = bucketEvent.getPlayer();
         Block block = bucketEvent.getBlockClicked().getRelative(bucketEvent.getBlockFace());
@@ -458,16 +458,13 @@ public class PlayerEventHandler implements Listener {
         // Fixes #1155:
         // Prevents waterlogging blocks placed on a claim's edge.
         // Waterlogging a block affects the clicked block, and NOT the adjacent location relative to it.
-        if (bucketEvent.getBucket() == Material.WATER_BUCKET
-                && bucketEvent.getBlockClicked().getBlockData() instanceof Waterlogged)
-        {
+        if (bucketEvent.getBucket() == Material.WATER_BUCKET && bucketEvent.getBlockClicked().getBlockData() instanceof Waterlogged) {
             block = bucketEvent.getBlockClicked();
         }
 
         //make sure the player is allowed to build at the location
-        String noBuildReason = instance.allowBuild(player, block.getLocation(), Material.WATER);
-        if (noBuildReason != null)
-        {
+        String noBuildReason = allowBuild(player, block.getLocation(), Material.WATER);
+        if (noBuildReason != null) {
             Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
             bucketEvent.setCancelled(true);
             return;
@@ -476,82 +473,8 @@ public class PlayerEventHandler implements Listener {
         //if the bucket is being used in a claim, allow for dumping lava closer to other players
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
         Claim claim = this.dataStore.getClaimAt(block.getLocation(), false, playerData.lastClaim);
-        if (claim != null)
-        {
+        if (claim != null) {
             minLavaDistance = 3;
-        }
-
-        //otherwise no wilderness dumping in creative mode worlds
-        else if (instance.creativeRulesApply(block.getLocation()))
-        {
-            if (block.getY() >= instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava"))
-            {
-                if (bucketEvent.getBucket() == Material.LAVA_BUCKET)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoWildernessBuckets);
-                    bucketEvent.setCancelled(true);
-                    return;
-                }
-            }
-        }
-
-        //lava buckets can't be dumped near other players unless pvp is on
-        if (!doesAllowLavaProximityInWorld(block.getWorld()) && !player.hasPermission("griefprevention.lava"))
-        {
-            if (bucketEvent.getBucket() == Material.LAVA_BUCKET)
-            {
-                List<Player> players = block.getWorld().getPlayers();
-                for (Player otherPlayer : players)
-                {
-                    Location location = otherPlayer.getLocation();
-                    if (!otherPlayer.equals(player) && otherPlayer.getGameMode() == GameMode.SURVIVAL && player.canSee(otherPlayer) && block.getY() >= location.getBlockY() - 1 && location.distanceSquared(block.getLocation()) < minLavaDistance * minLavaDistance)
-                    {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoLavaNearOtherPlayer, "another player");
-                        bucketEvent.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-        }
-
-        //log any suspicious placements (check sea level, world type, and adjacent blocks)
-        if (block.getY() >= instance.getSeaLevel(block.getWorld()) - 5 && !player.hasPermission("griefprevention.lava") && block.getWorld().getEnvironment() != Environment.NETHER)
-        {
-            //if certain blocks are nearby, it's less suspicious and not worth logging
-            Set<Material> exclusionAdjacentTypes;
-            if (bucketEvent.getBucket() == Material.WATER_BUCKET)
-                exclusionAdjacentTypes = this.commonAdjacentBlocks_water;
-            else
-                exclusionAdjacentTypes = this.commonAdjacentBlocks_lava;
-
-            boolean makeLogEntry = true;
-            BlockFace[] adjacentDirections = new BlockFace[]{BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.DOWN};
-            for (BlockFace direction : adjacentDirections)
-            {
-                Material adjacentBlockType = block.getRelative(direction).getType();
-                if (exclusionAdjacentTypes.contains(adjacentBlockType))
-                {
-                    makeLogEntry = false;
-                    break;
-                }
-            }
-
-            if (makeLogEntry)
-            {
-                customLogger.AddLogEntry(player.getName() + " placed suspicious " + bucketEvent.getBucket().name() + " @ " + TheatriaClaims.getfriendlyLocationString(block.getLocation()), CustomLogEntryTypes.SuspiciousActivity, true);
-            }
-        }
-    }
-
-    private boolean doesAllowLavaProximityInWorld(World world)
-    {
-        if (instance.pvpRulesApply(world))
-        {
-            return configManager.config_pvp_allowLavaNearPlayers;
-        }
-        else
-        {
-            return configManager.config_pvp_allowLavaNearPlayers_NonPvp;
         }
     }
 
@@ -561,10 +484,10 @@ public class PlayerEventHandler implements Listener {
         Player player = bucketEvent.getPlayer();
         Block block = bucketEvent.getBlockClicked();
 
-        if (!instance.claimsEnabledForWorld(block.getWorld())) return;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(block.getWorld())) return;
 
         //make sure the player is allowed to build at the location
-        String noBuildReason = instance.allowBuild(player, block.getLocation(), Material.AIR);
+        String noBuildReason = allowBuild(player, block.getLocation(), Material.AIR);
         if (noBuildReason != null)
         {
             //exemption for cow milking (permissions will be handled by player interact with entity event instead)
@@ -595,31 +518,26 @@ public class PlayerEventHandler implements Listener {
         Block clickedBlock = event.getClickedBlock(); //null returned here means interacting with air
 
         Material clickedBlockType = null;
-        if (clickedBlock != null)
-        {
+        if (clickedBlock != null) {
             clickedBlockType = clickedBlock.getType();
         }
-        else
-        {
+        else {
             clickedBlockType = Material.AIR;
         }
 
         PlayerData playerData = null;
 
         //Turtle eggs
-        if (action == Action.PHYSICAL)
-        {
+        if (action == Action.PHYSICAL) {
             if (clickedBlockType != Material.TURTLE_EGG)
                 return;
             playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 playerData.lastClaim = claim;
 
                 Supplier<String> noAccessReason = claim.checkPermission(player, ClaimPermission.Build, event);
-                if (noAccessReason != null)
-                {
+                if (noAccessReason != null) {
                     event.setCancelled(true);
                     return;
                 }
@@ -628,23 +546,18 @@ public class PlayerEventHandler implements Listener {
         }
 
         //don't care about left-clicking on most blocks, this is probably a break action
-        if (action == Action.LEFT_CLICK_BLOCK && clickedBlock != null)
-        {
-            if (clickedBlock.getY() < clickedBlock.getWorld().getMaxHeight() - 1 || event.getBlockFace() != BlockFace.UP)
-            {
+        if (action == Action.LEFT_CLICK_BLOCK && clickedBlock != null) {
+            if (clickedBlock.getY() < clickedBlock.getWorld().getMaxHeight() - 1 || event.getBlockFace() != BlockFace.UP) {
                 Block adjacentBlock = clickedBlock.getRelative(event.getBlockFace());
                 byte lightLevel = adjacentBlock.getLightFromBlocks();
-                if (lightLevel == 15 && adjacentBlock.getType() == Material.FIRE)
-                {
+                if (lightLevel == 15 && adjacentBlock.getType() == Material.FIRE) {
                     if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
                     Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-                    if (claim != null)
-                    {
+                    if (claim != null) {
                         playerData.lastClaim = claim;
 
                         Supplier<String> noBuildReason = claim.checkPermission(player, ClaimPermission.Build, event);
-                        if (noBuildReason != null)
-                        {
+                        if (noBuildReason != null) {
                             event.setCancelled(true);
                             Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason.get());
                             player.sendBlockChange(adjacentBlock.getLocation(), adjacentBlock.getType(), adjacentBlock.getData());
@@ -662,7 +575,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //apply rules for containers and crafting blocks
-        if (clickedBlock != null && configManager.config_claims_preventTheft && (
+        if (clickedBlock != null && configManager.getClaimsConfig().preventTheft && (
                 event.getAction() == Action.RIGHT_CLICK_BLOCK && (
                         (this.isInventoryHolder(clickedBlock) && clickedBlock.getType() != Material.LECTERN) ||
                                 clickedBlockType == Material.ANVIL ||
@@ -691,68 +604,39 @@ public class PlayerEventHandler implements Listener {
         {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
-            //block container use while under siege, so players can't hide items from attackers
-//            if (playerData.siegeData != null)
-//            {
-//                GriefPrevention.sendMessage(player, TextMode.Err, MessageType.SiegeNoContainers);
-//                event.setCancelled(true);
-//                return;
-//            }
-
-            //block container use during pvp combat, same reason
-            if (playerData.inPvpCombat())
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PvPNoContainers);
-                event.setCancelled(true);
-                return;
-            }
-
             //otherwise check permissions for the claim the player is in
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 playerData.lastClaim = claim;
-
                 Supplier<String> noContainersReason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-                if (noContainersReason != null)
-                {
+                if (noContainersReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), noContainersReason.get());
                     return;
                 }
-            }
-
-            //if the event hasn't been cancelled, then the player is allowed to use the container
-            //so drop any pvp protection
-            if (playerData.pvpImmune)
-            {
-                playerData.pvpImmune = false;
-                Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.PvPImmunityEnd);
             }
         }
 
         //otherwise apply rules for doors and beds, if configured that way
         else if (clickedBlock != null &&
 
-                (configManager.config_claims_lockWoodenDoors && Tag.WOODEN_DOORS.isTagged(clickedBlockType) ||
+                (configManager.getClaimsConfig().lockWoodenDoors && Tag.WOODEN_DOORS.isTagged(clickedBlockType) ||
 
-                        configManager.config_claims_preventButtonsSwitches && Tag.BEDS.isTagged(clickedBlockType) ||
+                        configManager.getClaimsConfig().preventButtonsSwitches && Tag.BEDS.isTagged(clickedBlockType) ||
 
-                        configManager.config_claims_lockTrapDoors && Tag.WOODEN_TRAPDOORS.isTagged(clickedBlockType) ||
+                        configManager.getClaimsConfig().lockTrapDoors && Tag.WOODEN_TRAPDOORS.isTagged(clickedBlockType) ||
 
-                        configManager.config_claims_lecternReadingRequiresAccessTrust && clickedBlockType == Material.LECTERN ||
+                        configManager.getClaimsConfig().lecternReadingRequiresAccessTrust && clickedBlockType == Material.LECTERN ||
 
-                        configManager.config_claims_lockFenceGates && Tag.FENCE_GATES.isTagged(clickedBlockType)))
+                        configManager.getClaimsConfig().lockFenceGates && Tag.FENCE_GATES.isTagged(clickedBlockType)))
         {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 playerData.lastClaim = claim;
 
                 Supplier<String> noAccessReason = claim.checkPermission(player, ClaimPermission.Access, event);
-                if (noAccessReason != null)
-                {
+                if (noAccessReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), noAccessReason.get());
                     return;
@@ -761,17 +645,14 @@ public class PlayerEventHandler implements Listener {
         }
 
         //otherwise apply rules for buttons and switches
-        else if (clickedBlock != null && configManager.config_claims_preventButtonsSwitches && (Tag.BUTTONS.isTagged(clickedBlockType) || clickedBlockType == Material.LEVER))
-        {
+        else if (clickedBlock != null && configManager.getClaimsConfig().preventButtonsSwitches && (Tag.BUTTONS.isTagged(clickedBlockType) || clickedBlockType == Material.LEVER)) {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 playerData.lastClaim = claim;
 
                 Supplier<String> noAccessReason = claim.checkPermission(player, ClaimPermission.Access, event);
-                if (noAccessReason != null)
-                {
+                if (noAccessReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), noAccessReason.get());
                     return;
@@ -780,17 +661,13 @@ public class PlayerEventHandler implements Listener {
         }
 
         //otherwise apply rule for cake
-        else if (clickedBlock != null && configManager.config_claims_preventTheft && (clickedBlockType == Material.CAKE || Tag.CANDLE_CAKES.isTagged(clickedBlockType)))
-        {
+        else if (clickedBlock != null && configManager.getClaimsConfig().preventTheft && (clickedBlockType == Material.CAKE || Tag.CANDLE_CAKES.isTagged(clickedBlockType))) {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 playerData.lastClaim = claim;
-
                 Supplier<String> noContainerReason = claim.checkPermission(player, ClaimPermission.Access, event);
-                if (noContainerReason != null)
-                {
+                if (noContainerReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), noContainerReason.get());
                     return;
@@ -809,15 +686,12 @@ public class PlayerEventHandler implements Listener {
                                 clickedBlockType == Material.REDSTONE_WIRE ||
                                 Tag.FLOWER_POTS.isTagged(clickedBlockType) ||
                                 Tag.CANDLES.isTagged(clickedBlockType)
-                ))
-        {
+                )) {
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
             Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-            if (claim != null)
-            {
+            if (claim != null) {
                 Supplier<String> noBuildReason = claim.checkPermission(player, ClaimPermission.Build, event);
-                if (noBuildReason != null)
-                {
+                if (noBuildReason != null) {
                     event.setCancelled(true);
                     Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason.get());
                     return;
@@ -826,8 +700,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //otherwise handle right click (shovel, string, bonemeal) //RoboMWM: flint and steel
-        else
-        {
+        else {
             //ignore all actions except right-click on a block or in the air
             if (action != Action.RIGHT_CLICK_BLOCK && action != Action.RIGHT_CLICK_AIR) return;
 
@@ -839,8 +712,7 @@ public class PlayerEventHandler implements Listener {
             Set<Material> spawn_eggs = new HashSet<>();
             Set<Material> dyes = new HashSet<>();
 
-            for (Material material : Material.values())
-            {
+            for (Material material : Material.values()) {
                 if (material.isLegacy()) continue;
                 if (material.name().endsWith("_SPAWN_EGG"))
                     spawn_eggs.add(material);
@@ -852,39 +724,31 @@ public class PlayerEventHandler implements Listener {
             //add glowing ink sac and ink sac, due to their usage on signs
             if (clickedBlock != null && (materialInHand == Material.BONE_MEAL
                     || materialInHand == Material.ARMOR_STAND
-                    || (spawn_eggs.contains(materialInHand) && configManager.config_claims_preventGlobalMonsterEggs)
+                    || (spawn_eggs.contains(materialInHand) && configManager.getClaimsConfig().preventGlobalMonsterEggs)
                     || materialInHand == Material.END_CRYSTAL
                     || materialInHand == Material.FLINT_AND_STEEL
                     || materialInHand == Material.INK_SAC
                     || materialInHand == Material.GLOW_INK_SAC
-                    || dyes.contains(materialInHand)))
-            {
-                String noBuildReason = instance
-                        .allowBuild(player, clickedBlock
+                    || dyes.contains(materialInHand))) {
+                String noBuildReason = allowBuild(player, clickedBlock
                                         .getLocation(),
                                 clickedBlockType);
-                if (noBuildReason != null)
-                {
+                if (noBuildReason != null) {
                     Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
                     event.setCancelled(true);
                 }
-
                 return;
             }
-            else if (clickedBlock != null && Tag.ITEMS_BOATS.isTagged(materialInHand))
-            {
+            else if (clickedBlock != null && Tag.ITEMS_BOATS.isTagged(materialInHand)) {
                 if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-                if (claim != null)
-                {
+                if (claim != null) {
                     Supplier<String> reason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-                    if (reason != null)
-                    {
+                    if (reason != null) {
                         Messages.sendMessage(player, TextMode.Err.getColor(), reason.get());
                         event.setCancelled(true);
                     }
                 }
-
                 return;
             }
 
@@ -894,72 +758,23 @@ public class PlayerEventHandler implements Listener {
                             materialInHand == Material.FURNACE_MINECART ||
                             materialInHand == Material.CHEST_MINECART ||
                             materialInHand == Material.TNT_MINECART ||
-                            materialInHand == Material.HOPPER_MINECART) &&
-                    !instance.creativeRulesApply(clickedBlock.getLocation()))
-            {
+                            materialInHand == Material.HOPPER_MINECART)) {
                 if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
                 Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-                if (claim != null)
-                {
+                if (claim != null) {
                     Supplier<String> reason = claim.checkPermission(player, ClaimPermission.Inventory, event);
-                    if (reason != null)
-                    {
+                    if (reason != null) {
                         Messages.sendMessage(player, TextMode.Err.getColor(), reason.get());
                         event.setCancelled(true);
                     }
                 }
-
-                return;
-            }
-
-            //if it's a spawn egg, minecart, or boat, and this is a creative world, apply special rules
-            else if (clickedBlock != null && (materialInHand == Material.MINECART ||
-                    materialInHand == Material.FURNACE_MINECART ||
-                    materialInHand == Material.CHEST_MINECART ||
-                    materialInHand == Material.TNT_MINECART ||
-                    materialInHand == Material.ARMOR_STAND ||
-                    materialInHand == Material.ITEM_FRAME ||
-                    materialInHand == Material.GLOW_ITEM_FRAME ||
-                    spawn_eggs.contains(materialInHand) ||
-                    materialInHand == Material.INFESTED_STONE ||
-                    materialInHand == Material.INFESTED_COBBLESTONE ||
-                    materialInHand == Material.INFESTED_STONE_BRICKS ||
-                    materialInHand == Material.INFESTED_MOSSY_STONE_BRICKS ||
-                    materialInHand == Material.INFESTED_CRACKED_STONE_BRICKS ||
-                    materialInHand == Material.INFESTED_CHISELED_STONE_BRICKS ||
-                    materialInHand == Material.HOPPER_MINECART) &&
-                    instance.creativeRulesApply(clickedBlock.getLocation()))
-            {
-                //player needs build permission at this location
-                String noBuildReason = instance.allowBuild(player, clickedBlock.getLocation(), Material.MINECART);
-                if (noBuildReason != null)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
-                    event.setCancelled(true);
-                    return;
-                }
-
-                //enforce limit on total number of entities in this claim
-                if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
-                Claim claim = this.dataStore.getClaimAt(clickedBlock.getLocation(), false, playerData.lastClaim);
-                if (claim == null) return;
-
-                String noEntitiesReason = claim.allowMoreEntities(false);
-                if (noEntitiesReason != null)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), noEntitiesReason);
-                    event.setCancelled(true);
-                    return;
-                }
-
                 return;
             }
 
             //if he's investigating a claim
-            else if (materialInHand == configManager.config_claims_investigationTool && hand == EquipmentSlot.HAND)
-            {
+            else if (materialInHand == configManager.getSystemConfig().investigationTool && hand == EquipmentSlot.HAND) {
                 //if claims are disabled in this world, do nothing
-                if (!instance.claimsEnabledForWorld(player.getWorld())) return;
+                if (!configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) return;
 
                 //if holding shift (sneaking), show all claims in area
                 if (player.isSneaking() && player.hasPermission("griefprevention.visualizenearbyclaims"))
