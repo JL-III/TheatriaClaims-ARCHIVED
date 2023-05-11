@@ -6,13 +6,11 @@ import org.bukkit.Bukkit;
 
 public class CustomLogger {
 
-    private final ConfigManager configManager;
-
     private final String pluginPrefix;
 
     public CustomLogger(ConfigManager configManager) {
         this.configManager = configManager;
-        this.pluginPrefix = configManager.getPluginPrefix();
+        this.pluginPrefix = configManager.getSystemConfig().getPluginPrefix();
     }
 
     public void log(String message) {

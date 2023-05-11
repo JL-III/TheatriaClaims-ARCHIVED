@@ -21,6 +21,8 @@ package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,9 +37,14 @@ public class FindUnusedClaimsTask implements Runnable {
     private List<UUID> claimOwnerUUIDs;
     private Iterator<UUID> claimOwnerIterator;
 
-    public FindUnusedClaimsTask()
-    {
+    private ConfigManager configManager;
+
+    private CustomLogger customLogger;
+
+    public FindUnusedClaimsTask(ConfigManager configManager, CustomLogger customLogger) {
         refreshUUIDs();
+        this.configManager = configManager;
+        this.customLogger = customLogger;
     }
 
     @Override
@@ -51,7 +58,7 @@ public class FindUnusedClaimsTask implements Runnable {
             return;
         }
 
-        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next()));
+        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next(), configManager, customLogger));
     }
 
     public void refreshUUIDs() {
@@ -64,10 +71,10 @@ public class FindUnusedClaimsTask implements Runnable {
             Collections.shuffle(claimOwnerUUIDs);
         }
 
-        GriefPrevention.AddLogEntry("The following UUIDs own a claim and will be checked for inactivity in the following order:", CustomLogEntryTypes.Debug, true);
+        customLogger.log("The following UUIDs own a claim and will be checked for inactivity in the following order:");
 
         for (UUID uuid : claimOwnerUUIDs)
-            GriefPrevention.AddLogEntry(uuid.toString(), CustomLogEntryTypes.Debug, true);
+            customLogger.log(uuid.toString());
 
         claimOwnerIterator = claimOwnerUUIDs.iterator();
     }

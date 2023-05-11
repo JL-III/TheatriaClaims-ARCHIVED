@@ -21,29 +21,36 @@ package com.jliii.theatriaclaims.tasks;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.Messages;
+import com.jliii.theatriaclaims.util.PlayerData;
+
 //sends a message to a player
 //used to send delayed messages, for example help text triggered by a player's chat
 public class SendPlayerMessageTask implements Runnable {
     private final Player player;
     private final ChatColor color;
     private final String message;
+    private CustomLogger customLogger;
 
-    public SendPlayerMessageTask(Player player, ChatColor color, String message) {
+    public SendPlayerMessageTask(Player player, ChatColor color, String message, CustomLogger customLogger) {
         this.player = player;
         this.color = color;
         this.message = message;
+        this.customLogger = customLogger;
     }
 
     @Override
     public void run() {
         if (player == null) {
-            GriefPrevention.AddLogEntry(color + message);
+            customLogger.log(color + message);
             return;
         }
 
         //if the player is dead, save it for after his respawn
         if (this.player.isDead()) {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(this.player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(this.player.getUniqueId());
             playerData.messageOnRespawn = this.color + this.message;
         }
         //otherwise send it immediately

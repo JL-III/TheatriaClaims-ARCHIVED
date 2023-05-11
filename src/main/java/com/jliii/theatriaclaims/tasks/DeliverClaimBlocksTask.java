@@ -44,7 +44,7 @@ public class DeliverClaimBlocksTask implements Runnable {
         this.instance = instance;
         this.configManager = configManager;
         this.customLogger = customLogger;
-        this.idleThresholdSquared = configManager.config_claims_accruedIdleThreshold * configManager.config_claims_accruedIdleThreshold;
+        this.idleThresholdSquared = configManager.getSystemConfig().accruedIdleThreshold * configManager.getSystemConfig().accruedIdleThreshold;
     }
 
 
@@ -89,22 +89,22 @@ public class DeliverClaimBlocksTask implements Runnable {
 
         try {
             //determine how fast blocks accrue for this player //RoboMWM: addons determine this instead
-            int accrualRate = configManager.config_claims_blocksAccruedPerHour_default;
+            int accrualRate = configManager.getSystemConfig().blocksAccruedPerHour_default;
 
             //determine idle accrual rate when idle
             if (isIdle) {
-                if (configManager.config_claims_accruedIdlePercent <= 0) {
-                    customLogger.AddLogEntry(player.getName() + " wasn't active enough to accrue claim blocks this round.", CustomLogEntryTypes.Debug, true);
+                if (configManager.getSystemConfig().accruedIdlePercent <= 0) {
+                    customLogger.log(player.getName() + " wasn't active enough to accrue claim blocks this round.");
                     return; //idle accrual percentage is disabled
                 }
-                accrualRate = (int) (accrualRate * (configManager.config_claims_accruedIdlePercent / 100.0D));
+                accrualRate = (int) (accrualRate * (configManager.getSystemConfig().accruedIdlePercent / 100.0D));
             }
 
             //fire event for addons
             AccrueClaimBlocksEvent event = new AccrueClaimBlocksEvent(player, accrualRate, isIdle);
             instance.getServer().getPluginManager().callEvent(event);
             if (event.isCancelled()) {
-                customLogger.AddLogEntry(player.getName() + " claim block delivery was canceled by another plugin.", CustomLogEntryTypes.Debug, true);
+                customLogger.log(player.getName() + " claim block delivery was canceled by another plugin.");
                 return; //event was cancelled
             }
 
@@ -112,14 +112,14 @@ public class DeliverClaimBlocksTask implements Runnable {
             accrualRate = event.getBlocksToAccrue();
             if (accrualRate < 0) accrualRate = 0;
             playerData.accrueBlocks(accrualRate);
-            customLogger.AddLogEntry("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName(), CustomLogEntryTypes.Debug, true);
+            customLogger.log("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName());
 
             //intentionally NOT saving data here to reduce overall secondary storage access frequency
             //many other operations will cause this player's data to save, including his eventual logout
             //dataStore.savePlayerData(player.getUniqueIdentifier(), playerData);
         }
         catch (Exception e) {
-            customLogger.AddLogEntry("Problem delivering claim blocks to player " + player.getName() + ":");
+            customLogger.log("Problem delivering claim blocks to player " + player.getName() + ":");
             e.printStackTrace();
         }
     }

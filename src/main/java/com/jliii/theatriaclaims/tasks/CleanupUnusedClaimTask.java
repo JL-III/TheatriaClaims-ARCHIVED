@@ -51,15 +51,15 @@ class CleanupUnusedClaimTask implements Runnable {
     public void run() {
         //determine area of the default chest claim
         int areaOfDefaultClaim = 0;
-        if (configManager.config_claims_automaticClaimsForNewPlayersRadius >= 0) {
-            areaOfDefaultClaim = (int) Math.pow(configManager.config_claims_automaticClaimsForNewPlayersRadius * 2 + 1, 2);
+        if (configManager.getSystemConfig().automaticClaimsForNewPlayersRadius >= 0) {
+            areaOfDefaultClaim = (int) Math.pow(configManager.getSystemConfig().automaticClaimsForNewPlayersRadius * 2 + 1, 2);
         }
 
         //if this claim is a chest claim and those are set to expire
-        if (ownerData.getClaims().size() == 1 && claim.getArea() <= areaOfDefaultClaim && configManager.config_claims_chestClaimExpirationDays > 0) {
+        if (ownerData.getClaims().size() == 1 && claim.getArea() <= areaOfDefaultClaim && configManager.getSystemConfig().chestClaimExpirationDays > 0) {
             //if the owner has been gone at least a week, and if he has ONLY the new player claim, it will be removed
             Calendar sevenDaysAgo = Calendar.getInstance();
-            sevenDaysAgo.add(Calendar.DATE, -configManager.config_claims_chestClaimExpirationDays);
+            sevenDaysAgo.add(Calendar.DATE, -configManager.getSystemConfig().chestClaimExpirationDays);
             if (sevenDaysAgo.getTime().after(new Date(ownerInfo.getLastPlayed()))) {
                 if (expireEventCanceled())
                     return;
@@ -69,14 +69,14 @@ class CleanupUnusedClaimTask implements Runnable {
 //                if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration) {
 //                    GriefPrevention.instance.restoreClaim(claim, 0);
 //                }
-                customLogger.AddLogEntry(" " + claim.getOwnerName() + "'s new player claim expired.", CustomLogEntryTypes.AdminActivity);
+                customLogger.log(" " + claim.getOwnerName() + "'s new player claim expired.");
             }
         }
 
         //if configured to always remove claims after some inactivity period without exceptions...
-        else if (configManager.config_claims_expirationDays > 0) {
+        else if (configManager.getSystemConfig().expirationDays > 0) {
             Calendar earliestPermissibleLastLogin = Calendar.getInstance();
-            earliestPermissibleLastLogin.add(Calendar.DATE, -configManager.config_claims_expirationDays);
+            earliestPermissibleLastLogin.add(Calendar.DATE, -configManager.getSystemConfig().expirationDays);
 
             if (earliestPermissibleLastLogin.getTime().after(new Date(ownerInfo.getLastPlayed()))) {
                 if (expireEventCanceled())
@@ -85,9 +85,9 @@ class CleanupUnusedClaimTask implements Runnable {
                 Vector<Claim> claims = new Vector<>(ownerData.getClaims());
                 //delete them
                 TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
-                customLogger.AddLogEntry(" All of " + claim.getOwnerName() + "'s claims have expired.", CustomLogEntryTypes.AdminActivity);
-                customLogger.AddLogEntry("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime(), CustomLogEntryTypes.Debug, true);
-                customLogger.AddLogEntry("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed(), CustomLogEntryTypes.Debug, true);
+                customLogger.log(" All of " + claim.getOwnerName() + "'s claims have expired.");
+                customLogger.log("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime());
+                customLogger.log("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed());
 //                for (Claim claim : claims) {
 //                    //if configured to do so, restore the land to natural
 //                    if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
@@ -117,7 +117,7 @@ class CleanupUnusedClaimTask implements Runnable {
 //                    if (expireEventCanceled())
 //                        return;
 //                    GriefPrevention.instance.dataStore.deleteClaim(claim, true, true);
-//                    GriefPrevention.AddLogEntry("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
+//                    GriefPrevention.log("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
 //
 //                    //restore the claim area to natural state
 //                    GriefPrevention.instance.restoreClaim(claim, 0);

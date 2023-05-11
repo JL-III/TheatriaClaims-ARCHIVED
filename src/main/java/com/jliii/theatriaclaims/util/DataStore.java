@@ -1151,7 +1151,7 @@ public abstract class DataStore {
                 Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeFailOverlap);
 
                 //show the player the conflicting claim
-                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE);
+                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, configManager, customLogger);
             }
             else
             {

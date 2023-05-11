@@ -19,7 +19,20 @@
 package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.enums.ShovelMode;
+import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.DataStore;
 import com.jliii.theatriaclaims.util.GeneralUtils;
+import com.jliii.theatriaclaims.util.Messages;
+import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
+import com.jliii.theatriaclaims.visualization.VisualizationType;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 
@@ -30,17 +43,22 @@ public class EquipShovelProcessingTask implements Runnable {
     //player data
     private final Player player;
 
-    public EquipShovelProcessingTask(Player player)
-    {
+    private ConfigManager configManager;
+
+    private CustomLogger customLogger;
+
+    public EquipShovelProcessingTask(Player player, ConfigManager configManager, CustomLogger customLogger){
         this.player = player;
+        this.configManager = configManager;
+        this.customLogger =customLogger;
     }
 
     @Override
     public void run() {
         //if he's not holding the golden shovel anymore, do nothing
-        if (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() != GriefPrevention.instance.config_claims_modificationTool)
+        if (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() != configManager.getSystemConfig().modificationTool)
             return;
-        PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
         //reset any work he might have been doing
         playerData.lastShovelLocation = null;
         playerData.claimResizing = null;
@@ -55,19 +73,15 @@ public class EquipShovelProcessingTask implements Runnable {
         int remainingBlocks = playerData.getRemainingClaimBlocks();
         Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.RemainingBlocks, String.valueOf(remainingBlocks));
 
-        //link to a video demo of land claiming, based on world type
-        if (GriefPrevention.instance.creativeRulesApply(player.getLocation())) {
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-        }
-        else if (GriefPrevention.instance.claimsEnabledForWorld(player.getWorld())) {
+        if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
             Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
         }
 
         //if standing in a claim owned by the player, visualize it
-        Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
         if (claim != null && claim.checkPermission(player, ClaimPermission.Edit, null) == null) {
             playerData.lastClaim = claim;
-            BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM);
+            BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager, customLogger);
         }
     }
 }

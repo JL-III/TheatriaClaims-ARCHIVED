@@ -7,6 +7,7 @@ import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
@@ -36,7 +37,7 @@ public class WelcomeTask implements Runnable {
             ItemFactory factory = Bukkit.getItemFactory();
             BookMeta meta = (BookMeta) factory.getItemMeta(Material.WRITTEN_BOOK);
 
-            DataStore datastore = GriefPrevention.instance.dataStore;
+            DataStore datastore = TheatriaClaims.instance.dataStore;
             meta.setAuthor(datastore.getMessage(MessageType.BookAuthor));
             meta.setTitle(datastore.getMessage(MessageType.BookTitle));
 
