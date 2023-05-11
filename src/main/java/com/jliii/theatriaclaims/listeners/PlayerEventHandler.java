@@ -19,15 +19,12 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.chat.SpamDetector;
-import com.jliii.theatriaclaims.chat.WordFinder;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
 import com.jliii.theatriaclaims.enums.*;
 import com.jliii.theatriaclaims.events.ClaimInspectionEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.tasks.AutoExtendClaimTask;
 import com.jliii.theatriaclaims.tasks.BroadcastMessageTask;
 import com.jliii.theatriaclaims.tasks.EquipShovelProcessingTask;
 import com.jliii.theatriaclaims.tasks.WelcomeTask;
@@ -78,32 +75,11 @@ public class PlayerEventHandler implements Listener {
     private final CustomLogger customLogger;
     private final DataStore dataStore;
 
-    //number of milliseconds in a day
-    private final long MILLISECONDS_IN_DAY = 1000 * 60 * 60 * 24;
-
-    //timestamps of login and logout notifications in the last minute
-    private final ArrayList<Long> recentLoginLogoutNotifications = new ArrayList<>();
-
-    //regex pattern for the "how do i claim land?" scanner
-    private Pattern howToClaimPattern = null;
-
-    //matcher for banned words
-    private final WordFinder bannedWordFinder;
-
-    //spam tracker
-    SpamDetector spamDetector = new SpamDetector();
-
     public PlayerEventHandler(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager, CustomLogger customLogger) {
         this.instance = plugin;
         this.dataStore = dataStore;
         this.configManager = configManager;
         this.customLogger = customLogger;
-        bannedWordFinder = new WordFinder(instance.dataStore.loadBannedWords());
-    }
-
-    public void resetPattern()
-    {
-        this.howToClaimPattern = null;
     }
 
     //when a player uses a slash command...
