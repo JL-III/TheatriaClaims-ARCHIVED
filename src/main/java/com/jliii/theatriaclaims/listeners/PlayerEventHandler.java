@@ -1206,13 +1206,6 @@ public class PlayerEventHandler implements Listener {
         return true;
     }
 
-    //ensures a piece of the managed world is loaded into server memory
-    //(generates the chunk if necessary)
-    private static void GuaranteeChunkLoaded(Location location) {
-        Chunk chunk = location.getChunk();
-        while (!chunk.isLoaded() || !chunk.load(true)) ;
-    }
-
     public String allowBuild(Player player, Location location) {
         // TODO check all derivatives and rework API
         return this.allowBuild(player, location, location.getBlock().getType());

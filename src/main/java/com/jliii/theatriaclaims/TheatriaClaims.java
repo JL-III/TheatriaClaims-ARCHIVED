@@ -484,6 +484,13 @@ public class TheatriaClaims extends JavaPlugin {
         }
     }
 
+    //ensures a piece of the managed world is loaded into server memory
+    //(generates the chunk if necessary)
+    private static void GuaranteeChunkLoaded(Location location) {
+        Chunk chunk = location.getChunk();
+        while (!chunk.isLoaded() || !chunk.load(true)) ;
+    }
+
     //TODO these methods do nothing currently, could be import issues though
     public String allowBreak(Player player, Block block, Location location) {
         return this.allowBreak(player, block, location, new BlockBreakEvent(block, player));

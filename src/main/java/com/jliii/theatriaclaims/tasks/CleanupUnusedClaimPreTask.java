@@ -22,6 +22,7 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -47,21 +48,21 @@ class CleanupUnusedClaimPreTask implements Runnable {
         //get the data
         PlayerData ownerData = TheatriaClaims.instance.dataStore.getPlayerDataFromStorage(ownerID);
         OfflinePlayer ownerInfo = Bukkit.getServer().getOfflinePlayer(ownerID);
-        customLogger.AddLogEntry("Looking for expired claims.  Checking data for " + ownerID.toString(), CustomLogEntryTypes.Debug, true);
+        customLogger.log("Looking for expired claims.  Checking data for " + ownerID.toString());
         //expiration code uses last logout timestamp to decide whether to expire claims
         //don't expire claims for online players
         if (ownerInfo.isOnline()) {
-            customLogger.AddLogEntry("Player is online. Ignoring.", CustomLogEntryTypes.Debug, true);
+            customLogger.log("Player is online. Ignoring.");
             return;
         }
         if (ownerInfo.getLastPlayed() <= 0) {
-            customLogger.AddLogEntry("Player is new or not in the server's cached userdata. Ignoring. getLastPlayed = " + ownerInfo.getLastPlayed(), CustomLogEntryTypes.Debug, true);
+            customLogger.log("Player is new or not in the server's cached userdata. Ignoring. getLastPlayed = " + ownerInfo.getLastPlayed());
             return;
         }
         //skip claims belonging to exempted players based on block totals in config
         int bonusBlocks = ownerData.getBonusClaimBlocks();
-        if (bonusBlocks >= configManager.config_claims_expirationExemptionBonusBlocks || bonusBlocks + ownerData.getAccruedClaimBlocks() >= configManager.config_claims_expirationExemptionTotalBlocks) {
-            CustomLogger.AddLogEntry("Player exempt from claim expiration based on claim block counts vs. config file settings.", CustomLogEntryTypes.Debug, true);
+        if (bonusBlocks >= configManager.getSystemConfig().expirationExemptionBonusBlocks || bonusBlocks + ownerData.getAccruedClaimBlocks() >= configManager.getSystemConfig().expirationExemptionTotalBlocks) {
+            customLogger.log("Player exempt from claim expiration based on claim block counts vs. config file settings.");
             return;
         }
         Claim claimToExpire = null;
@@ -73,10 +74,10 @@ class CleanupUnusedClaimPreTask implements Runnable {
             }
         }
         if (claimToExpire == null) {
-            customLogger.AddLogEntry("Unable to find a claim to expire for " + ownerID.toString(), CustomLogEntryTypes.Debug, false);
+            customLogger.log("Unable to find a claim to expire for " + ownerID.toString());
             return;
         }
         //pass it back to the main server thread, where it's safe to delete a claim if needed
-        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo), 1L);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo, configManager, customLogger), 1L);
     }
 }

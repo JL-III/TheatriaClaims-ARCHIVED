@@ -23,6 +23,7 @@ import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.ClaimExpirationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
