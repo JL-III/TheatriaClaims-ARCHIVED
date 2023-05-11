@@ -54,9 +54,8 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
         this.provider = provider;
     }
 
-    //TODO static method is broken here.
     public static final VisualizationProvider DEFAULT_PROVIDER = (world, visualizeFrom, height, configManager) -> {
-        if (configManager.config_visualizationAntiCheatCompat) {
+        if (configManager.getSystemConfig().visualizationAntiCheatCompat) {
             return new AntiCheatCompatVisualization(world, visualizeFrom, height);
         }
         return new FakeBlockVisualization(world, visualizeFrom, height);

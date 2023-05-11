@@ -7,12 +7,19 @@ import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.Messages;
+
 public class WelcomeTask implements Runnable {
     private final Player player;
+    private final ConfigManager configManager;
 
-    public WelcomeTask(Player player)
-    {
+    public WelcomeTask(Player player, ConfigManager configManager){
         this.player = player;
+        this.configManager = configManager;
     }
 
     @Override
@@ -25,7 +32,7 @@ public class WelcomeTask implements Runnable {
         Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
 
         //give the player a reference book for later
-        if (GriefPrevention.instance.config_claims_supplyPlayerManual) {
+        if (configManager.getSystemConfig().supplyPlayerManual) {
             ItemFactory factory = Bukkit.getItemFactory();
             BookMeta meta = (BookMeta) factory.getItemMeta(Material.WRITTEN_BOOK);
 
@@ -39,11 +46,11 @@ public class WelcomeTask implements Runnable {
 
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
-            String editToolName = GriefPrevention.instance.config_claims_modificationTool.name().replace('_', ' ').toLowerCase();
-            String infoToolName = GriefPrevention.instance.config_claims_investigationTool.name().replace('_', ' ').toLowerCase();
+            String editToolName = configManager.getSystemConfig().modificationTool.name().replace('_', ' ').toLowerCase();
+            String infoToolName = configManager.getSystemConfig().investigationTool.name().replace('_', ' ').toLowerCase();
             String configClaimTools = datastore.getMessage(MessageType.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);
-            if (GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius < 0) {
+            if (configManager.getSystemConfig().automaticClaimsForNewPlayersRadius < 0) {
                 page1.append(datastore.getMessage(MessageType.BookDisabledChestClaims));
             }
 
