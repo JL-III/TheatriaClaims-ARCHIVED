@@ -873,30 +873,22 @@ public class PlayerEventHandler implements Listener {
 
             //disable golden shovel while under siege
             if (playerData == null) playerData = this.dataStore.getPlayerData(player.getUniqueId());
-//            if (playerData.siegeData != null)
-//            {
-//                GriefPrevention.sendMessage(player, TextMode.Err, MessageType.SiegeNoShovel);
-//                event.setCancelled(true);
-//                return;
-//            }
+
 
             //FEATURE: shovel and stick can be used from a distance away
-            if (action == Action.RIGHT_CLICK_AIR)
-            {
+            if (action == Action.RIGHT_CLICK_AIR) {
                 //try to find a far away non-air block along line of sight
                 clickedBlock = getTargetBlock(player, 100);
                 clickedBlockType = clickedBlock.getType();
             }
 
             //if no block, stop here
-            if (clickedBlock == null)
-            {
+            if (clickedBlock == null) {
                 return;
             }
 
             //can't use the shovel from too far away
-            if (clickedBlockType == Material.AIR)
-            {
+            if (clickedBlockType == Material.AIR) {
                 Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.TooFarAway);
                 return;
             }
@@ -999,15 +991,12 @@ public class PlayerEventHandler implements Listener {
                                     null, player);
 
                             //if it didn't succeed, tell the player why
-                            if (!result.succeeded || result.claim == null)
-                            {
-                                if (result.claim != null)
-                                {
+                            if (!result.succeeded || result.claim == null) {
+                                if (result.claim != null) {
                                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateSubdivisionOverlap);
                                     BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
                                 }
-                                else
-                                {
+                                else {
                                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
                                 }
 
@@ -1015,8 +1004,7 @@ public class PlayerEventHandler implements Listener {
                             }
 
                             //otherwise, advise him on the /trust command and show him his new subdivision
-                            else
-                            {
+                            else {
                                 Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SubdivisionSuccess);
                                 BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
                                 playerData.lastShovelLocation = null;
@@ -1027,16 +1015,14 @@ public class PlayerEventHandler implements Listener {
 
                     //otherwise tell him he can't create a claim here, and show him the existing claim
                     //also advise him to consider /abandonclaim or resizing the existing claim
-                    else
-                    {
+                    else {
                         Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlap);
                         BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
                     }
                 }
 
                 //otherwise tell the player he can't claim here because it's someone else's claim, and show him the claim
-                else
-                {
+                else {
                     Messages.sendMessage(player, TextMode.Err.getColor(), noEditReason.get());
                     BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
                 }
@@ -1050,8 +1036,7 @@ public class PlayerEventHandler implements Listener {
             Location lastShovelLocation = playerData.lastShovelLocation;
             if (lastShovelLocation == null) {
                 //if claims are not enabled in this world and it's not an administrative claim, display an error message and stop
-                if (!configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld()))
-                {
+                if (!configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
                     Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimsDisabledWorld);
                     return;
                 }
@@ -1067,17 +1052,9 @@ public class PlayerEventHandler implements Listener {
             //otherwise, he's trying to finish creating a claim by setting the other boundary corner
             else {
                 //if last shovel location was in a different world, assume the player is starting the create-claim workflow over
-                if (!lastShovelLocation.getWorld().equals(clickedBlock.getWorld()))
-                {
+                if (!lastShovelLocation.getWorld().equals(clickedBlock.getWorld())) {
                     playerData.lastShovelLocation = null;
                     this.onPlayerInteract(event);
-                    return;
-                }
-
-                //apply pvp rule
-                if (playerData.inPvpCombat())
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoClaimDuringPvP);
                     return;
                 }
 
@@ -1085,23 +1062,18 @@ public class PlayerEventHandler implements Listener {
                 int newClaimWidth = Math.abs(playerData.lastShovelLocation.getBlockX() - clickedBlock.getX()) + 1;
                 int newClaimHeight = Math.abs(playerData.lastShovelLocation.getBlockZ() - clickedBlock.getZ()) + 1;
 
-                if (playerData.shovelMode != ShovelMode.Admin)
-                {
-                    if (newClaimWidth < configManager.getSystemConfig().minWidth || newClaimHeight < configManager.getSystemConfig().minWidth)
-                    {
+                if (playerData.shovelMode != ShovelMode.Admin) {
+                    if (newClaimWidth < configManager.getSystemConfig().minWidth || newClaimHeight < configManager.getSystemConfig().minWidth) {
                         //this IF block is a workaround for craftbukkit bug which fires two events for one interaction
-                        if (newClaimWidth != 1 && newClaimHeight != 1)
-                        {
+                        if (newClaimWidth != 1 && newClaimHeight != 1) {
                             Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NewClaimTooNarrow, String.valueOf(configManager.getSystemConfig().minWidth));
                         }
                         return;
                     }
 
                     int newArea = newClaimWidth * newClaimHeight;
-                    if (newArea < configManager.getSystemConfig().minArea)
-                    {
-                        if (newArea != 1)
-                        {
+                    if (newArea < configManager.getSystemConfig().minArea) {
+                        if (newArea != 1) {
                             Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(configManager.getSystemConfig().minArea));
                         }
 
@@ -1110,19 +1082,16 @@ public class PlayerEventHandler implements Listener {
                 }
 
                 //if not an administrative claim, verify the player has enough claim blocks for this new claim
-                if (playerData.shovelMode != ShovelMode.Admin)
-                {
+                if (playerData.shovelMode != ShovelMode.Admin) {
                     int newClaimArea = newClaimWidth * newClaimHeight;
                     int remainingBlocks = playerData.getRemainingClaimBlocks();
-                    if (newClaimArea > remainingBlocks)
-                    {
+                    if (newClaimArea > remainingBlocks) {
                         Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(newClaimArea - remainingBlocks));
                         instance.dataStore.tryAdvertiseAdminAlternatives(player);
                         return;
                     }
                 }
-                else
-                {
+                else {
                     playerID = null;
                 }
 
@@ -1137,12 +1106,11 @@ public class PlayerEventHandler implements Listener {
                         player);
 
                 //if it didn't succeed, tell the player why
-                if (!result.succeeded || result.claim == null)
-                {
+                if (!result.succeeded || result.claim == null) {
                     if (result.claim != null)
                     {
                         Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
-                        BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock);
+                        BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
                     }
                     else
                     {
@@ -1156,7 +1124,7 @@ public class PlayerEventHandler implements Listener {
                 else
                 {
                     Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
-                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock);
+                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
                     playerData.lastShovelLocation = null;
 
                     //if it's a big claim, tell the player about subdivisions
