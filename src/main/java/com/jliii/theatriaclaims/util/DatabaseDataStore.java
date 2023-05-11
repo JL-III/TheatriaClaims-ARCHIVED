@@ -71,9 +71,9 @@ public class DatabaseDataStore extends DataStore {
     public DatabaseDataStore(ConfigManager configManager, CustomLogger customLogger) throws Exception
     {
         super(configManager, customLogger);
-        this.databaseUrl = configManager.databaseUrl;
-        this.userName = configManager.databaseUserName;
-        this.password = configManager.databasePassword;
+        this.databaseUrl = configManager.getDatabaseConfig().databaseUrl;
+        this.userName = configManager.getDatabaseConfig().databaseUserName;
+        this.password = configManager.getDatabaseConfig().databasePassword;
         this.configManager = configManager;
         this.customLogger = customLogger;
 

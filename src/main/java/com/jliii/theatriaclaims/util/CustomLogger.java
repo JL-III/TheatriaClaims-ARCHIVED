@@ -9,7 +9,6 @@ public class CustomLogger {
     private final String pluginPrefix;
 
     public CustomLogger(ConfigManager configManager) {
-        this.configManager = configManager;
         this.pluginPrefix = configManager.getSystemConfig().getPluginPrefix();
     }
 
