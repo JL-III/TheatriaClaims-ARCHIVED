@@ -1,11 +1,13 @@
 package com.jliii.theatriaclaims.config;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.CustomizableMessage;
@@ -246,14 +248,12 @@ public class MessagesConfig {
         FileConfiguration config = YamlConfiguration.loadConfiguration(new File(messagesFilePath));
 
         //for each message ID
-        for (MessageType messageID : messageIDs)
-        {
+        for (MessageType messageID : messageIDs) {
             //get default for this message
             CustomizableMessage messageData = defaults.get(messageID.name());
 
             //if default is missing, log an error and use some fake data for now so that the plugin can run
-            if (messageData == null)
-            {
+            if (messageData == null) {
                 customLogger.log("Missing message for " + messageID.name() + ".  Please contact the developer.");
                 messageData = new CustomizableMessage(messageID, "Missing message!  ID: " + messageID.name() + ".  Please contact a server admin.", null);
             }
@@ -263,36 +263,32 @@ public class MessagesConfig {
             config.set("Messages." + messageID.name() + ".Text", this.messages[messageID.ordinal()]);
 
             //support color codes
-            if (messageID != MessageType.HowToClaimRegex)
-            {
+            if (messageID != MessageType.HowToClaimRegex) {
                 this.messages[messageID.ordinal()] = this.messages[messageID.ordinal()].replace('$', (char) 0x00A7);
             }
 
-            if (messageData.notes != null)
-            {
+            if (messageData.notes != null) {
                 messageData.notes = config.getString("Messages." + messageID.name() + ".Notes", messageData.notes);
                 config.set("Messages." + messageID.name() + ".Notes", messageData.notes);
             }
         }
 
         //save any changes
-        try
-        {
-            config.options().header("Use a YAML editor like NotepadPlusPlus to edit this file.  \nAfter editing, back up your changes before reloading the server in case you made a syntax error.  \nUse dollar signs ($) for formatting codes, which are documented here: http://minecraft.gamepedia.com/Formatting_codes");
-            config.save(DataStore.messagesFilePath);
+        try {
+            List<String> header = new ArrayList<>();
+            header.add("Use a YAML editor like NotepadPlusPlus to edit this file.  \nAfter editing, back up your changes before reloading the server in case you made a syntax error.  \nUse dollar signs ($) for formatting codes, which are documented here: http://minecraft.gamepedia.com/Formatting_codes");
+            config.options().setHeader(header);
+            config.save(messagesFilePath);
         }
-        catch (IOException exception)
-        {
-            customLogger.log("Unable to write to the configuration file at \"" + DataStore.messagesFilePath + "\"");
+        catch (IOException exception) {
+            customLogger.log("Unable to write to the configuration file at \"" + messagesFilePath + "\"");
         }
 
         defaults.clear();
         System.gc();
     }
 
-    private void addDefault(HashMap<String, CustomizableMessage> defaults,
-                            MessageType id, String text, String notes)
-    {
+    private void addDefault(HashMap<String, CustomizableMessage> defaults, MessageType id, String text, String notes) {
         CustomizableMessage message = new CustomizableMessage(id, text, notes);
         defaults.put(id.name(), message);
     }

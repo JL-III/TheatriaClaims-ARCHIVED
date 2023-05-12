@@ -17,8 +17,7 @@ import java.util.Collections;
  *
  * @author FrankHeijden
  */
-public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
-{
+public class ClaimInspectionEvent extends PlayerEvent implements Cancellable {
 
     private final @NotNull Collection<Claim> claims;
     private final @Nullable Block inspectedBlock;
@@ -31,17 +30,14 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
      * @param inspectedBlock the inspected {@code Block}
      * @param claim the {@link Claim} present or {@code null} if not claimed
      */
-    public ClaimInspectionEvent(@NotNull Player player, @NotNull Block inspectedBlock, @Nullable Claim claim)
-    {
+    public ClaimInspectionEvent(@NotNull Player player, @NotNull Block inspectedBlock, @Nullable Claim claim) {
         super(player);
 
         this.inspectedBlock = inspectedBlock;
-        if (claim != null)
-        {
+        if (claim != null) {
             this.claims = Collections.singleton(claim);
         }
-        else
-        {
+        else {
             this.claims = Collections.emptyList();
         }
         this.inspectingNearbyClaims = false;
@@ -55,12 +51,7 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
      * @param claims a {@link Collection} of all claims inspected
      * @param inspectingNearbyClaims whether the user is inspecting nearby claims ("shift-clicking")
      */
-    public ClaimInspectionEvent(
-            @NotNull Player player,
-            @Nullable Block inspectedBlock,
-            @NotNull Collection<Claim> claims,
-            boolean inspectingNearbyClaims)
-    {
+    public ClaimInspectionEvent(@NotNull Player player, @Nullable Block inspectedBlock, @NotNull Collection<Claim> claims, boolean inspectingNearbyClaims) {
         super(player);
         this.inspectedBlock = inspectedBlock;
         this.claims = claims;
@@ -72,8 +63,7 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
      *
      * @return the inspected {@code Block} or {@code null} if no block was clicked
      */
-    public @Nullable Block getInspectedBlock()
-    {
+    public @Nullable Block getInspectedBlock() {
         return inspectedBlock;
     }
 
@@ -82,8 +72,7 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
      *
      * @return the inspected claims
      */
-    public @NotNull Collection<Claim> getClaims()
-    {
+    public @NotNull Collection<Claim> getClaims() {
         return claims;
     }
 
@@ -92,22 +81,19 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
      *
      * @return whether the user is inspecting nearby claims
      */
-    public boolean isInspectingNearbyClaims()
-    {
+    public boolean isInspectingNearbyClaims() {
         return inspectingNearbyClaims;
     }
 
     // Listenable event requirements
     private static final HandlerList HANDLERS = new HandlerList();
 
-    public static HandlerList getHandlerList()
-    {
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 
     @Override
-    public @NotNull HandlerList getHandlers()
-    {
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 
@@ -115,14 +101,12 @@ public class ClaimInspectionEvent extends PlayerEvent implements Cancellable
     private boolean cancelled = false;
 
     @Override
-    public boolean isCancelled()
-    {
+    public boolean isCancelled() {
         return cancelled;
     }
 
     @Override
-    public void setCancelled(boolean cancelled)
-    {
+    public void setCancelled(boolean cancelled) {
         this.cancelled = cancelled;
     }
 

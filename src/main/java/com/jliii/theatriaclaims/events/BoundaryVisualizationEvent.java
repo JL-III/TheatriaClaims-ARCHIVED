@@ -1,6 +1,5 @@
 package com.jliii.theatriaclaims.events;
 
-import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.visualization.Boundary;
@@ -20,7 +19,6 @@ import java.util.HashSet;
  */
 public class BoundaryVisualizationEvent extends PlayerEvent {
 
-    private ConfigManager configManager;
     private final @NotNull Collection<Boundary> boundaries;
     private final int height;
     private @NotNull VisualizationProvider provider;
@@ -50,7 +48,6 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
         super(player);
         this.boundaries = new HashSet<>(boundaries);
         this.height = height;
-        this.configManager = configManager;
         this.provider = provider;
     }
 

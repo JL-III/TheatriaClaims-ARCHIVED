@@ -97,22 +97,17 @@ public class Claim {
     //note subdivisions themselves never have children
     public ArrayList<Claim> children = new ArrayList<>();
 
-    //information about a siege involving this claim.  null means no siege is impacting this claim
-//    public SiegeData siegeData = null;
-
     //following a siege, buttons/levers are unlocked temporarily.  this represents that state
     public boolean doorsOpen = false;
 
     //whether or not this is an administrative claim
     //administrative claims are created and maintained by players with the griefprevention.adminclaims permission.
-    public boolean isAdminClaim()
-    {
+    public boolean isAdminClaim() {
         return this.getOwnerID() == null;
     }
 
     //accessor for ID
-    public Long getID()
-    {
+    public Long getID() {
         return this.id;
     }
 
@@ -671,9 +666,6 @@ public class Claim {
     //whether more entities may be added to a claim
     public String allowMoreEntities(boolean remove) {
         if (this.parent != null) return this.parent.allowMoreEntities(remove);
-
-        //this rule only applies to creative mode worlds
-        if (!TheatriaClaims.instance.creativeRulesApply(this.getLesserBoundaryCorner())) return null;
 
         //admin claims aren't restricted
         if (this.isAdminClaim()) return null;
