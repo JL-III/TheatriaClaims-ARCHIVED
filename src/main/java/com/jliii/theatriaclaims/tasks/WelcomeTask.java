@@ -11,16 +11,20 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
 
 public class WelcomeTask implements Runnable {
+
     private final Player player;
     private final ConfigManager configManager;
+    private final CustomLogger customLogger;
 
-    public WelcomeTask(Player player, ConfigManager configManager){
+    public WelcomeTask(Player player, ConfigManager configManager, CustomLogger customLogger){
         this.player = player;
         this.configManager = configManager;
+        this.customLogger = customLogger;
     }
 
     @Override
@@ -29,8 +33,8 @@ public class WelcomeTask implements Runnable {
         if (!this.player.isOnline()) return;
 
         //offer advice and a helpful link
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.AvoidGriefClaimLand);
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.AvoidGriefClaimLand, customLogger);
+        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, customLogger, DataStore.SURVIVAL_VIDEO_URL);
 
         //give the player a reference book for later
         if (configManager.getSystemConfig().supplyPlayerManual) {

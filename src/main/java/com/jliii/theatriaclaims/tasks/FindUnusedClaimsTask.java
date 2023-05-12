@@ -18,9 +18,7 @@
 
 package com.jliii.theatriaclaims.tasks;
 
-
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 

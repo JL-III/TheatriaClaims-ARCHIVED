@@ -20,26 +20,23 @@ package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.ClaimExpirationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Vector;
 
-class CleanupUnusedClaimTask implements Runnable {
+public class CleanupUnusedClaimTask implements Runnable {
     Claim claim;
     PlayerData ownerData;
     OfflinePlayer ownerInfo;
     ConfigManager configManager;
     CustomLogger customLogger;
 
-    CleanupUnusedClaimTask(Claim claim, PlayerData ownerData, OfflinePlayer ownerInfo, ConfigManager configManager, CustomLogger customLogger) {
+    public CleanupUnusedClaimTask(Claim claim, PlayerData ownerData, OfflinePlayer ownerInfo, ConfigManager configManager, CustomLogger customLogger) {
         this.claim = claim;
         this.ownerData = ownerData;
         this.ownerInfo = ownerInfo;
@@ -63,12 +60,7 @@ class CleanupUnusedClaimTask implements Runnable {
             if (sevenDaysAgo.getTime().after(new Date(ownerInfo.getLastPlayed()))) {
                 if (expireEventCanceled())
                     return;
-                claim.removeSurfaceFluids(null);
                 TheatriaClaims.instance.dataStore.deleteClaim(claim, true, true);
-                //if configured to do so, restore the land to natural
-//                if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration) {
-//                    GriefPrevention.instance.restoreClaim(claim, 0);
-//                }
                 customLogger.log(" " + claim.getOwnerName() + "'s new player claim expired.");
             }
         }
@@ -81,49 +73,13 @@ class CleanupUnusedClaimTask implements Runnable {
             if (earliestPermissibleLastLogin.getTime().after(new Date(ownerInfo.getLastPlayed()))) {
                 if (expireEventCanceled())
                     return;
-                //make a copy of this player's claim list
-                Vector<Claim> claims = new Vector<>(ownerData.getClaims());
                 //delete them
                 TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
                 customLogger.log(" All of " + claim.getOwnerName() + "'s claims have expired.");
                 customLogger.log("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime());
                 customLogger.log("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed());
-//                for (Claim claim : claims) {
-//                    //if configured to do so, restore the land to natural
-//                    if (GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner()) || GriefPrevention.instance.config_claims_survivalAutoNatureRestoration)
-//                    {
-//                        GriefPrevention.instance.restoreClaim(claim, 0);
-//                    }
-//                }
             }
         }
-//        else if (GriefPrevention.instance.config_claims_unusedClaimExpirationDays > 0 && GriefPrevention.instance.creativeRulesApply(claim.getLesserBoundaryCorner())) {
-//            //avoid scanning large claims and administrative claims
-//            if (claim.isAdminClaim() || claim.getWidth() > 25 || claim.getHeight() > 25) return;
-//
-//            //otherwise scan the claim content
-//            int minInvestment = 400;
-//
-//            long investmentScore = claim.getPlayerInvestmentScore();
-//
-//            if (investmentScore < minInvestment)
-//            {
-//                //if the owner has been gone at least a week, and if he has ONLY the new player claim, it will be removed
-//                Calendar sevenDaysAgo = Calendar.getInstance();
-//                sevenDaysAgo.add(Calendar.DATE, -GriefPrevention.instance.config_claims_unusedClaimExpirationDays);
-//                boolean claimExpired = sevenDaysAgo.getTime().after(new Date(ownerInfo.getLastPlayed()));
-//                if (claimExpired)
-//                {
-//                    if (expireEventCanceled())
-//                        return;
-//                    GriefPrevention.instance.dataStore.deleteClaim(claim, true, true);
-//                    GriefPrevention.log("Removed " + claim.getOwnerName() + "'s unused claim @ " + GriefPrevention.getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
-//
-//                    //restore the claim area to natural state
-//                    GriefPrevention.instance.restoreClaim(claim, 0);
-//                }
-//            }
-//        }
     }
 
     public boolean expireEventCanceled() {

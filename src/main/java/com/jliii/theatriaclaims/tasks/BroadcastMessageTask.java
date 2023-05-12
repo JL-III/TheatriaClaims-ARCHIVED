@@ -25,14 +25,12 @@ import org.bukkit.Bukkit;
 public class BroadcastMessageTask implements Runnable {
     private final String message;
 
-    public BroadcastMessageTask(String message)
-    {
+    public BroadcastMessageTask(String message) {
         this.message = message;
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         Bukkit.getServer().broadcastMessage(this.message);
     }
 }
