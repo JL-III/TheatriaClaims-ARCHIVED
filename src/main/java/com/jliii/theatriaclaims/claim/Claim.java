@@ -428,11 +428,6 @@ public class Claim {
 
         // Special building-only rules.
         if (permission == ClaimPermission.Build) {
-            // No building while in PVP.
-            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(uuid);
-            if (playerData.inPvpCombat()) {
-                return () -> TheatriaClaims.instance.dataStore.getMessage(MessageType.NoBuildPvP);
-            }
 
             // Allow farming crops with container trust.
             Material material = null;
@@ -452,9 +447,9 @@ public class Claim {
 
         // Catch-all error message for all other cases.
         return () -> {
-            String reason = TheatriaClaims.instance.dataStore.getMessage(permission.getDenialMessage(), this.getOwnerName());
+            String reason = configManager.getMessagesConfig().getMessage(permission.getDenialMessage(), this.getOwnerName());
             if (hasBypassPermission(player, permission))
-                reason += "  " + TheatriaClaims.instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                reason += "  " + configManager.getMessagesConfig().getMessage(MessageType.IgnoreClaimsAdvertisement);
             return reason;
         };
     }
@@ -600,7 +595,7 @@ public class Claim {
             return this.parent.getOwnerName();
 
         if (this.ownerID == null)
-            return TheatriaClaims.instance.dataStore.getMessage(MessageType.OwnerNameForAdminClaims);
+            return configManager.getMessagesConfig().getMessage(MessageType.OwnerNameForAdminClaims);
 
         return PlayerName.lookupPlayerName(this.ownerID);
     }
@@ -675,7 +670,7 @@ public class Claim {
 
         //determine maximum allowable entity count, based on claim size
         int maxEntities = this.getArea() / 50;
-        if (maxEntities == 0) return TheatriaClaims.instance.dataStore.getMessage(MessageType.ClaimTooSmallForEntities);
+        if (maxEntities == 0) return configManager.getMessagesConfig().getMessage(MessageType.ClaimTooSmallForEntities);
 
         //count current entities (ignoring players)
         int totalEntities = 0;
@@ -691,7 +686,7 @@ public class Claim {
         }
 
         if (totalEntities >= maxEntities)
-            return TheatriaClaims.instance.dataStore.getMessage(MessageType.TooManyEntitiesInClaim);
+            return configManager.getMessagesConfig().getMessage(MessageType.TooManyEntitiesInClaim);
 
         return null;
     }
@@ -702,7 +697,7 @@ public class Claim {
         //determine maximum allowable entity count, based on claim size
         int maxActives = this.getArea() / 100;
         if (maxActives == 0)
-            return TheatriaClaims.instance.dataStore.getMessage(MessageType.ClaimTooSmallForActiveBlocks);
+            return configManager.getMessagesConfig().getMessage(MessageType.ClaimTooSmallForActiveBlocks);
 
         //count current actives
         int totalActives = 0;
@@ -719,7 +714,7 @@ public class Claim {
         }
 
         if (totalActives >= maxActives)
-            return TheatriaClaims.instance.dataStore.getMessage(MessageType.TooManyActiveBlocksInClaim);
+            return configManager.getMessagesConfig().getMessage(MessageType.TooManyActiveBlocksInClaim);
 
         return null;
     }

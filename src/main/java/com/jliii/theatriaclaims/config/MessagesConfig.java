@@ -292,4 +292,14 @@ public class MessagesConfig {
         CustomizableMessage message = new CustomizableMessage(id, text, notes);
         defaults.put(id.name(), message);
     }
+
+    synchronized public String getMessage(MessageType messageID, String... args) {
+        String message = messages[messageID.ordinal()];
+
+        for (int i = 0; i < args.length; i++) {
+            String param = args[i];
+            message = message.replace("{" + i + "}", param);
+        }
+        return message;
+    }
 }

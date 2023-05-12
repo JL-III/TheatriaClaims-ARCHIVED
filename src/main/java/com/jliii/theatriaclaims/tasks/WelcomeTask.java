@@ -7,7 +7,6 @@ import org.bukkit.inventory.ItemFactory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 
-import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
@@ -33,33 +32,32 @@ public class WelcomeTask implements Runnable {
         if (!this.player.isOnline()) return;
 
         //offer advice and a helpful link
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.AvoidGriefClaimLand, customLogger);
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, customLogger, DataStore.SURVIVAL_VIDEO_URL);
+        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.AvoidGriefClaimLand, configManager, customLogger);
+        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, configManager, customLogger, DataStore.SURVIVAL_VIDEO_URL);
 
         //give the player a reference book for later
         if (configManager.getSystemConfig().supplyPlayerManual) {
             ItemFactory factory = Bukkit.getItemFactory();
             BookMeta meta = (BookMeta) factory.getItemMeta(Material.WRITTEN_BOOK);
 
-            DataStore datastore = TheatriaClaims.instance.dataStore;
-            meta.setAuthor(datastore.getMessage(MessageType.BookAuthor));
-            meta.setTitle(datastore.getMessage(MessageType.BookTitle));
+            meta.setAuthor(configManager.getMessagesConfig().getMessage(MessageType.BookAuthor));
+            meta.setTitle(configManager.getMessagesConfig().getMessage(MessageType.BookTitle));
 
             StringBuilder page1 = new StringBuilder();
-            String URL = datastore.getMessage(MessageType.BookLink, DataStore.SURVIVAL_VIDEO_URL);
-            String intro = datastore.getMessage(MessageType.BookIntro);
+            String URL = configManager.getMessagesConfig().getMessage(MessageType.BookLink, DataStore.SURVIVAL_VIDEO_URL);
+            String intro = configManager.getMessagesConfig().getMessage(MessageType.BookIntro);
 
             page1.append(URL).append("\n\n");
             page1.append(intro).append("\n\n");
             String editToolName = configManager.getSystemConfig().modificationTool.name().replace('_', ' ').toLowerCase();
             String infoToolName = configManager.getSystemConfig().investigationTool.name().replace('_', ' ').toLowerCase();
-            String configClaimTools = datastore.getMessage(MessageType.BookTools, editToolName, infoToolName);
+            String configClaimTools = configManager.getMessagesConfig().getMessage(MessageType.BookTools, editToolName, infoToolName);
             page1.append(configClaimTools);
             if (configManager.getSystemConfig().automaticClaimsForNewPlayersRadius < 0) {
-                page1.append(datastore.getMessage(MessageType.BookDisabledChestClaims));
+                page1.append(configManager.getMessagesConfig().getMessage(MessageType.BookDisabledChestClaims));
             }
 
-            StringBuilder page2 = new StringBuilder(datastore.getMessage(MessageType.BookUsefulCommands)).append("\n\n");
+            StringBuilder page2 = new StringBuilder(configManager.getMessagesConfig().getMessage(MessageType.BookUsefulCommands)).append("\n\n");
             page2.append("/Trust /UnTrust /TrustList\n");
             page2.append("/ClaimsList\n");
             page2.append("/AbandonClaim\n\n");

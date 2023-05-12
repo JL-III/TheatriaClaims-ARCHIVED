@@ -525,7 +525,7 @@ public class FlatFileDataStore extends DataStore {
         File playerFile = new File(playerDataFolderPath + File.separator + playerID.toString());
 
         //TODO Why is this called here? Could be legitimate, just check on it
-        PlayerData playerData = new PlayerData(configManager);
+        PlayerData playerData = new PlayerData(configManager, customLogger);
         playerData.playerID = playerID;
 
         //if it exists as a file, read the file

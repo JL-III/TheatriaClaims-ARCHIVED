@@ -484,7 +484,7 @@ public class DatabaseDataStore extends DataStore {
     @Override
     public PlayerData getPlayerDataFromStorage(UUID playerID)
     {
-        PlayerData playerData = new PlayerData(configManager);
+        PlayerData playerData = new PlayerData(configManager, customLogger);
         playerData.playerID = playerID;
 
         try (PreparedStatement selectStmnt = this.databaseConnection.prepareStatement(SQL_SELECT_PLAYER_DATA))

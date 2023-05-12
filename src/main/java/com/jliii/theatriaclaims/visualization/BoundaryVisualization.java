@@ -294,13 +294,12 @@ public abstract class BoundaryVisualization {
                     return;
                 }
                 // Otherwise, add an extra hint that the problem is not with GP.
-                customLogger.AddLogEntry(
+                customLogger.log(
                         String.format(
                                 "External visualization provider %s caused %s: %s",
                                 event.getProvider().getClass().getName(),
                                 exception.getClass().getName(),
-                                exception.getCause()),
-                        CustomLogEntryTypes.Exception);
+                                exception.getCause()));
                 TheatriaClaims.instance.getLogger().log(
                         Level.WARNING,
                         "Exception visualizing claim using external provider",

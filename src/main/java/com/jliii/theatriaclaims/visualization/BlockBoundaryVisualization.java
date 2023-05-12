@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.visualization;
 
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.util.PlayerData;
@@ -26,8 +27,8 @@ public abstract class BlockBoundaryVisualization extends BoundaryVisualization {
      * @param visualizeFrom the {@link IntVector} representing the world coordinate being visualized from
      * @param height the height of the visualization
      */
-    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height) {
-        this(world, visualizeFrom, height, 10, 75);
+    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, ConfigManager configManager) {
+        this(world, visualizeFrom, height, 10, 75, configManager);
     }
 
     /**
@@ -39,7 +40,7 @@ public abstract class BlockBoundaryVisualization extends BoundaryVisualization {
      * @param step the distance between individual side elements
      * @param displayZoneRadius the radius in which elements are visible from the visualization location
      */
-    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, int step, int displayZoneRadius) {
+    protected BlockBoundaryVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, int step, int displayZoneRadius, ConfigManager configManager) {
         super(world, visualizeFrom, height, configManager);
         this.step = step;
         this.displayZoneArea = new BoundingBox(visualizeFrom.add(-displayZoneRadius, -displayZoneRadius, -displayZoneRadius), visualizeFrom.add(displayZoneRadius, displayZoneRadius, displayZoneRadius));

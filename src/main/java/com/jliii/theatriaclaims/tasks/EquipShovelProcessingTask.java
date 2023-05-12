@@ -66,15 +66,15 @@ public class EquipShovelProcessingTask implements Runnable {
         //always reset to basic claims mode
         if (playerData.shovelMode != ShovelMode.Basic) {
             playerData.shovelMode = ShovelMode.Basic;
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ShovelBasicClaimMode, customLogger);
+            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ShovelBasicClaimMode, configManager, customLogger);
         }
 
         //tell him how many claim blocks he has available
         int remainingBlocks = playerData.getRemainingClaimBlocks();
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.RemainingBlocks, customLogger, String.valueOf(remainingBlocks));
+        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.RemainingBlocks, configManager, customLogger, String.valueOf(remainingBlocks));
 
         if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, customLogger, DataStore.SURVIVAL_VIDEO_URL);
+            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, configManager, customLogger, DataStore.SURVIVAL_VIDEO_URL);
         }
 
         //if standing in a claim owned by the player, visualize it
