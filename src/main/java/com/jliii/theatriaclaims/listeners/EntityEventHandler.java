@@ -72,7 +72,7 @@ public class EntityEventHandler implements Listener
         if (entity.getType() == EntityType.PLAYER)
         {
             Player player = (Player) event.getEntity();
-            String noBuildReason = GriefPrevention.instance.allowBuild(player, event.getBlock().getLocation(), event.getNewState().getType());
+            String noBuildReason = TheatriaClaims.instance.allowBuild(player, event.getBlock().getLocation(), event.getNewState().getType());
             if (noBuildReason != null)
             {
                 event.setCancelled(true);

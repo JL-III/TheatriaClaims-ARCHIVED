@@ -22,8 +22,6 @@ import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
-import com.jliii.theatriaclaims.enums.ClaimsMode;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.events.*;
@@ -31,8 +29,6 @@ import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 import org.bukkit.*;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -40,20 +36,16 @@ import org.bukkit.entity.Tameable;
 import org.bukkit.inventory.InventoryHolder;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 //singleton class which manages all GriefPrevention data (except for config options)
 public abstract class DataStore {
 
     private ConfigManager configManager;
-    private CustomLogger customLogger;
 
-    public DataStore(ConfigManager configManager, CustomLogger customLogger) {
-        this.customLogger = customLogger;
+    public DataStore(ConfigManager configManager) {
         this.configManager = configManager;
     }
 
@@ -118,7 +110,7 @@ public abstract class DataStore {
 
     //initialization!
     void initialize() throws Exception {
-        customLogger.log(this.claims.size() + " total claims loaded.");
+        CustomLogger.log(this.claims.size() + " total claims loaded.");
 
         //RoboMWM: ensure the nextClaimID is greater than any other claim ID. If not, data corruption occurred (out of storage space, usually).
         for (Claim claim : this.claims)
@@ -127,7 +119,7 @@ public abstract class DataStore {
             {
                 TheatriaClaims.instance.getLogger().severe("nextClaimID was lesser or equal to an already-existing claim ID!\n" +
                         "This usually happens if you ran out of storage space.");
-                customLogger.log("Changing nextClaimID from " + nextClaimID + " to " + claim.id);
+                CustomLogger.log("Changing nextClaimID from " + nextClaimID + " to " + claim.id);
                 nextClaimID = claim.id + 1;
             }
         }
@@ -142,7 +134,7 @@ public abstract class DataStore {
         //if converting up from an earlier schema version, write all claims back to storage using the latest format
         if (this.getSchemaVersion() < latestSchemaVersion)
         {
-            customLogger.log("Please wait.  Updating data format.");
+            CustomLogger.log("Please wait.  Updating data format.");
 
             for (Claim claim : this.claims)
             {
@@ -161,7 +153,7 @@ public abstract class DataStore {
                 UUIDFetcher.correctedNames.clear();
             }
 
-            customLogger.log("Update finished.");
+            CustomLogger.log("Update finished.");
         }
 
         //make a note of the data store schema version
@@ -171,7 +163,7 @@ public abstract class DataStore {
         try
         {
             this.worldGuard = new WorldGuardWrapper();
-            customLogger.log("Successfully hooked into WorldGuard.");
+            CustomLogger.log("Successfully hooked into WorldGuard.");
         }
         //if failed, world guard compat features will just be disabled.
         catch (IllegalStateException | IllegalArgumentException | ClassCastException | NoClassDefFoundError ignored) { }
@@ -448,7 +440,7 @@ public abstract class DataStore {
 
         //if not there, build a fresh instance with some blanks for what may be in secondary storage
         if (playerData == null) {
-            playerData = new PlayerData(configManager, customLogger);
+            playerData = new PlayerData(configManager);
             playerData.playerID = playerID;
 
             //shove that new player data into the hash map cache
@@ -818,7 +810,7 @@ public abstract class DataStore {
 
             //if any problem, log it
             catch (Exception e) {
-                customLogger.log("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+                CustomLogger.log("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -871,13 +863,13 @@ public abstract class DataStore {
 
             if (!player.hasPermission("griefprevention.adminclaims") && !playerData.claimResizing.isAdminClaim() && smaller) {
                 if (newWidth < configManager.getSystemConfig().minWidth || newHeight < configManager.getSystemConfig().minWidth) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimTooNarrow, configManager, customLogger, String.valueOf(configManager.getSystemConfig().minWidth));
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeClaimTooNarrow, String.valueOf(configManager.getSystemConfig().minWidth));
                     return;
                 }
 
                 int newArea = newWidth * newHeight;
                 if (newArea < configManager.getSystemConfig().minArea) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, configManager, customLogger, String.valueOf(configManager.getSystemConfig().minArea));
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(configManager.getSystemConfig().minArea));
                     return;
                 }
             }
@@ -888,7 +880,7 @@ public abstract class DataStore {
                 int blocksRemainingAfter = playerData.getRemainingClaimBlocks() + playerData.claimResizing.getArea() - newArea;
 
                 if (blocksRemainingAfter < 0) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeNeedMoreBlocks, configManager, customLogger, String.valueOf(Math.abs(blocksRemainingAfter)));
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeNeedMoreBlocks, String.valueOf(Math.abs(blocksRemainingAfter)));
                     this.tryAdvertiseAdminAlternatives(player);
                     return;
                 }
@@ -951,19 +943,19 @@ public abstract class DataStore {
             }
 
             //inform about success, visualize, communicate remaining blocks available
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.ClaimResizeSuccess, configManager, customLogger, String.valueOf(claimBlocksRemaining));
-            BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, configManager, customLogger);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.ClaimResizeSuccess, String.valueOf(claimBlocksRemaining));
+            BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, configManager);
 
             //if resizing someone else's claim, make a log entry
             if (!player.getUniqueId().equals(playerData.claimResizing.ownerID) && playerData.claimResizing.parent == null) {
-                customLogger.log(player.getName() + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GeneralUtils.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
+                CustomLogger.log(player.getName() + " resized " + playerData.claimResizing.getOwnerName() + "'s claim at " + GeneralUtils.getfriendlyLocationString(playerData.claimResizing.lesserBoundaryCorner) + ".");
             }
 
 
             //if increased to a sufficiently large size and no subdivisions yet, send subdivision instructions
             if (oldClaim.getArea() < 1000 && result.claim.getArea() >= 1000 && result.claim.children.size() == 0 && !player.hasPermission("griefprevention.adminclaims")) {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BecomeMayor, 200L, configManager, customLogger);
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, 201L, configManager, customLogger, DataStore.SUBDIVISION_VIDEO_URL);
+                Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BecomeMayor, 200L);
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
             }
 
             //clean up
@@ -973,13 +965,13 @@ public abstract class DataStore {
         else {
             if (result.claim != null) {
                 //inform player
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeFailOverlap, configManager, customLogger);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeFailOverlap);
 
                 //show the player the conflicting claim
-                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, configManager, customLogger);
+                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, configManager);
             }
             else {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeFailOverlapRegion, configManager, customLogger);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeFailOverlapRegion);
             }
         }
     }
@@ -989,15 +981,15 @@ public abstract class DataStore {
     {
         if (player.hasPermission("griefprevention.adminclaims") && player.hasPermission("griefprevention.adjustclaimblocks"))
         {
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.AdvertiseACandACB, configManager, customLogger);
+            Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.AdvertiseACandACB);
         }
         else if (player.hasPermission("griefprevention.adminclaims"))
         {
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.AdvertiseAdminClaims, configManager, customLogger);
+            Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.AdvertiseAdminClaims);
         }
         else if (player.hasPermission("griefprevention.adjustclaimblocks"))
         {
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.AdvertiseACB, configManager, customLogger);
+            Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.AdvertiseACB);
         }
     }
 

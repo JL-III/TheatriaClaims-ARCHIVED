@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.visualization.BlockBoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.Boundary;
@@ -13,6 +14,7 @@ import org.bukkit.block.data.Lightable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 
 /**
  * A {@link BoundaryVisualization} implementation that displays clientside blocks along
@@ -29,8 +31,8 @@ public class FakeBlockVisualization extends BlockBoundaryVisualization {
      * @param visualizeFrom the {@link IntVector} representing the world coordinate being visualized from
      * @param height the height of the visualization
      */
-    public FakeBlockVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height) {
-        super(world, visualizeFrom, height);
+    public FakeBlockVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, ConfigManager configManager) {
+        super(world, visualizeFrom, height, configManager);
 
         // Water is considered transparent based on whether the visualization is initiated in water.
         waterTransparent = visualizeFrom.toBlock(world).getType() == Material.WATER;

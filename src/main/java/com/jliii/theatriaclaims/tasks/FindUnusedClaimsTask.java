@@ -37,12 +37,9 @@ public class FindUnusedClaimsTask implements Runnable {
 
     private ConfigManager configManager;
 
-    private CustomLogger customLogger;
-
-    public FindUnusedClaimsTask(ConfigManager configManager, CustomLogger customLogger) {
+    public FindUnusedClaimsTask(ConfigManager configManager) {
         refreshUUIDs();
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     @Override
@@ -56,7 +53,7 @@ public class FindUnusedClaimsTask implements Runnable {
             return;
         }
 
-        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next(), configManager, customLogger));
+        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next(), configManager));
     }
 
     public void refreshUUIDs() {
@@ -69,10 +66,10 @@ public class FindUnusedClaimsTask implements Runnable {
             Collections.shuffle(claimOwnerUUIDs);
         }
 
-        customLogger.log("The following UUIDs own a claim and will be checked for inactivity in the following order:");
+        CustomLogger.log("The following UUIDs own a claim and will be checked for inactivity in the following order:");
 
         for (UUID uuid : claimOwnerUUIDs)
-            customLogger.log(uuid.toString());
+            CustomLogger.log(uuid.toString());
 
         claimOwnerIterator = claimOwnerUUIDs.iterator();
     }

@@ -1,12 +1,10 @@
 package com.jliii.theatriaclaims.config;
 
-import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.configuration.file.FileConfiguration;
 
 public class ClaimsConfig {
 
     private FileConfiguration config;
-    private CustomLogger customLogger;
 
     public boolean preventGlobalMonsterEggs;
     public boolean preventTheft;
@@ -30,7 +28,7 @@ public class ClaimsConfig {
     public boolean ravagersBreakBlocks;                //whether or not ravagers may break blocks in claims
     public boolean limitTreeGrowth;                          //whether trees should be prevented from growing into a claim from outside
 
-    public ClaimsConfig(FileConfiguration fileConfiguration, CustomLogger customLogger) {
+    public ClaimsConfig(FileConfiguration fileConfiguration) {
         config = fileConfiguration;
         loadConfigurationValues();
     }

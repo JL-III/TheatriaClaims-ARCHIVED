@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.util;
 
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
@@ -50,11 +51,11 @@ class WorldGuardWrapper
             return manager.getApplicableRegions(tempRegion).queryState(localPlayer, Flags.BUILD) == StateFlag.State.ALLOW;
         }
         catch (Throwable rock) {
-            GriefPrevention.AddLogEntry("WorldGuard was found but unable to hook into. It could be that you're " +
+            CustomLogger.log("WorldGuard was found but unable to hook into. It could be that you're " +
                     "using an outdated version or WorldEdit broke their API... again." +
                     "Consider updating/downgrading/removing WorldGuard or disable WorldGuard integration in GP's config " +
                     "(CreationRequiresWorldGuardBuildPermission). If you're going to report this please be kind because " +
-                    "WorldEdit's API hasn't been :c", CustomLogEntryTypes.Debug, false);
+                    "WorldEdit's API hasn't been :c");
         }
         return true;
     }

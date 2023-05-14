@@ -13,12 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IgnoreLoaderThread extends Thread {
     private final UUID playerToLoad;
     private final ConcurrentHashMap<UUID, Boolean> destinationMap;
-    private CustomLogger customLogger;
 
-    public IgnoreLoaderThread(UUID playerToLoad, ConcurrentHashMap<UUID, Boolean> destinationMap, CustomLogger customLogger) {
+    public IgnoreLoaderThread(UUID playerToLoad, ConcurrentHashMap<UUID, Boolean> destinationMap) {
         this.playerToLoad = playerToLoad;
         this.destinationMap = destinationMap;
-        this.customLogger = customLogger;
         this.setPriority(MIN_PRIORITY);
     }
 
@@ -70,7 +68,7 @@ public class IgnoreLoaderThread extends Thread {
 
         //if last attempt failed, log information about the problem
         if (needRetry) {
-            customLogger.log("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": " + latestException.toString());
+            CustomLogger.log("Retry attempts exhausted.  Unable to load ignore data for player \"" + playerToLoad.toString() + "\": " + latestException.toString());
             latestException.printStackTrace();
         }
     }

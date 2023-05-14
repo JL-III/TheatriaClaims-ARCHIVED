@@ -39,8 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class PlayerData {
 
     private ConfigManager configManager;
-
-    private CustomLogger customLogger;
     // the player's ID
     public UUID playerID;
     // the player's claims
@@ -135,9 +133,8 @@ public class PlayerData {
     // profanity warning, once per play session
     public boolean profanityWarned = false;
 
-    public PlayerData(ConfigManager configManager, CustomLogger customLogger) {
+    public PlayerData(ConfigManager configManager) {
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     // the number of claim blocks a player has available for claiming land
@@ -246,15 +243,15 @@ public class PlayerData {
                     + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
             if (configManager.getSystemConfig().advanced_fixNegativeClaimblockAmounts && totalBlocks < totalClaimsArea) {
                 OfflinePlayer player = TheatriaClaims.instance.getServer().getOfflinePlayer(this.playerID);
-                customLogger
+                CustomLogger
                         .log(player.getName() + " has more claimed land than blocks available.  Adding blocks to fix.");
-                customLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks()
+                CustomLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks()
                         + " Bonus blocks: " + this.getBonusClaimBlocks());
-                customLogger.log("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea);
+                CustomLogger.log("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea);
                 for (Claim claim : this.claims) {
                     if (!claim.inDataStore)
                         continue;
-                    customLogger.log(GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // " + GeneralUtils.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = " + claim.getArea());
+                    CustomLogger.log(GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " // " + GeneralUtils.getfriendlyLocationString(claim.getGreaterBoundaryCorner()) + " = " + claim.getArea());
                 }
 
                 // try to fix it by adding to accrued blocks
@@ -263,26 +260,26 @@ public class PlayerData {
                 this.accruedClaimBlocks = Math.min(accruedLimit, this.accruedClaimBlocks); // set accrued blocks to
                                                                                            // maximum limit, if it's
                                                                                            // smaller
-                customLogger.log("New accrued blocks: " + this.accruedClaimBlocks);
+                CustomLogger.log("New accrued blocks: " + this.accruedClaimBlocks);
 
                 // Recalculate total blocks (accrued + bonus + permission group bonus)
                 totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks()
                         + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
-                        customLogger.log("New total blocks: " + totalBlocks);
+                        CustomLogger.log("New total blocks: " + totalBlocks);
 
                 // if that didn't fix it, then make up the difference with bonus blocks
                 if (totalBlocks < totalClaimsArea) {
                     int bonusBlocksToAdd = totalClaimsArea - totalBlocks;
                     this.bonusClaimBlocks += bonusBlocksToAdd;
-                    customLogger.log(
+                    CustomLogger.log(
                             "Accrued blocks weren't enough. Adding " + bonusBlocksToAdd + " bonus blocks.");
                 }
-                customLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID));
+                CustomLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID));
                 // Recalculate total blocks (accrued + bonus + permission group bonus)
                 totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks()
                         + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(this.playerID);
-                customLogger.log("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea);
-                customLogger.log("Remaining claim blocks to use: " + this.getRemainingClaimBlocks() + " (should be 0)");
+                CustomLogger.log("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea);
+                CustomLogger.log("Remaining claim blocks to use: " + this.getRemainingClaimBlocks() + " (should be 0)");
             }
         }
 

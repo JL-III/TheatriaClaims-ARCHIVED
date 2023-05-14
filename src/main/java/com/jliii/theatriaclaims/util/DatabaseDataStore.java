@@ -66,16 +66,14 @@ public class DatabaseDataStore extends DataStore {
     private final String userName;
     private final String password;
     private final ConfigManager configManager;
-    private final CustomLogger customLogger;
 
-    public DatabaseDataStore(ConfigManager configManager, CustomLogger customLogger) throws Exception
+    public DatabaseDataStore(ConfigManager configManager) throws Exception
     {
-        super(configManager, customLogger);
+        super(configManager);
         this.databaseUrl = configManager.getDatabaseConfig().databaseUrl;
         this.userName = configManager.getDatabaseConfig().databaseUserName;
         this.password = configManager.getDatabaseConfig().databasePassword;
         this.configManager = configManager;
-        this.customLogger = customLogger;
 
         this.initialize();
     }
@@ -89,7 +87,7 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (Exception e2)
         {
-            customLogger.log("ERROR: Unable to connect to database.  Check your config file settings.");
+            CustomLogger.log("ERROR: Unable to connect to database.  Check your config file settings.");
             throw e2;
         }
 
@@ -122,8 +120,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (Exception e3)
         {
-            customLogger.log("ERROR: Unable to create the necessary database table.  Details:");
-            customLogger.log(e3.getMessage());
+            CustomLogger.log("ERROR: Unable to create the necessary database table.  Details:");
+            CustomLogger.log(e3.getMessage());
             e3.printStackTrace();
             throw e3;
         }
@@ -194,7 +192,7 @@ public class DatabaseDataStore extends DataStore {
                 }
                 catch (Exception e)
                 {
-                    customLogger.log("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
+                    CustomLogger.log("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
                     e.printStackTrace();
                 }
 
@@ -235,15 +233,15 @@ public class DatabaseDataStore extends DataStore {
                     }
                     catch (SQLException e)
                     {
-                        customLogger.log("Unable to convert player data for " + name + ".  Skipping.");
-                        customLogger.log(e.getMessage());
+                        CustomLogger.log("Unable to convert player data for " + name + ".  Skipping.");
+                        CustomLogger.log(e.getMessage());
                     }
                 }
             }
             catch (SQLException e)
             {
-                customLogger.log("Unable to convert player data.  Details:");
-                customLogger.log(e.getMessage());
+                CustomLogger.log("Unable to convert player data.  Details:");
+                CustomLogger.log(e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -287,7 +285,7 @@ public class DatabaseDataStore extends DataStore {
                 {
                     if (e.getMessage() != null && e.getMessage().contains("World not found"))
                     {
-                        customLogger.log("Failed to load a claim (ID:" + claimID.toString() + ") because its world isn't loaded (yet?).  Please delete the claim or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
+                        CustomLogger.log("Failed to load a claim (ID:" + claimID.toString() + ") because its world isn't loaded (yet?).  Please delete the claim or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
                         continue;
                     }
                     else
@@ -310,8 +308,8 @@ public class DatabaseDataStore extends DataStore {
                     }
                     catch (Exception ex)
                     {
-                        customLogger.log("This owner name did not convert to a UUID: " + ownerName + ".");
-                        customLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                        CustomLogger.log("This owner name did not convert to a UUID: " + ownerName + ".");
+                        CustomLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
                 else
@@ -322,8 +320,8 @@ public class DatabaseDataStore extends DataStore {
                     }
                     catch (Exception ex)
                     {
-                        customLogger.log("This owner entry is not a UUID: " + ownerName + ".");
-                        customLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                        CustomLogger.log("This owner entry is not a UUID: " + ownerName + ".");
+                        CustomLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                     }
                 }
 
@@ -361,7 +359,7 @@ public class DatabaseDataStore extends DataStore {
             }
             catch (SQLException e)
             {
-                customLogger.log("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
+                CustomLogger.log("Unable to load a claim.  Details: " + e.getMessage() + " ... " + results.toString());
                 e.printStackTrace();
             }
         }
@@ -375,7 +373,7 @@ public class DatabaseDataStore extends DataStore {
             if (topLevelClaim == null)
             {
                 claimsToRemove.add(childClaim);
-                customLogger.log("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
+                CustomLogger.log("Removing orphaned claim subdivision: " + childClaim.getLesserBoundaryCorner().toString());
                 continue;
             }
 
@@ -415,8 +413,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
+            CustomLogger.log(e.getMessage());
         }
     }
 
@@ -459,8 +457,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to save data for claim at " + this.locationToString(claim.lesserBoundaryCorner) + ".  Details:");
+            CustomLogger.log(e.getMessage());
         }
     }
 
@@ -475,8 +473,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to delete data for claim " + claim.id + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to delete data for claim " + claim.id + ".  Details:");
+            CustomLogger.log(e.getMessage());
             e.printStackTrace();
         }
     }
@@ -484,7 +482,7 @@ public class DatabaseDataStore extends DataStore {
     @Override
     public PlayerData getPlayerDataFromStorage(UUID playerID)
     {
-        PlayerData playerData = new PlayerData(configManager, customLogger);
+        PlayerData playerData = new PlayerData(configManager);
         playerData.playerID = playerID;
 
         try (PreparedStatement selectStmnt = this.databaseConnection.prepareStatement(SQL_SELECT_PLAYER_DATA))
@@ -503,7 +501,7 @@ public class DatabaseDataStore extends DataStore {
         {
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));
-            customLogger.log(playerID + " " + errors.toString());
+            CustomLogger.log(playerID + " " + errors.toString());
         }
 
         return playerData;
@@ -541,7 +539,7 @@ public class DatabaseDataStore extends DataStore {
         {
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));
-            customLogger.log(playerID + " " + errors.toString());
+            CustomLogger.log(playerID + " " + errors.toString());
         }
     }
 
@@ -565,8 +563,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to set next claim ID to " + nextID + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to set next claim ID to " + nextID + ".  Details:");
+            CustomLogger.log(e.getMessage());
         }
     }
 
@@ -591,8 +589,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to save data for group " + groupName + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to save data for group " + groupName + ".  Details:");
+            CustomLogger.log(e.getMessage());
         }
     }
 
@@ -657,8 +655,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to retrieve schema version from database.  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to retrieve schema version from database.  Details:");
+            CustomLogger.log(e.getMessage());
             e.printStackTrace();
             return 0;
         }
@@ -677,8 +675,8 @@ public class DatabaseDataStore extends DataStore {
         }
         catch (SQLException e)
         {
-            customLogger.log("Unable to set next schema version to " + versionToSet + ".  Details:");
-            customLogger.log(e.getMessage());
+            CustomLogger.log("Unable to set next schema version to " + versionToSet + ".  Details:");
+            CustomLogger.log(e.getMessage());
         }
     }
 

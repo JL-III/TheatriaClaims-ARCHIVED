@@ -72,14 +72,12 @@ public class PlayerEventHandler implements Listener {
 
     private final TheatriaClaims instance;
     private final ConfigManager configManager;
-    private final CustomLogger customLogger;
     private final DataStore dataStore;
 
-    public PlayerEventHandler(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager, CustomLogger customLogger) {
+    public PlayerEventHandler(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager) {
         this.instance = plugin;
         this.dataStore = dataStore;
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     //when a player uses a slash command...
@@ -233,7 +231,7 @@ public class PlayerEventHandler implements Listener {
                         if (playerData.petGiveawayRecipient != null) {
                             tameable.setOwner(playerData.petGiveawayRecipient);
                             playerData.petGiveawayRecipient = null;
-                            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.PetGiveawayConfirmation);
+                            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.PetGiveawayConfirmation);
                             event.setCancelled(true);
                         }
 
@@ -242,9 +240,9 @@ public class PlayerEventHandler implements Listener {
                     OfflinePlayer owner = instance.getServer().getOfflinePlayer(ownerID);
                     String ownerName = owner.getName();
                     if (ownerName == null) ownerName = "someone";
-                    String message = instance.dataStore.getMessage(MessageType.NotYourPet, ownerName);
+                    String message = configManager.getMessagesConfig().getMessage(MessageType.NotYourPet, ownerName);
                     if (player.hasPermission("griefprevention.ignoreclaims"))
-                        message += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                        message += "  " + configManager.getMessagesConfig().getMessage(MessageType.IgnoreClaimsAdvertisement);
                     Messages.sendMessage(player, TextMode.Err.getColor(), message);
                     event.setCancelled(true);
                     return;
@@ -301,9 +299,9 @@ public class PlayerEventHandler implements Listener {
             {
                 Supplier<String> override = () ->
                 {
-                    String message = instance.dataStore.getMessage(MessageType.NoDamageClaimedEntity, claim.getOwnerName());
+                    String message = configManager.getMessagesConfig().getMessage(MessageType.NoDamageClaimedEntity, claim.getOwnerName());
                     if (player.hasPermission("griefprevention.ignoreclaims"))
-                        message += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                        message += "  " + configManager.getMessagesConfig().getMessage(MessageType.IgnoreClaimsAdvertisement);
 
                     return message;
                 };
@@ -357,7 +355,7 @@ public class PlayerEventHandler implements Listener {
         if (failureReason != null) {
             String reason = failureReason.get();
             if (player.hasPermission("griefprevention.ignoreclaims")) {
-                reason += "  " + instance.dataStore.getMessage(MessageType.IgnoreClaimsAdvertisement);
+                reason += "  " + configManager.getMessagesConfig().getMessage(MessageType.IgnoreClaimsAdvertisement);
             }
 
             Messages.sendMessage(player, TextMode.Err.getColor(), reason);
@@ -392,7 +390,7 @@ public class PlayerEventHandler implements Listener {
                 if (errorMessage != null)
                 {
                     event.setCancelled(true);
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoDamageClaimedEntity, claim.getOwnerName());
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoDamageClaimedEntity, claim.getOwnerName());
                     return;
                 }
             }
@@ -413,7 +411,7 @@ public class PlayerEventHandler implements Listener {
             //give the player his available claim blocks count and claiming instructions, but only if he keeps the shovel equipped for a minimum time, to avoid mouse wheel spam
             if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld()))
             {
-                EquipShovelProcessingTask task = new EquipShovelProcessingTask(player);
+                EquipShovelProcessingTask task = new EquipShovelProcessingTask(player, configManager);
                 instance.getServer().getScheduler().scheduleSyncDelayedTask(instance, task, 15L);  //15L is approx. 3/4 of a second
             }
         }
@@ -763,8 +761,8 @@ public class PlayerEventHandler implements Listener {
                     if (inspectionEvent.isCancelled()) return;
 
                     //visualize boundaries
-                    BoundaryVisualization.visualizeNearbyClaims(player, inspectionEvent.getClaims(), player.getEyeLocation().getBlockY(), configManager, customLogger);
-                    Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ShowNearbyClaims, String.valueOf(claims.size()));
+                    BoundaryVisualization.visualizeNearbyClaims(player, inspectionEvent.getClaims(), player.getEyeLocation().getBlockY(), configManager);
+                    Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.ShowNearbyClaims, String.valueOf(claims.size()));
                     return;
                 }
 
@@ -784,7 +782,7 @@ public class PlayerEventHandler implements Listener {
 
                 //air indicates too far away
                 if (clickedBlockType == Material.AIR) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.TooFarAway);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.TooFarAway);
                     // Remove visualizations
                     playerData.setVisibleBoundaries(null);
                     return;
@@ -798,7 +796,7 @@ public class PlayerEventHandler implements Listener {
                     ClaimInspectionEvent inspectionEvent = new ClaimInspectionEvent(player, clickedBlock, null);
                     Bukkit.getPluginManager().callEvent(inspectionEvent);
                     if (inspectionEvent.isCancelled()) return;
-                    Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BlockNotClaimed);
+                    Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BlockNotClaimed);
                     playerData.setVisibleBoundaries(null);
                 }
 
@@ -810,10 +808,10 @@ public class PlayerEventHandler implements Listener {
                     if (inspectionEvent.isCancelled()) return;
 
                     playerData.lastClaim = claim;
-                    Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BlockClaimed, claim.getOwnerName());
+                    Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BlockClaimed, claim.getOwnerName());
 
                     //visualize boundary
-                    BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager, customLogger);
+                    BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager);
 
                     if (player.hasPermission("griefprevention.seeclaimsize"))
                     {
@@ -831,7 +829,7 @@ public class PlayerEventHandler implements Listener {
                         Date now = new Date();
                         long daysElapsed = (now.getTime() - lastLogin.getTime()) / (1000 * 60 * 60 * 24);
 
-                        Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.PlayerOfflineTime, String.valueOf(daysElapsed));
+                        Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.PlayerOfflineTime, String.valueOf(daysElapsed));
 
                         //drop the data we just loaded, if the player isn't online
                         if (instance.getServer().getPlayer(claim.ownerID) == null)
@@ -865,7 +863,7 @@ public class PlayerEventHandler implements Listener {
 
             //can't use the shovel from too far away
             if (clickedBlockType == Material.AIR) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.TooFarAway);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.TooFarAway);
                 return;
             }
 
@@ -875,7 +873,7 @@ public class PlayerEventHandler implements Listener {
 
             //if the player doesn't have claims permission, don't do anything
             if (!player.hasPermission("griefprevention.createclaims")) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoCreateClaimPermission);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoCreateClaimPermission);
                 return;
             }
 
@@ -920,13 +918,13 @@ public class PlayerEventHandler implements Listener {
             //if within an existing claim, he's not creating a new one
             if (claim != null) {
                 //if the player has permission to edit the claim or subdivision
-                Supplier<String> noEditReason = claim.checkPermission(player, ClaimPermission.Edit, event, () -> instance.dataStore.getMessage(MessageType.CreateClaimFailOverlapOtherPlayer, claim.getOwnerName()));
+                Supplier<String> noEditReason = claim.checkPermission(player, ClaimPermission.Edit, event, () -> configManager.getMessagesConfig().getMessage(MessageType.CreateClaimFailOverlapOtherPlayer, claim.getOwnerName()));
                 if (noEditReason == null) {
                     //if he clicked on a corner, start resizing it
                     if ((clickedBlock.getX() == claim.getLesserBoundaryCorner().getBlockX() || clickedBlock.getX() == claim.getGreaterBoundaryCorner().getBlockX()) && (clickedBlock.getZ() == claim.getLesserBoundaryCorner().getBlockZ() || clickedBlock.getZ() == claim.getGreaterBoundaryCorner().getBlockZ())) {
                         playerData.claimResizing = claim;
                         playerData.lastShovelLocation = clickedBlock.getLocation();
-                        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.ResizeStart);
+                        Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ResizeStart);
                     }
 
                     //if he didn't click on a corner and is in subdivision mode, he's creating a new subdivision
@@ -935,12 +933,12 @@ public class PlayerEventHandler implements Listener {
                         if (playerData.lastShovelLocation == null) {
                             //if the clicked claim was a subdivision, tell him he can't start a new subdivision here
                             if (claim.parent != null) {
-                                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeFailOverlapSubdivision);
+                                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeFailOverlapSubdivision);
                             }
 
                             //otherwise start a new subdivision
                             else {
-                                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SubdivisionStart);
+                                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionStart);
                                 playerData.lastShovelLocation = clickedBlock.getLocation();
                                 playerData.claimSubdividing = claim;
                             }
@@ -969,11 +967,11 @@ public class PlayerEventHandler implements Listener {
                             //if it didn't succeed, tell the player why
                             if (!result.succeeded || result.claim == null) {
                                 if (result.claim != null) {
-                                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateSubdivisionOverlap);
-                                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
+                                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateSubdivisionOverlap);
+                                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager);
                                 }
                                 else {
-                                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
+                                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
                                 }
 
                                 return;
@@ -981,8 +979,8 @@ public class PlayerEventHandler implements Listener {
 
                             //otherwise, advise him on the /trust command and show him his new subdivision
                             else {
-                                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SubdivisionSuccess);
-                                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
+                                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SubdivisionSuccess);
+                                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager);
                                 playerData.lastShovelLocation = null;
                                 playerData.claimSubdividing = null;
                             }
@@ -992,15 +990,15 @@ public class PlayerEventHandler implements Listener {
                     //otherwise tell him he can't create a claim here, and show him the existing claim
                     //also advise him to consider /abandonclaim or resizing the existing claim
                     else {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlap);
-                        BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlap);
+                        BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, clickedBlock, configManager);
                     }
                 }
 
                 //otherwise tell the player he can't claim here because it's someone else's claim, and show him the claim
                 else {
                     Messages.sendMessage(player, TextMode.Err.getColor(), noEditReason.get());
-                    BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
+                    BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager);
                 }
 
                 return;
@@ -1013,16 +1011,16 @@ public class PlayerEventHandler implements Listener {
             if (lastShovelLocation == null) {
                 //if claims are not enabled in this world and it's not an administrative claim, display an error message and stop
                 if (!configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimsDisabledWorld);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClaimsDisabledWorld);
                     return;
                 }
 
                 //remember it, and start him on the new claim
                 playerData.lastShovelLocation = clickedBlock.getLocation();
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.ClaimStart);
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ClaimStart);
 
                 //show him where he's working
-                BoundaryVisualization.visualizeArea(player, new BoundingBox(clickedBlock), VisualizationType.INITIALIZE_ZONE, configManager, customLogger);
+                BoundaryVisualization.visualizeArea(player, new BoundingBox(clickedBlock), VisualizationType.INITIALIZE_ZONE, configManager);
             }
 
             //otherwise, he's trying to finish creating a claim by setting the other boundary corner
@@ -1042,7 +1040,7 @@ public class PlayerEventHandler implements Listener {
                     if (newClaimWidth < configManager.getSystemConfig().minWidth || newClaimHeight < configManager.getSystemConfig().minWidth) {
                         //this IF block is a workaround for craftbukkit bug which fires two events for one interaction
                         if (newClaimWidth != 1 && newClaimHeight != 1) {
-                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NewClaimTooNarrow, String.valueOf(configManager.getSystemConfig().minWidth));
+                            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NewClaimTooNarrow, String.valueOf(configManager.getSystemConfig().minWidth));
                         }
                         return;
                     }
@@ -1050,7 +1048,7 @@ public class PlayerEventHandler implements Listener {
                     int newArea = newClaimWidth * newClaimHeight;
                     if (newArea < configManager.getSystemConfig().minArea) {
                         if (newArea != 1) {
-                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(configManager.getSystemConfig().minArea));
+                            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ResizeClaimInsufficientArea, String.valueOf(configManager.getSystemConfig().minArea));
                         }
 
                         return;
@@ -1062,7 +1060,7 @@ public class PlayerEventHandler implements Listener {
                     int newClaimArea = newClaimWidth * newClaimHeight;
                     int remainingBlocks = playerData.getRemainingClaimBlocks();
                     if (newClaimArea > remainingBlocks) {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(newClaimArea - remainingBlocks));
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(newClaimArea - remainingBlocks));
                         instance.dataStore.tryAdvertiseAdminAlternatives(player);
                         return;
                     }
@@ -1085,12 +1083,12 @@ public class PlayerEventHandler implements Listener {
                 if (!result.succeeded || result.claim == null) {
                     if (result.claim != null)
                     {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
-                        BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager, customLogger);
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
+                        BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, clickedBlock, configManager);
                     }
                     else
                     {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
                     }
 
                     return;
@@ -1099,15 +1097,15 @@ public class PlayerEventHandler implements Listener {
                 //otherwise, advise him on the /trust command and show him his new claim
                 else
                 {
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
-                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager, customLogger);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
+                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, clickedBlock, configManager);
                     playerData.lastShovelLocation = null;
 
                     //if it's a big claim, tell the player about subdivisions
                     if (!player.hasPermission("griefprevention.adminclaims") && result.claim.getArea() >= 1000)
                     {
-                        Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BecomeMayor, 200L);
-                        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
+                        Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BecomeMayor, 200L);
+                        Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
                     }
 
                     AutoExtendClaimTask.scheduleAsync(result.claim);

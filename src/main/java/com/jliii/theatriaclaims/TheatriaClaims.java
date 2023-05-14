@@ -15,15 +15,12 @@ import com.jliii.theatriaclaims.listeners.EntityEventHandler;
 import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.tasks.DeliverClaimBlocksTask;
-import com.jliii.theatriaclaims.tasks.EntityCleanupTask;
 import com.jliii.theatriaclaims.tasks.FindUnusedClaimsTask;
 import com.jliii.theatriaclaims.util.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
@@ -34,33 +31,20 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import java.util.logging.Logger;
 
 public class TheatriaClaims extends JavaPlugin {
     //for convenience, a reference to the instance of this plugin
     public static TheatriaClaims instance;
-    //for logging to the console and log file
-    private static Logger log;
     //this handles data storage, like player and region data
     public DataStore dataStore;
     // Event handlers with common functionality
     public EntityEventHandler entityEventHandler;
-    //this tracks item stacks expected to drop which will need protection
-    public ArrayList<PendingItemProtection> pendingItemWatchList = new ArrayList<>();
-    //log entry manager for GP's custom log files
-    CustomLogger customLogger;
     // Player event handler
     PlayerEventHandler playerEventHandler;
 
     EconomyHandler economyHandler;
 
     ConfigManager configManager;
-
-    //how far away to search from a tree trunk for its branch blocks
-    public static final int TREE_RADIUS = 5;
-
-    //how long to wait before deciding a player is staying online or staying offline, for notication messages
-    public static final int NOTIFICATION_SECONDS = 20;
 
     //initializes well...   everything
     public void onEnable() {
@@ -75,27 +59,26 @@ public class TheatriaClaims extends JavaPlugin {
 
         }
         instance = this;
-        customLogger = new CustomLogger(configManager);
-        configManager = new ConfigManager(this, customLogger);
+        configManager = new ConfigManager(this);
         configManager.loadConfig();
-        customLogger.log("Finished loading configuration.");
+        CustomLogger.log("Finished loading configuration.");
 
         //TODO this is creating flatfile datastore in more than one case, can we cut some repeated code out?
         //when datastore initializes, it loads player and claim data, and posts some stats to the log
         if (configManager.getDatabaseConfig().databaseUrl.length() > 0) {
             try {
-                DatabaseDataStore databaseStore = new DatabaseDataStore(configManager, customLogger);
+                DatabaseDataStore databaseStore = new DatabaseDataStore(configManager);
                 if (FlatFileDataStore.hasData()) {
-                    customLogger.log("There appears to be some data on the hard drive.  Migrating those data to the database...");
-                    FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager, customLogger);
+                    CustomLogger.log("There appears to be some data on the hard drive.  Migrating those data to the database...");
+                    FlatFileDataStore flatFileStore = new FlatFileDataStore(configManager);
                     this.dataStore = flatFileStore;
                     flatFileStore.migrateData(databaseStore);
-                    customLogger.log("Data migration process complete.");
+                    CustomLogger.log("Data migration process complete.");
                 }
                 this.dataStore = databaseStore;
             }
             catch (Exception e) {
-                customLogger.log("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+                CustomLogger.log("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
                 e.printStackTrace();
                 this.getServer().getPluginManager().disablePlugin(this);
                 return;
@@ -116,34 +99,34 @@ public class TheatriaClaims extends JavaPlugin {
                 }
             }
             try {
-                this.dataStore = new FlatFileDataStore(configManager, customLogger);
+                this.dataStore = new FlatFileDataStore(configManager);
             }
             catch (Exception e) {
-                customLogger.log("Unable to initialize the file system data store.  Details:");
-                customLogger.log(e.getMessage());
+                CustomLogger.log("Unable to initialize the file system data store.  Details:");
+                CustomLogger.log(e.getMessage());
                 e.printStackTrace();
             }
         }
 
         String dataMode = (this.dataStore instanceof FlatFileDataStore) ? "(File Mode)" : "(Database Mode)";
-        customLogger.log("Finished loading data " + dataMode + ".");
+        CustomLogger.log("Finished loading data " + dataMode + ".");
 
         //unless claim block accrual is disabled, start the recurring per 10 minute event to give claim blocks to online players
         //20L ~ 1 second
         if (configManager.getSystemConfig().blocksAccruedPerHour_default > 0) {
-            DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this, configManager, customLogger);
+            DeliverClaimBlocksTask task = new DeliverClaimBlocksTask(null, this, configManager);
             this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task, 20L * 60 * 10, 20L * 60 * 10);
         }
 
         //start recurring cleanup scan for unused claims belonging to inactive players
-        FindUnusedClaimsTask task2 = new FindUnusedClaimsTask();
+        FindUnusedClaimsTask task2 = new FindUnusedClaimsTask(configManager);
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * configManager.getSystemConfig().advanced_claim_expiration_check_rate);
 
         //register for events
         PluginManager pluginManager = this.getServer().getPluginManager();
 
         //player events
-        playerEventHandler = new PlayerEventHandler(this, this.dataStore, configManager, customLogger);
+        playerEventHandler = new PlayerEventHandler(this, this.dataStore, configManager);
         pluginManager.registerEvents(playerEventHandler, this);
 
         //block events
@@ -155,7 +138,7 @@ public class TheatriaClaims extends JavaPlugin {
         pluginManager.registerEvents(entityEventHandler, this);
 
         //vault-based economy integration
-        economyHandler = new EconomyHandler(this);
+        economyHandler = new EconomyHandler(this, configManager);
         pluginManager.registerEvents(economyHandler, this);
 
         //register commands
@@ -174,7 +157,7 @@ public class TheatriaClaims extends JavaPlugin {
             new IgnoreLoaderThread(player.getUniqueId(), this.dataStore.getPlayerData(player.getUniqueId()).ignoredPlayers).start();
         }
 
-        customLogger.log("Boot finished.");
+        CustomLogger.log("Boot finished.");
 
     }
 
@@ -209,22 +192,21 @@ public class TheatriaClaims extends JavaPlugin {
         //which claim is being abandoned?
         Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
         if (claim == null) {
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.AbandonClaimMissing);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.AbandonClaimMissing);
         }
 
         //verify ownership
         else if (claim.checkPermission(player, ClaimPermission.Edit, null) != null) {
-            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NotYourClaim);
+            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotYourClaim);
         }
 
         //warn if has children and we're not explicitly deleting a top level claim
         else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.DeleteTopLevelClaim);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.DeleteTopLevelClaim);
             return true;
         }
         else {
             //delete it
-            claim.removeSurfaceFluids(null);
             this.dataStore.deleteClaim(claim, true, false);
 
             //adjust claim blocks when abandoning a top level claim
@@ -234,7 +216,7 @@ public class TheatriaClaims extends JavaPlugin {
 
             //tell the player how many claim blocks he has left
             int remainingBlocks = playerData.getRemainingClaimBlocks();
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AbandonSuccess, String.valueOf(remainingBlocks));
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AbandonSuccess, String.valueOf(remainingBlocks));
 
             //revert any current visualization
             playerData.setVisibleBoundaries(null);
@@ -258,7 +240,7 @@ public class TheatriaClaims extends JavaPlugin {
         if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
             permission = recipientName.substring(1, recipientName.length() - 1);
             if (permission == null || permission.isEmpty()) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.InvalidPermissionID);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.InvalidPermissionID);
                 return;
             }
         }
@@ -266,7 +248,7 @@ public class TheatriaClaims extends JavaPlugin {
             otherPlayer = PlayerName.resolvePlayerByName(recipientName);
             boolean isPermissionFormat = recipientName.contains(".");
             if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all") && !isPermissionFormat) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return;
             }
 
@@ -292,7 +274,7 @@ public class TheatriaClaims extends JavaPlugin {
         else {
             //check permission here
             if (claim.checkPermission(player, ClaimPermission.Manage, null) != null) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
                 return;
             }
 
@@ -314,7 +296,7 @@ public class TheatriaClaims extends JavaPlugin {
 
             //error message for trying to grant a permission the player doesn't have
             if (errorMessage != null) {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CantGrantThatPermission);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CantGrantThatPermission);
                 return;
             }
 
@@ -323,7 +305,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         //if we didn't determine which claims to modify, tell the player to be specific
         if (targetClaims.size() == 0) {
-            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.GrantPermissionNoClaim);
+            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.GrantPermissionNoClaim);
             return;
         }
 
@@ -359,31 +341,31 @@ public class TheatriaClaims extends JavaPlugin {
         }
 
         //notify player
-        if (recipientName.equals("public")) recipientName = this.dataStore.getMessage(MessageType.CollectivePublic);
+        if (recipientName.equals("public")) recipientName = configManager.getMessagesConfig().getMessage(MessageType.CollectivePublic);
         String permissionDescription;
         if (permissionLevel == null) {
-            permissionDescription = this.dataStore.getMessage(MessageType.PermissionsPermission);
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.PermissionsPermission);
         }
         else if (permissionLevel == ClaimPermission.Build) {
-            permissionDescription = this.dataStore.getMessage(MessageType.BuildPermission);
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.BuildPermission);
         }
         else if (permissionLevel == ClaimPermission.Access) {
-            permissionDescription = this.dataStore.getMessage(MessageType.AccessPermission);
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.AccessPermission);
         }
         //ClaimPermission.Inventory
         else {
-            permissionDescription = this.dataStore.getMessage(MessageType.ContainersPermission);
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.ContainersPermission);
         }
 
         String location;
         if (claim == null) {
-            location = this.dataStore.getMessage(MessageType.LocationAllClaims);
+            location = configManager.getMessagesConfig().getMessage(MessageType.LocationAllClaims);
         }
         else {
-            location = this.dataStore.getMessage(MessageType.LocationCurrentClaim);
+            location = configManager.getMessagesConfig().getMessage(MessageType.LocationCurrentClaim);
         }
 
-        Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.GrantPermissionConfirmation, recipientName, permissionDescription, location);
+        Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 
     //helper method to resolve a player by name
@@ -437,7 +419,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         this.dataStore.close();
 
-        customLogger.log("GriefPrevention disabled.");
+        CustomLogger.log("GriefPrevention disabled.");
     }
 
     public static boolean isInventoryEmpty(Player player) {

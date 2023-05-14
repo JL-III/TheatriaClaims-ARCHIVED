@@ -7,6 +7,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.jliii.theatriaclaims.TheatriaClaims;
 import org.bukkit.OfflinePlayer;
 
 import java.io.InputStreamReader;
@@ -38,8 +39,7 @@ public class UUIDFetcher {
         this.rateLimiting = rateLimiting;
     }
 
-    public UUIDFetcher(List<String> names)
-    {
+    public UUIDFetcher(List<String> names) {
         this(names, true);
     }
 
@@ -52,10 +52,10 @@ public class UUIDFetcher {
             correctedNames = new HashMap<>();
         }
 
-        GriefPrevention.AddLogEntry("UUID conversion process started.  Please be patient - this may take a while.");
+        CustomLogger.log("UUID conversion process started.  Please be patient - this may take a while.");
 
-        GriefPrevention.AddLogEntry("Mining your local world data to save calls to Mojang...");
-        OfflinePlayer[] players = GriefPrevention.instance.getServer().getOfflinePlayers();
+        CustomLogger.log("Mining your local world data to save calls to Mojang...");
+        OfflinePlayer[] players = TheatriaClaims.instance.getServer().getOfflinePlayers();
         for (OfflinePlayer player : players) {
             if (player.getName() != null && player.getUniqueId() != null) {
                 lookupCache.put(player.getName(), player.getUniqueId());
@@ -65,23 +65,23 @@ public class UUIDFetcher {
         }
 
         //try to get correct casing from local data
-        GriefPrevention.AddLogEntry("Checking local server data to get correct casing for player names...");
+        CustomLogger.log("Checking local server data to get correct casing for player names...");
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
             String correctCasingName = correctedNames.get(name);
             if (correctCasingName != null && !name.equals(correctCasingName)) {
-                GriefPrevention.AddLogEntry(name + " --> " + correctCasingName);
+                CustomLogger.log(name + " --> " + correctCasingName);
                 names.set(i, correctCasingName);
             }
         }
 
         //look for local uuid's first
-        GriefPrevention.AddLogEntry("Checking local server data for UUIDs already seen...");
+        CustomLogger.log("Checking local server data for UUIDs already seen...");
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
             UUID uuid = lookupCache.get(name);
             if (uuid != null) {
-                GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                CustomLogger.log(name + " --> " + uuid.toString());
                 names.remove(i--);
             }
         }
@@ -89,7 +89,7 @@ public class UUIDFetcher {
         names.removeIf(Objects::isNull);
 
         //for online mode, call Mojang to resolve the rest
-        if (GriefPrevention.instance.getServer().getOnlineMode()) {
+        if (TheatriaClaims.instance.getServer().getOnlineMode()) {
             Pattern validNamePattern = Pattern.compile("^\\w+$");
 
             // Don't bother requesting UUIDs for invalid names from Mojang.
@@ -97,11 +97,11 @@ public class UUIDFetcher {
                 if (name.length() >= 3 && name.length() <= 16 && validNamePattern.matcher(name).find())
                     return false;
 
-                GriefPrevention.AddLogEntry(String.format("Cannot convert invalid name: %s", name));
+                CustomLogger.log(String.format("Cannot convert invalid name: %s", name));
                 return true;
             });
 
-            GriefPrevention.AddLogEntry("Calling Mojang to get UUIDs for remaining unresolved players (this is the slowest step)...");
+            CustomLogger.log("Calling Mojang to get UUIDs for remaining unresolved players (this is the slowest step)...");
 
             for (int i = 0; i * PROFILES_PER_REQUEST < names.size(); i++) {
                 boolean retry = false;
@@ -123,14 +123,14 @@ public class UUIDFetcher {
                             //if this is the first time we're sending anything, the batch size must be too big
                             //try reducing it
                             if (i == 0 && PROFILES_PER_REQUEST > 1) {
-                                GriefPrevention.AddLogEntry("Batch size " + PROFILES_PER_REQUEST + " seems too large.  Looking for a workable batch size...");
+                                CustomLogger.log("Batch size " + PROFILES_PER_REQUEST + " seems too large.  Looking for a workable batch size...");
                                 PROFILES_PER_REQUEST = Math.max(PROFILES_PER_REQUEST - 5, 1);
                             }
 
                             //otherwise, keep the batch size which has worked for previous iterations
                             //but wait a little while before trying again.
                             else {
-                                GriefPrevention.AddLogEntry("Mojang says we're sending requests too fast.  Will retry every 30 seconds until we succeed...");
+                                CustomLogger.log("Mojang says we're sending requests too fast.  Will retry every 30 seconds until we succeed...");
                                 Thread.sleep(30000);
                             }
                         }
@@ -145,7 +145,7 @@ public class UUIDFetcher {
                     String id = jsonProfile.get("id").getAsString();
                     String name = jsonProfile.get("name").getAsString();
                     UUID uuid = UUIDFetcher.getUUID(id);
-                    GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                    CustomLogger.log(name + " --> " + uuid.toString());
                     lookupCache.put(name, uuid);
                     lookupCache.put(name.toLowerCase(), uuid);
                 }
@@ -157,11 +157,11 @@ public class UUIDFetcher {
 
         //for offline mode, generate UUIDs for the rest
         else {
-            GriefPrevention.AddLogEntry("Generating offline mode UUIDs for remaining unresolved players...");
+            CustomLogger.log("Generating offline mode UUIDs for remaining unresolved players...");
 
             for (String name : names) {
                 UUID uuid = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(Charsets.UTF_8));
-                GriefPrevention.AddLogEntry(name + " --> " + uuid.toString());
+                CustomLogger.log(name + " --> " + uuid.toString());
                 lookupCache.put(name, uuid);
                 lookupCache.put(name.toLowerCase(), uuid);
             }

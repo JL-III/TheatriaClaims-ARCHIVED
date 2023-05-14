@@ -34,14 +34,12 @@ public class CleanupUnusedClaimTask implements Runnable {
     PlayerData ownerData;
     OfflinePlayer ownerInfo;
     ConfigManager configManager;
-    CustomLogger customLogger;
 
-    public CleanupUnusedClaimTask(Claim claim, PlayerData ownerData, OfflinePlayer ownerInfo, ConfigManager configManager, CustomLogger customLogger) {
+    public CleanupUnusedClaimTask(Claim claim, PlayerData ownerData, OfflinePlayer ownerInfo, ConfigManager configManager) {
         this.claim = claim;
         this.ownerData = ownerData;
         this.ownerInfo = ownerInfo;
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     @Override
@@ -61,7 +59,7 @@ public class CleanupUnusedClaimTask implements Runnable {
                 if (expireEventCanceled())
                     return;
                 TheatriaClaims.instance.dataStore.deleteClaim(claim, true, true);
-                customLogger.log(" " + claim.getOwnerName() + "'s new player claim expired.");
+                CustomLogger.log(" " + claim.getOwnerName() + "'s new player claim expired.");
             }
         }
 
@@ -75,9 +73,9 @@ public class CleanupUnusedClaimTask implements Runnable {
                     return;
                 //delete them
                 TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
-                customLogger.log(" All of " + claim.getOwnerName() + "'s claims have expired.");
-                customLogger.log("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime());
-                customLogger.log("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed());
+                CustomLogger.log(" All of " + claim.getOwnerName() + "'s claims have expired.");
+                CustomLogger.log("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime());
+                CustomLogger.log("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed());
             }
         }
     }

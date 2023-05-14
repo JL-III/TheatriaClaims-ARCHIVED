@@ -1,6 +1,8 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,12 +16,13 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 public class EconomyHandler implements Listener {
 
     private final TheatriaClaims instance;
+    private final ConfigManager configManager;
     private boolean setupDone = false;
     private EconomyWrapper economy = null;
 
-    public EconomyHandler(TheatriaClaims instance)
-    {
+    public EconomyHandler(TheatriaClaims instance, ConfigManager configManager) {
         this.instance = instance;
+        this.configManager = configManager;
     }
 
     /**
@@ -67,7 +70,7 @@ public class EconomyHandler implements Listener {
         if (setupState != setupDone) return;
 
         // Are we configured to allow transactions?
-        if (!(configManager.config_economy_claimBlocksPurchaseCost > 0 || configManager.config_economy_claimBlocksSellValue > 0)) {
+        if (!(configManager.getEconomyConfig().economy_claimBlocksPurchaseCost > 0 || configManager.getEconomyConfig().economy_claimBlocksSellValue > 0)) {
             finishSetup(false, null);
             return;
         }
@@ -104,7 +107,7 @@ public class EconomyHandler implements Listener {
     private void finishSetup(boolean ready, String log) {
         if (!ready) this.economy = null;
 
-        if (log != null && !setupDone) customLogger.AddLogEntry(log);
+        if (log != null && !setupDone) CustomLogger.log(log);
 
         this.setupDone = true;
     }

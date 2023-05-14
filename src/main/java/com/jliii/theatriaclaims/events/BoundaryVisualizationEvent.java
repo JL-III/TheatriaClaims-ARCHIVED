@@ -6,6 +6,7 @@ import com.jliii.theatriaclaims.visualization.Boundary;
 import com.jliii.theatriaclaims.visualization.VisualizationProvider;
 import com.jliii.theatriaclaims.visualization.impl.AntiCheatCompatVisualization;
 import com.jliii.theatriaclaims.visualization.impl.FakeBlockVisualization;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
@@ -53,9 +54,9 @@ public class BoundaryVisualizationEvent extends PlayerEvent {
 
     public static final VisualizationProvider DEFAULT_PROVIDER = (world, visualizeFrom, height, configManager) -> {
         if (configManager.getSystemConfig().visualizationAntiCheatCompat) {
-            return new AntiCheatCompatVisualization(world, visualizeFrom, height);
+            return new AntiCheatCompatVisualization(world, visualizeFrom, height, configManager);
         }
-        return new FakeBlockVisualization(world, visualizeFrom, height);
+        return new FakeBlockVisualization(world, visualizeFrom, height, configManager);
     };
 
     /**

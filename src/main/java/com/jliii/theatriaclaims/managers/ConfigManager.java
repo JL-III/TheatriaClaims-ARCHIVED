@@ -8,7 +8,6 @@ import com.jliii.theatriaclaims.config.EconomyConfig;
 import com.jliii.theatriaclaims.config.MessagesConfig;
 import com.jliii.theatriaclaims.config.SystemConfig;
 import com.jliii.theatriaclaims.config.WorldConfig;
-import com.jliii.theatriaclaims.util.CustomLogger;
 import lombok.Getter;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -32,15 +31,15 @@ public class ConfigManager {
 
     //TODO this needs a reload method
 
-    public ConfigManager(TheatriaClaims theatriaClaims, CustomLogger customLogger) {
+    public ConfigManager(TheatriaClaims theatriaClaims) {
         config = theatriaClaims.getConfig();
-        claimsConfig = new ClaimsConfig(config, customLogger);
+        claimsConfig = new ClaimsConfig(config);
         databaseConfig = new DatabaseConfig(config);
         dynmapConfig = new DynmapConfig();
         economyConfig = new EconomyConfig(config);
-        systemConfig = new SystemConfig(config, customLogger);
+        systemConfig = new SystemConfig(config);
         worldConfig = new WorldConfig(config);
-        messagesConfig = new MessagesConfig(customLogger);
+        messagesConfig = new MessagesConfig();
     }
 
     public FileConfiguration getConfig() {

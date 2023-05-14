@@ -18,11 +18,11 @@
 
 package com.jliii.theatriaclaims.tasks;
 
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.Messages;
 import com.jliii.theatriaclaims.util.PlayerData;
 
@@ -32,19 +32,17 @@ public class SendPlayerMessageTask implements Runnable {
     private final Player player;
     private final ChatColor color;
     private final String message;
-    private CustomLogger customLogger;
 
-    public SendPlayerMessageTask(Player player, ChatColor color, String message, CustomLogger customLogger) {
+    public SendPlayerMessageTask(Player player, ChatColor color, String message) {
         this.player = player;
         this.color = color;
         this.message = message;
-        this.customLogger = customLogger;
     }
 
     @Override
     public void run() {
         if (player == null) {
-            customLogger.log(color + message);
+            CustomLogger.log(color + message);
             return;
         }
 

@@ -25,7 +25,6 @@ import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.ShovelMode;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.DataStore;
 import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.util.Messages;
@@ -45,12 +44,9 @@ public class EquipShovelProcessingTask implements Runnable {
 
     private ConfigManager configManager;
 
-    private CustomLogger customLogger;
-
-    public EquipShovelProcessingTask(Player player, ConfigManager configManager, CustomLogger customLogger){
+    public EquipShovelProcessingTask(Player player, ConfigManager configManager){
         this.player = player;
         this.configManager = configManager;
-        this.customLogger =customLogger;
     }
 
     @Override
@@ -66,22 +62,22 @@ public class EquipShovelProcessingTask implements Runnable {
         //always reset to basic claims mode
         if (playerData.shovelMode != ShovelMode.Basic) {
             playerData.shovelMode = ShovelMode.Basic;
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ShovelBasicClaimMode, configManager, customLogger);
+            Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.ShovelBasicClaimMode);
         }
 
         //tell him how many claim blocks he has available
         int remainingBlocks = playerData.getRemainingClaimBlocks();
-        Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.RemainingBlocks, configManager, customLogger, String.valueOf(remainingBlocks));
+        Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.RemainingBlocks, String.valueOf(remainingBlocks));
 
         if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, configManager, customLogger, DataStore.SURVIVAL_VIDEO_URL);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
         }
 
         //if standing in a claim owned by the player, visualize it
         Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
         if (claim != null && claim.checkPermission(player, ClaimPermission.Edit, null) == null) {
             playerData.lastClaim = claim;
-            BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager, customLogger);
+            BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager);
         }
     }
 }

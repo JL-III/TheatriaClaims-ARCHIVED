@@ -36,13 +36,11 @@ public class DeliverClaimBlocksTask implements Runnable {
     private final TheatriaClaims instance;
     private final ConfigManager configManager;
     private final int idleThresholdSquared;
-    private final CustomLogger customLogger;
 
-    public DeliverClaimBlocksTask(Player player, TheatriaClaims instance, ConfigManager configManager, CustomLogger customLogger) {
+    public DeliverClaimBlocksTask(Player player, TheatriaClaims instance, ConfigManager configManager) {
         this.player = player;
         this.instance = instance;
         this.configManager = configManager;
-        this.customLogger = customLogger;
         this.idleThresholdSquared = configManager.getSystemConfig().accruedIdleThreshold * configManager.getSystemConfig().accruedIdleThreshold;
     }
 
@@ -57,7 +55,7 @@ public class DeliverClaimBlocksTask implements Runnable {
 
             long i = 0;
             for (Player onlinePlayer : players) {
-                DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer, instance, configManager, customLogger);
+                DeliverClaimBlocksTask newTask = new DeliverClaimBlocksTask(onlinePlayer, instance, configManager);
                 instance.getServer().getScheduler().scheduleSyncDelayedTask(instance, newTask, i++);
             }
 
@@ -93,7 +91,7 @@ public class DeliverClaimBlocksTask implements Runnable {
             //determine idle accrual rate when idle
             if (isIdle) {
                 if (configManager.getSystemConfig().accruedIdlePercent <= 0) {
-                    customLogger.log(player.getName() + " wasn't active enough to accrue claim blocks this round.");
+                    CustomLogger.log(player.getName() + " wasn't active enough to accrue claim blocks this round.");
                     return; //idle accrual percentage is disabled
                 }
                 accrualRate = (int) (accrualRate * (configManager.getSystemConfig().accruedIdlePercent / 100.0D));
@@ -103,7 +101,7 @@ public class DeliverClaimBlocksTask implements Runnable {
             AccrueClaimBlocksEvent event = new AccrueClaimBlocksEvent(player, accrualRate, isIdle);
             instance.getServer().getPluginManager().callEvent(event);
             if (event.isCancelled()) {
-                customLogger.log(player.getName() + " claim block delivery was canceled by another plugin.");
+                CustomLogger.log(player.getName() + " claim block delivery was canceled by another plugin.");
                 return; //event was cancelled
             }
 
@@ -111,14 +109,14 @@ public class DeliverClaimBlocksTask implements Runnable {
             accrualRate = event.getBlocksToAccrue();
             if (accrualRate < 0) accrualRate = 0;
             playerData.accrueBlocks(accrualRate);
-            customLogger.log("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName());
+            CustomLogger.log("Delivering " + event.getBlocksToAccrue() + " blocks to " + player.getName());
 
             //intentionally NOT saving data here to reduce overall secondary storage access frequency
             //many other operations will cause this player's data to save, including his eventual logout
             //dataStore.savePlayerData(player.getUniqueIdentifier(), playerData);
         }
         catch (Exception e) {
-            customLogger.log("Problem delivering claim blocks to player " + player.getName() + ":");
+            CustomLogger.log("Problem delivering claim blocks to player " + player.getName() + ":");
             e.printStackTrace();
         }
     }

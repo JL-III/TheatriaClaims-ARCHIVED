@@ -39,7 +39,6 @@ import java.util.regex.Matcher;
 public class FlatFileDataStore extends DataStore {
 
     private ConfigManager configManager;
-    private CustomLogger customLogger;
     private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
     private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
     private final static String schemaVersionFilePath = dataLayerFolderPath + File.separator + "_schemaVersion";
@@ -50,11 +49,10 @@ public class FlatFileDataStore extends DataStore {
     }
 
     //initialization!
-    public FlatFileDataStore(ConfigManager configManager, CustomLogger customLogger) throws Exception {
-        super(configManager, customLogger);
+    public FlatFileDataStore(ConfigManager configManager) throws Exception {
+        super(configManager);
         this.initialize();
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     @Override
@@ -97,7 +95,7 @@ public class FlatFileDataStore extends DataStore {
             catch (Exception e) {
                 StringWriter errors = new StringWriter();
                 e.printStackTrace(new PrintWriter(errors));
-                customLogger.log(errors.toString());
+                CustomLogger.log(errors.toString());
             }
 
             try {
@@ -142,7 +140,7 @@ public class FlatFileDataStore extends DataStore {
                 fetcher.call();
             }
             catch (Exception e) {
-                customLogger.log("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
+                CustomLogger.log("Failed to resolve a batch of names to UUIDs.  Details:" + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -252,8 +250,8 @@ public class FlatFileDataStore extends DataStore {
                                 ownerID = UUIDFetcher.getUUIDOf(ownerName);
                             }
                             catch (Exception ex) {
-                                customLogger.log("Couldn't resolve this name to a UUID: " + ownerName + ".");
-                                customLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                                CustomLogger.log("Couldn't resolve this name to a UUID: " + ownerName + ".");
+                                CustomLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                             }
                         }
                         else {
@@ -261,8 +259,8 @@ public class FlatFileDataStore extends DataStore {
                                 ownerID = UUID.fromString(ownerName);
                             }
                             catch (Exception ex) {
-                                customLogger.log("Error - this is not a valid UUID: " + ownerName + ".");
-                                customLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                                CustomLogger.log("Error - this is not a valid UUID: " + ownerName + ".");
+                                CustomLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
                             }
                         }
 
@@ -320,14 +318,14 @@ public class FlatFileDataStore extends DataStore {
                 //if there's any problem with the file's content, log an error message and skip it
                 catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().contains("World not found")) {
-                        customLogger.log("Failed to load a claim " + files[i].getName() + " because its world isn't loaded (yet?).  Please delete the claim file or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
+                        CustomLogger.log("Failed to load a claim " + files[i].getName() + " because its world isn't loaded (yet?).  Please delete the claim file or contact the GriefPrevention developer with information about which plugin(s) you're using to load or create worlds.  " + lesserCornerString);
                         inStream.close();
                     }
                     else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        customLogger.log("Failed to load claim " + files[i].getName() + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file found in GriefPreventionData/ClaimData/" + files[i].getName());
-                        customLogger.log(files[i].getName() + " " + errors.toString());
+                        CustomLogger.log("Failed to load claim " + files[i].getName() + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file found in GriefPreventionData/ClaimData/" + files[i].getName());
+                        CustomLogger.log(files[i].getName() + " " + errors.toString());
                     }
                 }
 
@@ -381,12 +379,12 @@ public class FlatFileDataStore extends DataStore {
                 //if there's any problem with the file's content, log an error message and skip it
                 catch (Exception e) {
                     if (e.getMessage() != null && e.getMessage().contains("World not found")) {
-                        customLogger.log("Failed to load a claim (ID:" + claimID + ") because its world isn't loaded (yet?).  If this is not expected, delete this claim.");
+                        CustomLogger.log("Failed to load a claim (ID:" + claimID + ") because its world isn't loaded (yet?).  If this is not expected, delete this claim.");
                     }
                     else {
                         StringWriter errors = new StringWriter();
                         e.printStackTrace(new PrintWriter(errors));
-                        customLogger.log(files[i].getName() + " " + errors.toString());
+                        CustomLogger.log(files[i].getName() + " " + errors.toString());
                     }
                 }
             }
@@ -427,8 +425,8 @@ public class FlatFileDataStore extends DataStore {
                 ownerID = UUID.fromString(ownerIdentifier);
             }
             catch (Exception ex) {
-                customLogger.log("Error - this is not a valid UUID: " + ownerIdentifier + ".");
-                customLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
+                CustomLogger.log("Error - this is not a valid UUID: " + ownerIdentifier + ".");
+                CustomLogger.log("  Converted land claim to administrative @ " + lesserBoundaryCorner.toString());
             }
         }
 
@@ -504,7 +502,7 @@ public class FlatFileDataStore extends DataStore {
         catch (Exception e) {
             StringWriter errors = new StringWriter();
             e.printStackTrace(new PrintWriter(errors));
-            customLogger.log(claimID + " " + errors.toString());
+            CustomLogger.log(claimID + " " + errors.toString());
         }
     }
 
@@ -516,7 +514,7 @@ public class FlatFileDataStore extends DataStore {
         //remove from disk
         File claimFile = new File(claimDataFolderPath + File.separator + claimID + ".yml");
         if (claimFile.exists() && !claimFile.delete()) {
-            customLogger.log("Error: Unable to delete claim file \"" + claimFile.getAbsolutePath() + "\".");
+            CustomLogger.log("Error: Unable to delete claim file \"" + claimFile.getAbsolutePath() + "\".");
         }
     }
 
@@ -525,7 +523,7 @@ public class FlatFileDataStore extends DataStore {
         File playerFile = new File(playerDataFolderPath + File.separator + playerID.toString());
 
         //TODO Why is this called here? Could be legitimate, just check on it
-        PlayerData playerData = new PlayerData(configManager, customLogger);
+        PlayerData playerData = new PlayerData(configManager);
         playerData.playerID = playerID;
 
         //if it exists as a file, read the file
@@ -592,8 +590,8 @@ public class FlatFileDataStore extends DataStore {
             if (needRetry) {
                 StringWriter errors = new StringWriter();
                 latestException.printStackTrace(new PrintWriter(errors));
-                customLogger.log("Failed to load PlayerData for " + playerID + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file in GriefPrevetionData/PlayerData/" + playerID);
-                customLogger.log(playerID + " " + errors.toString());
+                CustomLogger.log("Failed to load PlayerData for " + playerID + ". This usually occurs when your server runs out of storage space, causing any file saves to corrupt. Fix or delete the file in GriefPrevetionData/PlayerData/" + playerID);
+                CustomLogger.log(playerID + " " + errors.toString());
             }
         }
 
@@ -632,7 +630,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            customLogger.log("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
+            CustomLogger.log("GriefPrevention: Unexpected exception saving data for player \"" + playerID.toString() + "\": " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -655,7 +653,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            customLogger.log("Unexpected exception saving next claim ID: " + e.getMessage());
+            CustomLogger.log("Unexpected exception saving next claim ID: " + e.getMessage());
             e.printStackTrace();
         }
 
@@ -684,7 +682,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            customLogger.log("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
+            CustomLogger.log("Unexpected exception saving data for group \"" + groupName + "\": " + e.getMessage());
         }
 
         try {
@@ -755,9 +753,9 @@ public class FlatFileDataStore extends DataStore {
         claimsFolder.renameTo(claimsBackupFolder);
         playersFolder.renameTo(playersBackupFolder);
 
-        customLogger.log("Backed your file system data up to " + claimsBackupFolder.getName() + " and " + playersBackupFolder.getName() + ".");
-        customLogger.log("If your migration encountered any problems, you can restore those data with a quick copy/paste.");
-        customLogger.log("When you're satisfied that all your data have been safely migrated, consider deleting those folders.");
+        CustomLogger.log("Backed your file system data up to " + claimsBackupFolder.getName() + " and " + playersBackupFolder.getName() + ".");
+        CustomLogger.log("If your migration encountered any problems, you can restore those data with a quick copy/paste.");
+        CustomLogger.log("When you're satisfied that all your data have been safely migrated, consider deleting those folders.");
     }
 
     @Override
@@ -808,7 +806,7 @@ public class FlatFileDataStore extends DataStore {
 
         //if any problem, log it
         catch (Exception e) {
-            customLogger.log("Unexpected exception saving schema version: " + e.getMessage());
+            CustomLogger.log("Unexpected exception saving schema version: " + e.getMessage());
         }
 
         //close the file

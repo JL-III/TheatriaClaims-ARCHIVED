@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.util;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Player;
@@ -12,23 +13,23 @@ public class PlayerName {
 
     public static OfflinePlayer resolvePlayerByName(String name) {
         //try online players first
-        Player targetPlayer = GriefPrevention.instance.getServer().getPlayerExact(name);
+        Player targetPlayer = TheatriaClaims.instance.getServer().getPlayerExact(name);
         if (targetPlayer != null) return targetPlayer;
 
         UUID bestMatchID = null;
 
         //try exact match first
-        bestMatchID = GriefPrevention.instance.playerNameToIDMap.get(name);
+        bestMatchID = TheatriaClaims.instance.playerNameToIDMap.get(name);
 
         //if failed, try ignore case
         if (bestMatchID == null) {
-            bestMatchID = GriefPrevention.instance.playerNameToIDMap.get(name.toLowerCase());
+            bestMatchID = TheatriaClaims.instance.playerNameToIDMap.get(name.toLowerCase());
         }
         if (bestMatchID == null) {
             return null;
         }
 
-        return GriefPrevention.instance.getServer().getOfflinePlayer(bestMatchID);
+        return TheatriaClaims.instance.getServer().getOfflinePlayer(bestMatchID);
     }
 
     //helper method to resolve a player name from the player's UUID
@@ -36,7 +37,7 @@ public class PlayerName {
         //parameter validation
         if (playerID == null) return "someone";
         //check the cache
-        OfflinePlayer player = GriefPrevention.instance.getServer().getOfflinePlayer(playerID);
+        OfflinePlayer player = TheatriaClaims.instance.getServer().getOfflinePlayer(playerID);
         return lookupPlayerName(player);
     }
 
@@ -54,8 +55,8 @@ public class PlayerName {
     //cache for player name lookups, to save searches of all offline players
     public static void cacheUUIDNamePair(UUID playerID, String playerName) {
         //store the reverse mapping
-        GriefPrevention.instance.playerNameToIDMap.put(playerName, playerID);
-        GriefPrevention.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
+        TheatriaClaims.instance.playerNameToIDMap.put(playerName, playerID);
+        TheatriaClaims.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
     }
 
     //string overload for above helper
@@ -65,7 +66,7 @@ public class PlayerName {
             id = UUID.fromString(playerID);
         }
         catch (IllegalArgumentException ex) {
-            GriefPrevention.AddLogEntry("Error: Tried to look up a local player name for invalid UUID: " + playerID);
+            CustomLogger.log("Error: Tried to look up a local player name for invalid UUID: " + playerID);
             return "someone";
         }
         return lookupPlayerName(id);

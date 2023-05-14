@@ -11,14 +11,14 @@ import org.bukkit.entity.Player;
 public class Messages {
 
     //sends a color-coded message to a player
-    public static void sendMessage(Player player, ChatColor color, MessageType messageID, ConfigManager configManager, CustomLogger customLogger, String... args) {
-        sendMessage(player, color, messageID, 0, configManager, customLogger, args);
+    public static void sendMessage(Player player, ConfigManager configManager, ChatColor color, MessageType messageID, String... args) {
+        sendMessage(player, configManager, color, messageID, 0, args);
     }
 
     //sends a color-coded message to a player
-    public static void sendMessage(Player player, ChatColor color, MessageType messageID, long delayInTicks, ConfigManager configManager, CustomLogger customLogger, String... args) {
+    public static void sendMessage(Player player, ConfigManager configManager, ChatColor color, MessageType messageID, long delayInTicks, String... args) {
         String message =  configManager.getMessagesConfig().getMessage(messageID, args);
-        sendMessage(player, color, message, delayInTicks, customLogger);
+        sendMessage(player, color, message, delayInTicks);
     }
 
     //sends a color-coded message to a player
@@ -44,8 +44,8 @@ public class Messages {
         }
     }
 
-    public static void sendMessage(Player player, ChatColor color, String message, long delayInTicks, CustomLogger customLogger) {
-        SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message, customLogger);
+    public static void sendMessage(Player player, ChatColor color, String message, long delayInTicks) {
+        SendPlayerMessageTask task = new SendPlayerMessageTask(player, color, message);
 
         //Only schedule if there should be a delay. Otherwise, send the message right now, else the message will appear out of order.
         if (delayInTicks > 0) {

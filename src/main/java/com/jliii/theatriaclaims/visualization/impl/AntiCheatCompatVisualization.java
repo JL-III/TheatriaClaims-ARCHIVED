@@ -1,5 +1,6 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.IntVector;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -19,8 +20,8 @@ public class AntiCheatCompatVisualization extends FakeBlockVisualization {
      * @param visualizeFrom the {@link IntVector} representing the world coordinate being visualized from
      * @param height the height of the visualization
      */
-    public AntiCheatCompatVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height) {
-        super(world, visualizeFrom, height);
+    public AntiCheatCompatVisualization(@NotNull World world, @NotNull IntVector visualizeFrom, int height, ConfigManager configManager) {
+        super(world, visualizeFrom, height, configManager);
     }
 
     @Override

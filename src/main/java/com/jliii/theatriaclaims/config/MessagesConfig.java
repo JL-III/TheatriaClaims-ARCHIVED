@@ -6,28 +6,27 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import com.jliii.theatriaclaims.enums.MessageType;
-import com.jliii.theatriaclaims.util.CustomLogger;
+
 import com.jliii.theatriaclaims.util.CustomizableMessage;
 
 public class MessagesConfig {
 
     private String[] messages;
 
-    private CustomLogger customLogger;
     //TODO dont hardcode these values
     protected final static String dataLayerFolderPath = "plugins" + File.separator + "TheatriaClaimsData";
 
     final static String messagesFilePath = dataLayerFolderPath + File.separator + "messages.yml";
 
 
-    public MessagesConfig(CustomLogger customLogger) {
+    public MessagesConfig() {
         //load up all the messages from messages.yml
-        this.customLogger = customLogger;
         this.loadMessages();
-        customLogger.log("Customizable messages loaded.");
+        CustomLogger.log("Customizable messages loaded.");
     }
 
     
@@ -254,7 +253,7 @@ public class MessagesConfig {
 
             //if default is missing, log an error and use some fake data for now so that the plugin can run
             if (messageData == null) {
-                customLogger.log("Missing message for " + messageID.name() + ".  Please contact the developer.");
+                CustomLogger.log("Missing message for " + messageID.name() + ".  Please contact the developer.");
                 messageData = new CustomizableMessage(messageID, "Missing message!  ID: " + messageID.name() + ".  Please contact a server admin.", null);
             }
 
@@ -281,7 +280,7 @@ public class MessagesConfig {
             config.save(messagesFilePath);
         }
         catch (IOException exception) {
-            customLogger.log("Unable to write to the configuration file at \"" + messagesFilePath + "\"");
+            CustomLogger.log("Unable to write to the configuration file at \"" + messagesFilePath + "\"");
         }
 
         defaults.clear();

@@ -1,10 +1,9 @@
 package com.jliii.theatriaclaims.config;
 
-import com.jliii.theatriaclaims.util.CustomLogger;
-
 import java.util.ArrayList;
 import java.util.List;
 
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -12,7 +11,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 public class SystemConfig {
 
     private FileConfiguration config;
-    private CustomLogger customLogger;
 
     public Material investigationTool;                //which material will be used to investigate claims with a right click
     public Material modificationTool;                    //which material will be used to create/resize claims with a right click
@@ -38,12 +36,10 @@ public class SystemConfig {
     public boolean supplyPlayerManual;                //whether to give new players a book with land claim help in it
     public int manualDeliveryDelaySeconds;            //how long to wait before giving a book to a new player
     //ATTENTION: The following config options have been added.
-    public String plugin_prefix;
     public List<String> claimWorldNames;
 
-    public SystemConfig(FileConfiguration config, CustomLogger customLogger) {
+    public SystemConfig(FileConfiguration config) {
         this.config = config;
-        this.customLogger = customLogger;
     }
 
     public void loadConfigurationValues() {
@@ -52,7 +48,6 @@ public class SystemConfig {
         advanced_fixNegativeClaimblockAmounts = config.getBoolean("GriefPrevention.Advanced.fixNegativeClaimblockAmounts", true);
         advanced_claim_expiration_check_rate = config.getInt("GriefPrevention.Advanced.ClaimExpirationCheckRate", 60);
         advanced_offlineplayer_cache_days = config.getInt("GriefPrevention.Advanced.OfflinePlayer_cache_days", 90);
-        plugin_prefix = config.getString("GriefPrevention.PluginPrefix", "GriefPrevention");
         initialBlocks = config.getInt("GriefPrevention.Claims.InitialBlocks", 100);
         blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.BlocksAccruedPerHour", 100);
         blocksAccruedPerHour_default = config.getInt("GriefPrevention.Claims.Claim Blocks Accrued Per Hour.Default", blocksAccruedPerHour_default);
@@ -97,21 +92,16 @@ public class SystemConfig {
         //validate investigation tool
         investigationTool = Material.getMaterial(investigationToolMaterialName);
         if (investigationTool == null) {
-            customLogger.log("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
+            CustomLogger.log("ERROR: Material " + investigationToolMaterialName + " not found.  Defaulting to the stick.  Please update your config.yml.");
             investigationTool = Material.STICK;
         }
 
         //validate modification tool
         modificationTool = Material.getMaterial(modificationToolMaterialName);
         if (modificationTool == null) {
-            customLogger.log("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
+            CustomLogger.log("ERROR: Material " + modificationToolMaterialName + " not found.  Defaulting to the golden shovel.  Please update your config.yml.");
             modificationTool = Material.GOLDEN_SHOVEL;
         }
-    }
-    
-
-    public String getPluginPrefix() {
-        return plugin_prefix;
     }
 
     //checks whether players can create claims in a world

@@ -2,7 +2,6 @@ package com.jliii.theatriaclaims.visualization;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
@@ -137,11 +136,11 @@ public abstract class BoundaryVisualization {
     public static void visualizeArea(
             @NotNull Player player,
             @NotNull BoundingBox boundingBox,
-            @NotNull VisualizationType type, ConfigManager configManager, CustomLogger customLogger) {
+            @NotNull VisualizationType type, ConfigManager configManager) {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player,
                 Set.of(new Boundary(boundingBox, type)),
                 player.getEyeLocation().getBlockY(), configManager);
-        callAndVisualize(event, configManager, customLogger);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -155,10 +154,9 @@ public abstract class BoundaryVisualization {
             @NotNull Player player,
             @NotNull Claim claim,
             @NotNull VisualizationType type,
-            ConfigManager configManager,
-            CustomLogger customLogger)
+            ConfigManager configManager)
     {
-        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY(), configManager, customLogger);
+        visualizeClaim(player, claim, type, player.getEyeLocation().getBlockY(), configManager);
     }
 
     /**
@@ -174,9 +172,8 @@ public abstract class BoundaryVisualization {
             @NotNull Claim claim,
             @NotNull VisualizationType type,
             @NotNull Block block,
-            ConfigManager configManager,
-            CustomLogger customLogger) {
-        visualizeClaim(player, claim, type, block.getY(), configManager, customLogger);
+            ConfigManager configManager) {
+        visualizeClaim(player, claim, type, block.getY(), configManager);
     }
 
     /**
@@ -187,9 +184,9 @@ public abstract class BoundaryVisualization {
      * @param type the {@link VisualizationType}
      * @param height the height at which the visualization was initiated
      */
-    private static void visualizeClaim(@NotNull Player player, @NotNull Claim claim, @NotNull VisualizationType type, int height, ConfigManager configManager, CustomLogger customLogger) {
+    private static void visualizeClaim(@NotNull Player player, @NotNull Claim claim, @NotNull VisualizationType type, int height, ConfigManager configManager) {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(player, defineBoundaries(claim, type), height, configManager);
-        callAndVisualize(event, configManager, customLogger);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -228,7 +225,7 @@ public abstract class BoundaryVisualization {
             @NotNull Player player,
             @NotNull Collection<Claim> claims,
             int height,
-            ConfigManager configManager, CustomLogger customLogger)
+            ConfigManager configManager)
     {
         BoundaryVisualizationEvent event = new BoundaryVisualizationEvent(
                 player,
@@ -237,7 +234,7 @@ public abstract class BoundaryVisualization {
                         claim.isAdminClaim() ? VisualizationType.ADMIN_CLAIM :  VisualizationType.CLAIM))
                         .collect(Collectors.toSet()),
                 height, configManager);
-        callAndVisualize(event, configManager, customLogger);
+        callAndVisualize(event, configManager);
     }
 
     /**
@@ -245,7 +242,7 @@ public abstract class BoundaryVisualization {
      *
      * @param event the {@code BoundaryVisualizationEvent}
      */
-    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event, ConfigManager configManager, CustomLogger customLogger) {
+    public static void callAndVisualize(@NotNull BoundaryVisualizationEvent event, ConfigManager configManager) {
         Bukkit.getPluginManager().callEvent(event);
 
         Player player = event.getPlayer();
@@ -272,7 +269,7 @@ public abstract class BoundaryVisualization {
         {
             TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
                     TheatriaClaims.instance,
-                    new DelayedVisualizationTask(visualization, playerData, event, configManager, customLogger),
+                    new DelayedVisualizationTask(visualization, playerData, event, configManager),
                     1L);
         }
     }
@@ -280,7 +277,7 @@ public abstract class BoundaryVisualization {
     private record DelayedVisualizationTask(
             @NotNull BoundaryVisualization visualization,
             @NotNull PlayerData playerData,
-            @NotNull BoundaryVisualizationEvent event, ConfigManager configManager, CustomLogger customLogger)
+            @NotNull BoundaryVisualizationEvent event, ConfigManager configManager)
             implements Runnable {
         @Override
         public void run() {
@@ -294,7 +291,7 @@ public abstract class BoundaryVisualization {
                     return;
                 }
                 // Otherwise, add an extra hint that the problem is not with GP.
-                customLogger.log(
+                CustomLogger.log(
                         String.format(
                                 "External visualization provider %s caused %s: %s",
                                 event.getProvider().getClass().getName(),

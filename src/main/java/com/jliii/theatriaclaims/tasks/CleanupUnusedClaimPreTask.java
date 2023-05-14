@@ -20,7 +20,6 @@ package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.PlayerData;
@@ -35,12 +34,10 @@ import java.util.UUID;
 class CleanupUnusedClaimPreTask implements Runnable {
     private final UUID ownerID;
     private final ConfigManager configManager;
-    private final CustomLogger customLogger;
 
-    public CleanupUnusedClaimPreTask(UUID uuid, ConfigManager configManager, CustomLogger customLogger) {
+    public CleanupUnusedClaimPreTask(UUID uuid, ConfigManager configManager) {
         this.ownerID = uuid;
         this.configManager = configManager;
-        this.customLogger = customLogger;
     }
 
     @Override
@@ -48,21 +45,21 @@ class CleanupUnusedClaimPreTask implements Runnable {
         //get the data
         PlayerData ownerData = TheatriaClaims.instance.dataStore.getPlayerDataFromStorage(ownerID);
         OfflinePlayer ownerInfo = Bukkit.getServer().getOfflinePlayer(ownerID);
-        customLogger.log("Looking for expired claims.  Checking data for " + ownerID.toString());
+        CustomLogger.log("Looking for expired claims.  Checking data for " + ownerID.toString());
         //expiration code uses last logout timestamp to decide whether to expire claims
         //don't expire claims for online players
         if (ownerInfo.isOnline()) {
-            customLogger.log("Player is online. Ignoring.");
+            CustomLogger.log("Player is online. Ignoring.");
             return;
         }
         if (ownerInfo.getLastPlayed() <= 0) {
-            customLogger.log("Player is new or not in the server's cached userdata. Ignoring. getLastPlayed = " + ownerInfo.getLastPlayed());
+            CustomLogger.log("Player is new or not in the server's cached userdata. Ignoring. getLastPlayed = " + ownerInfo.getLastPlayed());
             return;
         }
         //skip claims belonging to exempted players based on block totals in config
         int bonusBlocks = ownerData.getBonusClaimBlocks();
         if (bonusBlocks >= configManager.getSystemConfig().expirationExemptionBonusBlocks || bonusBlocks + ownerData.getAccruedClaimBlocks() >= configManager.getSystemConfig().expirationExemptionTotalBlocks) {
-            customLogger.log("Player exempt from claim expiration based on claim block counts vs. config file settings.");
+            CustomLogger.log("Player exempt from claim expiration based on claim block counts vs. config file settings.");
             return;
         }
         Claim claimToExpire = null;
@@ -74,10 +71,10 @@ class CleanupUnusedClaimPreTask implements Runnable {
             }
         }
         if (claimToExpire == null) {
-            customLogger.log("Unable to find a claim to expire for " + ownerID.toString());
+            CustomLogger.log("Unable to find a claim to expire for " + ownerID.toString());
             return;
         }
         //pass it back to the main server thread, where it's safe to delete a claim if needed
-        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo, configManager, customLogger), 1L);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo, configManager), 1L);
     }
 }
