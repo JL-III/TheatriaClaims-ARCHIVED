@@ -18,9 +18,16 @@
 
 package com.jliii.theatriaclaims.listeners;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.util.Messages;
+import com.jliii.theatriaclaims.util.PlayerData;
+
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.*;
@@ -50,6 +57,7 @@ import org.bukkit.metadata.MetadataValue;
 import org.bukkit.projectiles.BlockProjectileSource;
 import org.bukkit.projectiles.ProjectileSource;
 
+import java.io.ObjectInputFilter.Config;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -59,12 +67,14 @@ public class BlockEventHandler implements Listener {
     //convenience reference to singleton datastore
     private final DataStore dataStore;
 
+    private final ConfigManager configManager;
+
     private final EnumSet<Material> trashBlocks;
 
     //constructor
-    public BlockEventHandler(DataStore dataStore) {
+    public BlockEventHandler(DataStore dataStore, ConfigManager configManager) {
         this.dataStore = dataStore;
-
+        this.configManager = configManager;
         //create the list of blocks which will not trigger a warning when they're placed outside of land claims
         this.trashBlocks = EnumSet.noneOf(Material.class);
         this.trashBlocks.add(Material.COBBLESTONE);
@@ -91,7 +101,7 @@ public class BlockEventHandler implements Listener {
         Block block = breakEvent.getBlock();
 
         //make sure the player is allowed to break at the location
-        String noBuildReason = allowBreak(player, block, block.getLocation(), breakEvent);
+        String noBuildReason = GeneralUtils.allowBreak(player, configManager, block, block.getLocation(), breakEvent);
         if (noBuildReason != null) {
             Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
             breakEvent.setCancelled(true);
@@ -118,15 +128,6 @@ public class BlockEventHandler implements Listener {
         }
     }
 
-    private boolean doesAllowFireProximityInWorld(World world) {
-        if (GriefPrevention.instance.pvpRulesApply(world)) {
-            return GriefPrevention.instance.config_pvp_allowFireNearPlayers;
-        }
-        else {
-            return GriefPrevention.instance.config_pvp_allowFireNearPlayers_NonPvp;
-        }
-    }
-
     //when a player places a block...
     @SuppressWarnings("null")
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
@@ -134,27 +135,8 @@ public class BlockEventHandler implements Listener {
         Player player = placeEvent.getPlayer();
         Block block = placeEvent.getBlock();
 
-        //FEATURE: limit fire placement, to prevent PvP-by-fire
-        //if placed block is fire and pvp is off, apply rules for proximity to other players
-        if (block.getType() == Material.FIRE && !doesAllowFireProximityInWorld(block.getWorld())) {
-            List<Player> players = block.getWorld().getPlayers();
-            for (Player otherPlayer : players) {
-                // Ignore players in creative or spectator mode to avoid users from checking if someone is spectating near them
-                if (otherPlayer.getGameMode() == GameMode.CREATIVE || otherPlayer.getGameMode() == GameMode.SPECTATOR) {
-                    continue;
-                }
-
-                Location location = otherPlayer.getLocation();
-                if (!otherPlayer.equals(player) && location.distanceSquared(block.getLocation()) < 9 && player.canSee(otherPlayer)) {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerTooCloseForFire2);
-                    placeEvent.setCancelled(true);
-                    return;
-                }
-            }
-        }
-
         //don't track in worlds where claims are not enabled
-        if (!GriefPrevention.instance.claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
+        if (!configManager.getSystemConfig().claimsEnabledForWorld(placeEvent.getBlock().getWorld())) return;
 
         //make sure the player is allowed to build at the location
         String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), block.getType());
