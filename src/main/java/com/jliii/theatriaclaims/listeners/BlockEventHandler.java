@@ -23,6 +23,7 @@ import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.managers.PermissionManager;
 import com.jliii.theatriaclaims.util.DataStore;
 import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.util.Messages;
@@ -119,7 +120,7 @@ public class BlockEventHandler implements Listener {
 
         //make sure the player is allowed to build at the location
         for (BlockState block : placeEvent.getReplacedBlockStates()) {
-            String noBuildReason = GriefPrevention.instance.allowBuild(player, block.getLocation(), block.getType());
+            String noBuildReason = PermissionManager.allowBuild(player, block.getLocation(), block.getType());
             if (noBuildReason != null) {
                 Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
                 placeEvent.setCancelled(true);
