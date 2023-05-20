@@ -853,7 +853,7 @@ public abstract class DataStore {
         return result;
     }
 
-    public void resizeClaimWithChecks(Player player, PlayerData playerData, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2) {
+    public void resizeClaimWithChecks(Player player, PlayerData playerData, int newx1, int newx2, int newz1, int newz2) {
         //for top level claims, apply size rules and claim blocks requirement
         if (playerData.claimResizing.parent == null) {
             //measure new claim, apply size rules
@@ -890,8 +890,8 @@ public abstract class DataStore {
         Claim oldClaim = playerData.claimResizing;
         Claim newClaim = new Claim(oldClaim);
         World world = newClaim.getLesserBoundaryCorner().getWorld();
-        newClaim.lesserBoundaryCorner = new Location(world, newx1, newy1, newz1);
-        newClaim.greaterBoundaryCorner = new Location(world, newx2, newy2, newz2);
+        newClaim.lesserBoundaryCorner = new Location(world, newx1, world.getMinHeight(), newz1);
+        newClaim.greaterBoundaryCorner = new Location(world, newx2, world.getMaxHeight(), newz2);
 
         //call event here to check if it has been cancelled
         ClaimResizeEvent event = new ClaimModifiedEvent(oldClaim, newClaim, player); // Swap to ClaimResizeEvent when ClaimModifiedEvent is removed

@@ -884,7 +884,7 @@ public class PlayerEventHandler implements Listener {
                 if (clickedBlock.getLocation().equals(playerData.lastShovelLocation)) return;
 
                 //figure out what the coords of his new claim would be
-                int newx1, newx2, newz1, newz2, newy1, newy2;
+                int newx1, newx2, newz1, newz2;
                 if (playerData.lastShovelLocation.getBlockX() == playerData.claimResizing.getLesserBoundaryCorner().getBlockX()) {
                     newx1 = clickedBlock.getX();
                     newx2 = playerData.claimResizing.getGreaterBoundaryCorner().getBlockX();
@@ -903,12 +903,7 @@ public class PlayerEventHandler implements Listener {
                     newz2 = clickedBlock.getZ();
                 }
 
-                newy1 = playerData.claimResizing.getLesserBoundaryCorner().getBlockY();
-
-                //TODO take a good look at this i think we just need to set it to build minimum so -64?
-                newy2 = clickedBlock.getY() - configManager.getSystemConfig().claimsExtendIntoGroundDistance;
-
-                this.dataStore.resizeClaimWithChecks(player, playerData, newx1, newx2, newy1, newy2, newz1, newz2);
+                this.dataStore.resizeClaimWithChecks(player, playerData, newx1, newx2, newz1, newz2);
 
                 return;
             }
@@ -959,7 +954,6 @@ public class PlayerEventHandler implements Listener {
                             CreateClaimResult result = dataStore.createClaim(
                                     player.getWorld(),
                                     playerData.lastShovelLocation.getBlockX(), clickedBlock.getX(),
-                                    playerData.lastShovelLocation.getBlockY() - configManager.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - configManager.config_claims_claimsExtendIntoGroundDistance,
                                     playerData.lastShovelLocation.getBlockZ(), clickedBlock.getZ(),
                                     null,  //owner is not used for subdivisions
                                     playerData.claimSubdividing,
@@ -1074,7 +1068,6 @@ public class PlayerEventHandler implements Listener {
                 CreateClaimResult result = this.dataStore.createClaim(
                         player.getWorld(),
                         lastShovelLocation.getBlockX(), clickedBlock.getX(),
-                        lastShovelLocation.getBlockY() - configManager.config_claims_claimsExtendIntoGroundDistance, clickedBlock.getY() - configManager.config_claims_claimsExtendIntoGroundDistance,
                         lastShovelLocation.getBlockZ(), clickedBlock.getZ(),
                         playerID,
                         null, null,
@@ -1109,7 +1102,6 @@ public class PlayerEventHandler implements Listener {
                         Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, 201L, DataStore.SUBDIVISION_VIDEO_URL);
                     }
 
-                    AutoExtendClaimTask.scheduleAsync(result.claim);
                 }
             }
         }
