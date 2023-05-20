@@ -1,10 +1,7 @@
 package com.jliii.theatriaclaims.managers;
 
-import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.claim.ClaimPermission;
-import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
-import com.jliii.theatriaclaims.util.DataStore;
-import com.jliii.theatriaclaims.util.PlayerData;
+import java.util.function.Supplier;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -15,28 +12,24 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.function.Supplier;
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
+import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
+import com.jliii.theatriaclaims.util.PlayerData;
 
 public class PermissionManager {
-
-    private final ConfigManager configManager;
-    private final DataStore dataStore;
-
-    public PermissionManager(ConfigManager configManager, DataStore dataStore) {
-        this.configManager = configManager;
-        this.dataStore = dataStore;
-    }
-
-    public String allowBuild(Player player, Location location) {
+    
+    public static String allowBuild(Player player, ConfigManager configManager, Location location) {
         // TODO check all derivatives and rework API
-        return this.allowBuild(player, location, location.getBlock().getType());
+        return allowBuild(player, configManager, location, location.getBlock().getType());
     }
 
-    public String allowBuild(Player player, Location location, Material material) {
+    public static String allowBuild(Player player, ConfigManager configManager, Location location, Material material) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
@@ -55,20 +48,19 @@ public class PermissionManager {
         }
     }
 
-    //TODO these methods do nothing currently, could be import issues though
-    public String allowBreak(Player player, Block block, Location location) {
-        return this.allowBreak(player, block, location, new BlockBreakEvent(block, player));
+    public static String allowBreak(Player player, ConfigManager configManager, Block block, Location location) {
+        return allowBreak(player, configManager, block, location, new BlockBreakEvent(block, player));
     }
 
-    public String allowBreak(Player player, Material material, Location location, BlockBreakEvent breakEvent) {
-        return this.allowBreak(player, location.getBlock(), location, breakEvent);
+    public static String allowBreak(Player player, ConfigManager configManager, Material material, Location location, BlockBreakEvent breakEvent) {
+        return allowBreak(player, configManager, location.getBlock(), location, breakEvent);
     }
 
-    public String allowBreak(Player player, Block block, Location location, BlockBreakEvent breakEvent) {
+    public static String allowBreak(Player player, ConfigManager configManager, Block block, Location location, BlockBreakEvent breakEvent) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
@@ -90,4 +82,5 @@ public class PermissionManager {
             return cancel.get();
         }
     }
+
 }

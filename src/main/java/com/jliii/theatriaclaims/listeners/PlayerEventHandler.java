@@ -25,6 +25,7 @@ import com.jliii.theatriaclaims.claim.CreateClaimResult;
 import com.jliii.theatriaclaims.enums.*;
 import com.jliii.theatriaclaims.events.ClaimInspectionEvent;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.managers.PermissionManager;
 import com.jliii.theatriaclaims.tasks.BroadcastMessageTask;
 import com.jliii.theatriaclaims.tasks.EquipShovelProcessingTask;
 import com.jliii.theatriaclaims.tasks.WelcomeTask;
@@ -262,7 +263,7 @@ public class PlayerEventHandler implements Listener {
 
         //don't allow interaction with item frames or armor stands in claimed areas without build permission
         if (entity.getType() == EntityType.ARMOR_STAND || entity instanceof Hanging) {
-            String noBuildReason = allowBuild(player, entity.getLocation(), Material.ITEM_FRAME);
+            String noBuildReason = PermissionManager.allowBuild(player, configManager, entity.getLocation(), Material.ITEM_FRAME);
             if (noBuildReason != null) {
                 Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
                 event.setCancelled(true);
@@ -437,7 +438,7 @@ public class PlayerEventHandler implements Listener {
         }
 
         //make sure the player is allowed to build at the location
-        String noBuildReason = allowBuild(player, block.getLocation(), Material.WATER);
+        String noBuildReason = PermissionManager.allowBuild(player, configManager, block.getLocation(), Material.WATER);
         if (noBuildReason != null) {
             Messages.sendMessage(player, TextMode.Err.getColor(), noBuildReason);
             bucketEvent.setCancelled(true);
@@ -461,7 +462,7 @@ public class PlayerEventHandler implements Listener {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(block.getWorld())) return;
 
         //make sure the player is allowed to build at the location
-        String noBuildReason = allowBuild(player, block.getLocation(), Material.AIR);
+        String noBuildReason = PermissionManager.allowBuild(player, configManager, block.getLocation(), Material.AIR);
         if (noBuildReason != null)
         {
             //exemption for cow milking (permissions will be handled by player interact with entity event instead)
@@ -704,7 +705,7 @@ public class PlayerEventHandler implements Listener {
                     || materialInHand == Material.INK_SAC
                     || materialInHand == Material.GLOW_INK_SAC
                     || dyes.contains(materialInHand))) {
-                String noBuildReason = allowBuild(player, clickedBlock
+                String noBuildReason = PermissionManager.allowBuild(player, configManager, clickedBlock
                                         .getLocation(),
                                 clickedBlockType);
                 if (noBuildReason != null) {
@@ -1203,5 +1204,4 @@ public class PlayerEventHandler implements Listener {
 
         return true;
     }
-
 }

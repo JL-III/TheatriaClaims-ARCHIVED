@@ -1,9 +1,22 @@
 package com.jliii.theatriaclaims.util;
 
+import java.util.function.Supplier;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
+import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
+import com.jliii.theatriaclaims.managers.ConfigManager;
 
 public class GeneralUtils {
 
