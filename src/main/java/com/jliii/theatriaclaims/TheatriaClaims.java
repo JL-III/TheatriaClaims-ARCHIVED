@@ -130,11 +130,11 @@ public class TheatriaClaims extends JavaPlugin {
         pluginManager.registerEvents(playerEventHandler, this);
 
         //block events
-        BlockEventHandler blockEventHandler = new BlockEventHandler(this.dataStore);
+        BlockEventHandler blockEventHandler = new BlockEventHandler(this.dataStore, configManager);
         pluginManager.registerEvents(blockEventHandler, this);
 
         //entity events
-        entityEventHandler = new EntityEventHandler(this.dataStore, this);
+        entityEventHandler = new EntityEventHandler(this.dataStore, this, configManager);
         pluginManager.registerEvents(entityEventHandler, this);
 
         //vault-based economy integration
@@ -142,7 +142,7 @@ public class TheatriaClaims extends JavaPlugin {
         pluginManager.registerEvents(economyHandler, this);
 
         //register commands
-        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, playerEventHandler));
+        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, playerEventHandler, configManager));
 
         //cache offline players
         OfflinePlayer[] offlinePlayers = this.getServer().getOfflinePlayers();
