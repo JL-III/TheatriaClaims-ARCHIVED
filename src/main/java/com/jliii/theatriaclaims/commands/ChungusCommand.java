@@ -1,7 +1,27 @@
 package com.jliii.theatriaclaims.commands;
 
+import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.claim.ClaimPermission;
+import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
+import com.jliii.theatriaclaims.enums.MessageType;
+import com.jliii.theatriaclaims.enums.ShovelMode;
+import com.jliii.theatriaclaims.enums.TextMode;
+import com.jliii.theatriaclaims.events.TrustChangedEvent;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
 import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.tasks.WelcomeTask;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.GeneralUtils;
+import com.jliii.theatriaclaims.util.Messages;
+import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.util.PlayerName;
+import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
+import com.jliii.theatriaclaims.visualization.VisualizationType;
+
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -20,10 +40,12 @@ public class ChungusCommand implements CommandExecutor {
     private Player player;
     private EconomyHandler economyHandler;
     private PlayerEventHandler playerEventHandler;
+    private ConfigManager configManager;
 
-    public ChungusCommand(EconomyHandler economyHandler, PlayerEventHandler playerEventHandler) {
+    public ChungusCommand(EconomyHandler economyHandler, PlayerEventHandler playerEventHandler, ConfigManager configManager) {
         this.economyHandler = economyHandler;
         this.playerEventHandler = playerEventHandler;
+        this.configManager = configManager;
     }
 
     //handles slash commands
@@ -36,68 +58,58 @@ public class ChungusCommand implements CommandExecutor {
         }
 
         //claim
-        if (cmd.getName().equalsIgnoreCase("claim") && player != null)
-        {
-            if (!GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimsDisabledWorld);
+        if (cmd.getName().equalsIgnoreCase("claim") && player != null) {
+            if (!configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClaimsDisabledWorld);
                 return true;
             }
 
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
-            //if he's at the claim count per player limit already and doesn't have permission to bypass, display an error message
-            if (GriefPrevention.instance.config_claims_maxClaimsPerPlayer > 0 &&
-                    !player.hasPermission("griefprevention.overrideclaimcountlimit") &&
-                    playerData.getClaims().size() >= GriefPrevention.instance.config_claims_maxClaimsPerPlayer)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimCreationFailedOverClaimCountLimit);
-                return true;
-            }
+            // //if he's at the claim count per player limit already and doesn't have permission to bypass, display an error message
+            // if (configManager.getSystemConfig().maxClaimsPerPlayer > 0 &&
+            //         !player.hasPermission("TheatriaClaims.overrideclaimcountlimit") &&
+            //         playerData.getClaims().size() >= TheatriaClaims.instance.config_claims_maxClaimsPerPlayer)
+            // {
+            //     Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClaimCreationFailedOverClaimCountLimit);
+            //     return true;
+            // }
 
             //default is chest claim radius, unless -1
-            int radius = GriefPrevention.instance.config_claims_automaticClaimsForNewPlayersRadius;
-            if (radius < 0) radius = (int) Math.ceil(Math.sqrt(GriefPrevention.instance.config_claims_minArea) / 2);
+            int radius = configManager.getSystemConfig().automaticClaimsForNewPlayersRadius;
+            if (radius < 0) radius = (int) Math.ceil(Math.sqrt(configManager.getSystemConfig().minArea) / 2);
 
             //if player has any claims, respect claim minimum size setting
-            if (playerData.getClaims().size() > 0)
-            {
+            if (playerData.getClaims().size() > 0) {
                 //if player has exactly one land claim, this requires the claim modification tool to be in hand (or creative mode player)
-                if (playerData.getClaims().size() == 1 && player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.MustHoldModificationToolForThat);
+                if (playerData.getClaims().size() == 1 && player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != configManager.getSystemConfig().modificationTool) {
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.MustHoldModificationToolForThat);
                     return true;
                 }
 
-                radius = (int) Math.ceil(Math.sqrt(GriefPrevention.instance.config_claims_minArea) / 2);
+                radius = (int) Math.ceil(Math.sqrt(configManager.getSystemConfig().minArea) / 2);
             }
 
             //allow for specifying the radius
-            if (args.length > 0)
-            {
-                if (playerData.getClaims().size() < 2 && player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.RadiusRequiresGoldenShovel);
+            if (args.length > 0) {
+                if (playerData.getClaims().size() < 2 && player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != configManager.getSystemConfig().modificationTool) {
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.RadiusRequiresGoldenShovel);
                     return true;
                 }
 
                 int specifiedRadius;
-                try
-                {
+                try {
                     specifiedRadius = Integer.parseInt(args[0]);
                 }
-                catch (NumberFormatException e)
-                {
+                catch (NumberFormatException e) {
                     return false;
                 }
 
-                if (specifiedRadius < radius)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.MinimumRadius, String.valueOf(radius));
+                if (specifiedRadius < radius) {
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.MinimumRadius, String.valueOf(radius));
                     return true;
                 }
-                else
-                {
+                else {
                     radius = specifiedRadius;
                 }
             }
@@ -110,125 +122,92 @@ public class ChungusCommand implements CommandExecutor {
             //player must have sufficient unused claim blocks
             int area = Math.abs((gc.getBlockX() - lc.getBlockX() + 1) * (gc.getBlockZ() - lc.getBlockZ() + 1));
             int remaining = playerData.getRemainingClaimBlocks();
-            if (remaining < area)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(area - remaining));
-                GriefPrevention.instance.dataStore.tryAdvertiseAdminAlternatives(player);
+            if (remaining < area) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(area - remaining));
+                TheatriaClaims.instance.dataStore.tryAdvertiseAdminAlternatives(player);
                 return true;
             }
 
-            CreateClaimResult result = GriefPrevention.instance.dataStore.createClaim(lc.getWorld(),
+            CreateClaimResult result = TheatriaClaims.instance.dataStore.createClaim(lc.getWorld(),
                     lc.getBlockX(), gc.getBlockX(),
-                    lc.getBlockY() - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance - 1,
-                    gc.getWorld().getHighestBlockYAt(gc) - GriefPrevention.instance.config_claims_claimsExtendIntoGroundDistance - 1,
                     lc.getBlockZ(), gc.getBlockZ(),
                     player.getUniqueId(), null, null, player);
-            if (!result.succeeded || result.claim == null)
-            {
-                if (result.claim != null)
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
+            if (!result.succeeded || result.claim == null) {
+                if (result.claim != null) {
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
 
-                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE);
+                    BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, configManager);
                 }
-                else
-                {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
+                else {
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
                 }
             }
-            else
-            {
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
+            else {
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
 
-                //link to a video demo of land claiming, based on world type
-                if (GriefPrevention.instance.creativeRulesApply(player.getLocation())) {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
+                if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
+                    Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
                 }
-                else if (GriefPrevention.instance.claimsEnabledForWorld(player.getWorld()))
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
-                }
-                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM);
+                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, configManager);
                 playerData.claimResizing = null;
                 playerData.lastShovelLocation = null;
 
-                AutoExtendClaimTask.scheduleAsync(result.claim);
+                // AutoExtendClaimTask.scheduleAsync(result.claim);
             }
 
             return true;
         }
 
         //extendclaim
-        if (cmd.getName().equalsIgnoreCase("extendclaim") && player != null)
-        {
-            if (args.length < 1)
-            {
-                //link to a video demo of land claiming, based on world type
-                if (GriefPrevention.instance.creativeRulesApply(player.getLocation()))
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-                }
-                else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getWorld()))
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+        if (cmd.getName().equalsIgnoreCase("extendclaim") && player != null) {
+            if (args.length < 1) {
+                if (configManager.getSystemConfig().claimsEnabledForWorld(player.getLocation().getWorld())) {
+                    Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
                 }
                 return false;
             }
 
             int amount;
-            try
-            {
+            try {
                 amount = Integer.parseInt(args[0]);
             }
-            catch (NumberFormatException e)
-            {
-                //link to a video demo of land claiming, based on world type
-                if (GriefPrevention.instance.creativeRulesApply(player.getLocation()))
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.CreativeBasicsVideo2, DataStore.CREATIVE_VIDEO_URL);
-                }
-                else if (GriefPrevention.instance.claimsEnabledForWorld(player.getLocation().getWorld()))
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
+            catch (NumberFormatException e) {
+                if (configManager.getSystemConfig().claimsEnabledForWorld(player.getLocation().getWorld())) {
+                    Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
                 }
                 return false;
             }
 
             //requires claim modification tool in hand
-            if (player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != GriefPrevention.instance.config_claims_modificationTool)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.MustHoldModificationToolForThat);
+            if (player.getGameMode() != GameMode.CREATIVE && player.getItemInHand().getType() != configManager.getSystemConfig().modificationTool) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.MustHoldModificationToolForThat);
                 return true;
             }
 
             //must be standing in a land claim
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
-            if (claim == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.StandInClaimToResize);
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+            if (claim == null) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.StandInClaimToResize);
                 return true;
             }
 
             //must have permission to edit the land claim you're in
             Supplier<String> errorMessage = claim.checkPermission(player, ClaimPermission.Edit, null);
-            if (errorMessage != null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NotYourClaim);
+            if (errorMessage != null) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotYourClaim);
                 return true;
             }
 
             //determine new corner coordinates
             org.bukkit.util.Vector direction = player.getLocation().getDirection();
-            if (direction.getY() > .75)
-            {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ClaimsExtendToSky);
+            if (direction.getY() > .75) {
+                Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.ClaimsExtendToSky);
                 return true;
             }
 
-            if (direction.getY() < -.75)
-            {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.ClaimsAutoExtendDownward);
+            if (direction.getY() < -.75) {
+                Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.ClaimsAutoExtendDownward);
                 return true;
             }
 
@@ -236,94 +215,78 @@ public class ChungusCommand implements CommandExecutor {
             Location gc = claim.getGreaterBoundaryCorner();
             int newx1 = lc.getBlockX();
             int newx2 = gc.getBlockX();
-            int newy1 = lc.getBlockY();
-            int newy2 = gc.getBlockY();
             int newz1 = lc.getBlockZ();
             int newz2 = gc.getBlockZ();
 
             //if changing Z only
-            if (Math.abs(direction.getX()) < .3)
-            {
-                if (direction.getZ() > 0)
-                {
+            if (Math.abs(direction.getX()) < .3) {
+                if (direction.getZ() > 0) {
                     newz2 += amount;  //north
                 }
-                else
-                {
+                else {
                     newz1 -= amount;  //south
                 }
             }
 
             //if changing X only
-            else if (Math.abs(direction.getZ()) < .3)
-            {
-                if (direction.getX() > 0)
-                {
+            else if (Math.abs(direction.getZ()) < .3) {
+                if (direction.getX() > 0) {
                     newx2 += amount;  //east
                 }
-                else
-                {
+                else {
                     newx1 -= amount;  //west
                 }
             }
 
             //diagonals
-            else
-            {
-                if (direction.getX() > 0)
-                {
+            else {
+                if (direction.getX() > 0) {
                     newx2 += amount;
                 }
-                else
-                {
+                else {
                     newx1 -= amount;
                 }
 
-                if (direction.getZ() > 0)
-                {
+                if (direction.getZ() > 0) {
                     newz2 += amount;
                 }
-                else
-                {
+                else {
                     newz1 -= amount;
                 }
             }
 
             //attempt resize
             playerData.claimResizing = claim;
-            GriefPrevention.instance.dataStore.resizeClaimWithChecks(player, playerData, newx1, newx2, newy1, newy2, newz1, newz2);
+            TheatriaClaims.instance.dataStore.resizeClaimWithChecks(player, playerData, newx1, newx2, newz1, newz2);
             playerData.claimResizing = null;
 
             return true;
         }
 
         //abandonclaim
-        if (cmd.getName().equalsIgnoreCase("abandonclaim") && player != null)
-        {
-            return GriefPrevention.instance.abandonClaimHandler(player, false);
+        if (cmd.getName().equalsIgnoreCase("abandonclaim") && player != null) {
+            return TheatriaClaims.instance.abandonClaimHandler(player, false);
         }
 
         //abandontoplevelclaim
-        if (cmd.getName().equalsIgnoreCase("abandontoplevelclaim") && player != null)
-        {
-            return GriefPrevention.instance.abandonClaimHandler(player, true);
+        if (cmd.getName().equalsIgnoreCase("abandontoplevelclaim") && player != null) {
+            return TheatriaClaims.instance.abandonClaimHandler(player, true);
         }
 
         //ignoreclaims
-        if (cmd.getName().equalsIgnoreCase("ignoreclaims") && player != null)
-        {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+        if (cmd.getName().equalsIgnoreCase("ignoreclaims") && player != null) {
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
             playerData.ignoreClaims = !playerData.ignoreClaims;
 
             //toggle ignore claims mode on or off
             if (!playerData.ignoreClaims)
             {
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.RespectingClaims);
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.RespectingClaims);
             }
             else
             {
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.IgnoringClaims);
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.IgnoringClaims);
             }
 
             return true;
@@ -336,37 +299,37 @@ public class ChungusCommand implements CommandExecutor {
 
             if (args.length != 1 || !"confirm".equalsIgnoreCase(args[0]))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ConfirmAbandonAllClaims);
+                Messages.sendMessage(player,configManager, TextMode.Err.getColor(), MessageType.ConfirmAbandonAllClaims);
                 return true;
             }
 
             //count claims
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
             int originalClaimCount = playerData.getClaims().size();
 
             //check count
             if (originalClaimCount == 0)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.YouHaveNoClaims);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.YouHaveNoClaims);
                 return true;
             }
 
-            if (GriefPrevention.instance.config_claims_abandonReturnRatio != 1.0D)
+            if (configManager.getSystemConfig().abandonReturnRatio != 1.0D)
             {
                 //adjust claim blocks
                 for (Claim claim : playerData.getClaims())
                 {
-                    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - GriefPrevention.instance.config_claims_abandonReturnRatio))));
+                    playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - configManager.getSystemConfig().abandonReturnRatio))));
                 }
             }
 
 
             //delete them
-            GriefPrevention.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
+            TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(player.getUniqueId(), false);
 
             //inform the player
             int remainingBlocks = playerData.getRemainingClaimBlocks();
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SuccessfulAbandon, String.valueOf(remainingBlocks));
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SuccessfulAbandon, String.valueOf(remainingBlocks));
 
             //revert any current visualization
             playerData.setVisibleBoundaries(null);
@@ -381,7 +344,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //most trust commands use this helper method, it keeps them consistent
-            GriefPrevention.instance.handleTrustCommand(player, ClaimPermission.Build, args[0]);
+            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Build, args[0]);
 
             return true;
         }
@@ -390,17 +353,17 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("transferclaim") && player != null)
         {
             //which claim is the user in?
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, null);
             if (claim == null)
             {
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.TransferClaimMissing);
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.TransferClaimMissing);
                 return true;
             }
 
             //check additional permission for admin claims
-            if (claim.isAdminClaim() && !player.hasPermission("griefprevention.adminclaims"))
+            if (claim.isAdminClaim() && !player.hasPermission("TheatriaClaims.adminclaims"))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.TransferClaimPermission);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.TransferClaimPermission);
                 return true;
             }
 
@@ -412,7 +375,7 @@ public class ChungusCommand implements CommandExecutor {
                 OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
                 if (targetPlayer == null)
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                     return true;
                 }
                 newOwnerID = targetPlayer.getUniqueId();
@@ -422,17 +385,17 @@ public class ChungusCommand implements CommandExecutor {
             //change ownerhsip
             try
             {
-                GriefPrevention.instance.dataStore.changeClaimOwner(claim, newOwnerID);
+                TheatriaClaims.instance.dataStore.changeClaimOwner(claim, newOwnerID);
             }
             catch (DataStore.NoTransferException e)
             {
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.TransferTopLevel);
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.TransferTopLevel);
                 return true;
             }
 
             //confirm
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.TransferSuccess);
-            GriefPrevention.AddLogEntry(player.getName() + " transferred a claim at " + getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".", CustomLogEntryTypes.AdminActivity);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.TransferSuccess);
+            CustomLogger.log(player.getName() + " transferred a claim at " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + " to " + ownerName + ".");
 
             return true;
         }
@@ -440,19 +403,18 @@ public class ChungusCommand implements CommandExecutor {
         //trustlist
         else if (cmd.getName().equalsIgnoreCase("trustlist") && player != null)
         {
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, null);
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, null);
 
             //if no claim here, error message
             if (claim == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.TrustListNoClaim);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.TrustListNoClaim);
                 return true;
             }
 
             //if no permission to manage permissions, error message
             Supplier<String> errorMessage = claim.checkPermission(player, ClaimPermission.Manage, null);
-            if (errorMessage != null)
-            {
+            if (errorMessage != null) {
                 Messages.sendMessage(player, TextMode.Err.getColor(), errorMessage.get());
                 return true;
             }
@@ -465,7 +427,7 @@ public class ChungusCommand implements CommandExecutor {
             ArrayList<String> managers = new ArrayList<>();
             claim.getPermissions(builders, containers, accessors, managers);
 
-            Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.TrustListHeader);
+            Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.TrustListHeader);
 
             StringBuilder permissions = new StringBuilder();
             permissions.append(ChatColor.GOLD).append('>');
@@ -473,7 +435,7 @@ public class ChungusCommand implements CommandExecutor {
             if (managers.size() > 0)
             {
                 for (String manager : managers)
-                    permissions.append(GriefPrevention.instance.trustEntryToPlayerName(manager)).append(' ');
+                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(manager)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -483,7 +445,7 @@ public class ChungusCommand implements CommandExecutor {
             if (builders.size() > 0)
             {
                 for (String builder : builders)
-                    permissions.append(GriefPrevention.instance.trustEntryToPlayerName(builder)).append(' ');
+                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(builder)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -493,7 +455,7 @@ public class ChungusCommand implements CommandExecutor {
             if (containers.size() > 0)
             {
                 for (String container : containers)
-                    permissions.append(GriefPrevention.instance.trustEntryToPlayerName(container)).append(' ');
+                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(container)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -503,20 +465,19 @@ public class ChungusCommand implements CommandExecutor {
             if (accessors.size() > 0)
             {
                 for (String accessor : accessors)
-                    permissions.append(GriefPrevention.instance.trustEntryToPlayerName(accessor)).append(' ');
+                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(accessor)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
 
             player.sendMessage(
-                    ChatColor.GOLD + GriefPrevention.instance.dataStore.getMessage(MessageType.Manage) + " " +
-                            ChatColor.YELLOW + GriefPrevention.instance.dataStore.getMessage(MessageType.Build) + " " +
-                            ChatColor.GREEN + GriefPrevention.instance.dataStore.getMessage(MessageType.Containers) + " " +
-                            ChatColor.BLUE + GriefPrevention.instance.dataStore.getMessage(MessageType.Access));
+                    ChatColor.GOLD + configManager.getMessagesConfig().getMessage(MessageType.Manage) + " " +
+                            ChatColor.YELLOW + configManager.getMessagesConfig().getMessage(MessageType.Build) + " " +
+                            ChatColor.GREEN + configManager.getMessagesConfig().getMessage(MessageType.Containers) + " " +
+                            ChatColor.BLUE + configManager.getMessagesConfig().getMessage(MessageType.Access));
 
-            if (claim.getSubclaimRestrictions())
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.HasSubclaimRestriction);
+            if (claim.getSubclaimRestrictions()) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.HasSubclaimRestriction);
             }
 
             return true;
@@ -529,7 +490,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //determine which claim the player is standing in
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             //determine whether a single player or clearing permissions entirely
             boolean clearPermissions = false;
@@ -542,7 +503,7 @@ public class ChungusCommand implements CommandExecutor {
                 }
                 else
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClearPermsOwnerOnly);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClearPermsOwnerOnly);
                     return true;
                 }
             }
@@ -561,7 +522,7 @@ public class ChungusCommand implements CommandExecutor {
                         }
                         else
                         {
-                            Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                             return true;
                         }
                     }
@@ -575,7 +536,7 @@ public class ChungusCommand implements CommandExecutor {
             //if no claim here, apply changes to all his claims
             if (claim == null)
             {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
                 String idToDrop = args[0];
                 if (otherPlayer != null)
@@ -610,7 +571,7 @@ public class ChungusCommand implements CommandExecutor {
                     }
 
                     //save changes
-                    GriefPrevention.instance.dataStore.saveClaim(claim);
+                    TheatriaClaims.instance.dataStore.saveClaim(claim);
                 }
 
                 //beautify for output
@@ -622,18 +583,18 @@ public class ChungusCommand implements CommandExecutor {
                 //confirmation message
                 if (!clearPermissions)
                 {
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UntrustIndividualAllClaims, args[0]);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UntrustIndividualAllClaims, args[0]);
                 }
                 else
                 {
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UntrustEveryoneAllClaims);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UntrustEveryoneAllClaims);
                 }
             }
 
             //otherwise, apply changes to only this claim
             else if (claim.checkPermission(player, ClaimPermission.Manage, null) != null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
                 return true;
             }
             else
@@ -644,7 +605,7 @@ public class ChungusCommand implements CommandExecutor {
                     //requires owner
                     if (claim.checkPermission(player, ClaimPermission.Edit, null) != null)
                     {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.UntrustAllOwnerOnly);
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.UntrustAllOwnerOnly);
                         return true;
                     }
 
@@ -658,7 +619,7 @@ public class ChungusCommand implements CommandExecutor {
                     }
 
                     event.getClaims().forEach(Claim::clearPermissions);
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.ClearPermissionsOneClaim);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.ClearPermissionsOneClaim);
                 }
 
                 //otherwise individual permission drop
@@ -672,7 +633,7 @@ public class ChungusCommand implements CommandExecutor {
                     boolean targetIsManager = claim.managers.contains(idToDrop);
                     if (targetIsManager && claim.checkPermission(player, ClaimPermission.Edit, null) != null)  //only claim owners can untrust managers
                     {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ManagersDontUntrustManagers, claim.getOwnerName());
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ManagersDontUntrustManagers, claim.getOwnerName());
                         return true;
                     }
                     else
@@ -694,12 +655,12 @@ public class ChungusCommand implements CommandExecutor {
                             args[0] = "the public";
                         }
 
-                        Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UntrustIndividualSingleClaim, args[0]);
+                        Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UntrustIndividualSingleClaim, args[0]);
                     }
                 }
 
                 //save changes
-                GriefPrevention.instance.dataStore.saveClaim(claim);
+                TheatriaClaims.instance.dataStore.saveClaim(claim);
             }
 
             return true;
@@ -711,7 +672,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            GriefPrevention.instance.handleTrustCommand(player, ClaimPermission.Access, args[0]);
+            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Access, args[0]);
 
             return true;
         }
@@ -722,7 +683,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            GriefPrevention.instance.handleTrustCommand(player, ClaimPermission.Inventory, args[0]);
+            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Inventory, args[0]);
 
             return true;
         }
@@ -733,7 +694,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            GriefPrevention.instance.handleTrustCommand(player, null, args[0]);  //null indicates permissiontrust to the helper method
+            TheatriaClaims.instance.handleTrustCommand(player, null, args[0]);  //null indicates permissiontrust to the helper method
 
             return true;
         }
@@ -741,34 +702,34 @@ public class ChungusCommand implements CommandExecutor {
         //restrictsubclaim
         else if (cmd.getName().equalsIgnoreCase("restrictsubclaim") && player != null)
         {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
             if (claim == null || claim.parent == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.StandInSubclaim);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.StandInSubclaim);
                 return true;
             }
 
             // If player has /ignoreclaims on, continue
             // If admin claim, fail if this user is not an admin
             // If not an admin claim, fail if this user is not the owner
-            if (!playerData.ignoreClaims && (claim.isAdminClaim() ? !player.hasPermission("griefprevention.adminclaims") : !player.getUniqueId().equals(claim.parent.ownerID)))
+            if (!playerData.ignoreClaims && (claim.isAdminClaim() ? !player.hasPermission("TheatriaClaims.adminclaims") : !player.getUniqueId().equals(claim.parent.ownerID)))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.OnlyOwnersModifyClaims, claim.getOwnerName());
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.OnlyOwnersModifyClaims, claim.getOwnerName());
                 return true;
             }
 
             if (claim.getSubclaimRestrictions())
             {
                 claim.setSubclaimRestrictions(false);
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SubclaimUnrestricted);
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SubclaimUnrestricted);
             }
             else
             {
                 claim.setSubclaimRestrictions(true);
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SubclaimRestricted);
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SubclaimRestricted);
             }
-            GriefPrevention.instance.dataStore.saveClaim(claim);
+            TheatriaClaims.instance.dataStore.saveClaim(claim);
             return true;
         }
 
@@ -779,20 +740,19 @@ public class ChungusCommand implements CommandExecutor {
             EconomyHandler.EconomyWrapper economyWrapper = economyHandler.getWrapper();
             if (economyWrapper == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.BuySellNotConfigured);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.BuySellNotConfigured);
                 return true;
             }
 
-            if (!player.hasPermission("griefprevention.buysellclaimblocks"))
+            if (!player.hasPermission("TheatriaClaims.buysellclaimblocks"))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoPermissionForCommand);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionForCommand);
                 return true;
             }
 
             //if purchase disabled, send error message
-            if (GriefPrevention.instance.config_economy_claimBlocksPurchaseCost == 0)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.OnlySellBlocks);
+            if (configManager.getEconomyConfig().economy_claimBlocksPurchaseCost == 0) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.OnlySellBlocks);
                 return true;
             }
 
@@ -801,12 +761,12 @@ public class ChungusCommand implements CommandExecutor {
             //if no parameter, just tell player cost per block and balance
             if (args.length != 1)
             {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BlockPurchaseCost, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksPurchaseCost), String.valueOf(economy.getBalance(player)));
+                Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BlockPurchaseCost, String.valueOf(configManager.getEconomyConfig().economy_claimBlocksPurchaseCost), String.valueOf(economy.getBalance(player)));
                 return false;
             }
             else
             {
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
                 //try to parse number of blocks
                 int blockCount;
@@ -826,10 +786,10 @@ public class ChungusCommand implements CommandExecutor {
 
                 //if the player can't afford his purchase, send error message
                 double balance = economy.getBalance(player);
-                double totalCost = blockCount * GriefPrevention.instance.config_economy_claimBlocksPurchaseCost;
+                double totalCost = blockCount * configManager.getEconomyConfig().economy_claimBlocksPurchaseCost;
                 if (totalCost > balance)
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.InsufficientFunds, String.valueOf(totalCost), String.valueOf(balance));
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.InsufficientFunds, String.valueOf(totalCost), String.valueOf(balance));
                 }
 
                 //otherwise carry out transaction
@@ -838,10 +798,10 @@ public class ChungusCommand implements CommandExecutor {
                     int newBonusClaimBlocks = playerData.getBonusClaimBlocks() + blockCount;
 
                     //if the player is going to reach max bonus limit, send error message
-                    int bonusBlocksLimit = GriefPrevention.instance.config_economy_claimBlocksMaxBonus;
+                    int bonusBlocksLimit = configManager.getEconomyConfig().economy_claimBlocksMaxBonus;
                     if (bonusBlocksLimit != 0 && newBonusClaimBlocks > bonusBlocksLimit)
                     {
-                        Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.MaxBonusReached, String.valueOf(blockCount), String.valueOf(bonusBlocksLimit));
+                        Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.MaxBonusReached, String.valueOf(blockCount), String.valueOf(bonusBlocksLimit));
                         return true;
                     }
 
@@ -850,10 +810,10 @@ public class ChungusCommand implements CommandExecutor {
 
                     //add blocks
                     playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
-                    GriefPrevention.instance.dataStore.savePlayerData(player.getUniqueId(), playerData);
+                    TheatriaClaims.instance.dataStore.savePlayerData(player.getUniqueId(), playerData);
 
                     //inform player
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.PurchaseConfirmation, String.valueOf(totalCost), String.valueOf(playerData.getRemainingClaimBlocks()));
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.PurchaseConfirmation, String.valueOf(totalCost), String.valueOf(playerData.getRemainingClaimBlocks()));
                 }
 
                 return true;
@@ -867,31 +827,31 @@ public class ChungusCommand implements CommandExecutor {
             EconomyHandler.EconomyWrapper economyWrapper = economyHandler.getWrapper();
             if (economyWrapper == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.BuySellNotConfigured);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.BuySellNotConfigured);
                 return true;
             }
 
-            if (!player.hasPermission("griefprevention.buysellclaimblocks"))
+            if (!player.hasPermission("TheatriaClaims.buysellclaimblocks"))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoPermissionForCommand);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionForCommand);
                 return true;
             }
 
             //if disabled, error message
-            if (GriefPrevention.instance.config_economy_claimBlocksSellValue == 0)
+            if (configManager.getEconomyConfig().economy_claimBlocksSellValue == 0)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.OnlyPurchaseBlocks);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.OnlyPurchaseBlocks);
                 return true;
             }
 
             //load player data
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
             int availableBlocks = playerData.getRemainingClaimBlocks();
 
             //if no amount provided, just tell player value per block sold, and how many he can sell
             if (args.length != 1)
             {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.BlockSaleValue, String.valueOf(GriefPrevention.instance.config_economy_claimBlocksSellValue), String.valueOf(availableBlocks));
+                Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.BlockSaleValue, String.valueOf(configManager.getEconomyConfig().economy_claimBlocksSellValue), String.valueOf(availableBlocks));
                 return false;
             }
 
@@ -914,22 +874,22 @@ public class ChungusCommand implements CommandExecutor {
             //if he doesn't have enough blocks, tell him so
             if (blockCount > availableBlocks)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NotEnoughBlocksForSale);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotEnoughBlocksForSale);
             }
 
             //otherwise carry out the transaction
             else
             {
                 //compute value and deposit it
-                double totalValue = blockCount * GriefPrevention.instance.config_economy_claimBlocksSellValue;
+                double totalValue = blockCount * configManager.getEconomyConfig().economy_claimBlocksSellValue;
                 economyWrapper.getEconomy().depositPlayer(player, totalValue);
 
                 //subtract blocks
                 playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
-                GriefPrevention.instance.dataStore.savePlayerData(player.getUniqueId(), playerData);
+                TheatriaClaims.instance.dataStore.savePlayerData(player.getUniqueId(), playerData);
 
                 //inform player
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.BlockSaleConfirmation, String.valueOf(totalValue), String.valueOf(playerData.getRemainingClaimBlocks()));
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.BlockSaleConfirmation, String.valueOf(totalValue), String.valueOf(playerData.getRemainingClaimBlocks()));
             }
 
             return true;
@@ -938,9 +898,9 @@ public class ChungusCommand implements CommandExecutor {
         //adminclaims
         else if (cmd.getName().equalsIgnoreCase("adminclaims") && player != null)
         {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Admin;
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AdminClaimsMode);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdminClaimsMode);
 
             return true;
         }
@@ -948,10 +908,10 @@ public class ChungusCommand implements CommandExecutor {
         //basicclaims
         else if (cmd.getName().equalsIgnoreCase("basicclaims") && player != null)
         {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Basic;
             playerData.claimSubdividing = null;
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.BasicClaimsMode);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.BasicClaimsMode);
 
             return true;
         }
@@ -959,11 +919,11 @@ public class ChungusCommand implements CommandExecutor {
         //subdivideclaims
         else if (cmd.getName().equalsIgnoreCase("subdivideclaims") && player != null)
         {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Subdivide;
             playerData.claimSubdividing = null;
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SubdivisionMode);
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, DataStore.SUBDIVISION_VIDEO_URL);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionMode);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionVideo2, DataStore.SUBDIVISION_VIDEO_URL);
 
             return true;
         }
@@ -972,26 +932,26 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("deleteclaim") && player != null)
         {
             //determine which claim the player is standing in
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             if (claim == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.DeleteClaimMissing);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.DeleteClaimMissing);
             }
             else
             {
                 //deleting an admin claim additionally requires the adminclaims permission
-                if (!claim.isAdminClaim() || player.hasPermission("griefprevention.adminclaims")) {
-                    PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+                if (!claim.isAdminClaim() || player.hasPermission("TheatriaClaims.adminclaims")) {
+                    PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
                     if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
-                        Messages.sendMessage(player, TextMode.Warn.getColor(), MessageType.DeletionSubdivisionWarning);
+                        Messages.sendMessage(player, configManager, TextMode.Warn.getColor(), MessageType.DeletionSubdivisionWarning);
                         playerData.warnedAboutMajorDeletion = true;
                     }
                     else {
-                        claim.removeSurfaceFluids(null);
-                        GriefPrevention.instance.dataStore.deleteClaim(claim, true, true);
-                        Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.DeleteSuccess);
-                        GriefPrevention.AddLogEntry(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + getfriendlyLocationString(claim.getLesserBoundaryCorner()), CustomLogEntryTypes.AdminActivity);
+                        // claim.removeSurfaceFluids(null);
+                        TheatriaClaims.instance.dataStore.deleteClaim(claim, true, true);
+                        Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DeleteSuccess);
+                        CustomLogger.log(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                         //revert any current visualization
                         playerData.setVisibleBoundaries(null);
                         playerData.warnedAboutMajorDeletion = false;
@@ -999,7 +959,7 @@ public class ChungusCommand implements CommandExecutor {
                 }
                 else
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.CantDeleteAdminClaim);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CantDeleteAdminClaim);
                 }
             }
 
@@ -1008,11 +968,11 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("claimexplosions") && player != null)
         {
             //determine which claim the player is standing in
-            Claim claim = GriefPrevention.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             if (claim == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.DeleteClaimMissing);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.DeleteClaimMissing);
             }
             else
             {
@@ -1026,12 +986,12 @@ public class ChungusCommand implements CommandExecutor {
                 if (claim.areExplosivesAllowed)
                 {
                     claim.areExplosivesAllowed = false;
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.ExplosivesDisabled);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.ExplosivesDisabled);
                 }
                 else
                 {
                     claim.areExplosivesAllowed = true;
-                    Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.ExplosivesEnabled);
+                    Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.ExplosivesEnabled);
                 }
             }
 
@@ -1048,22 +1008,22 @@ public class ChungusCommand implements CommandExecutor {
             OfflinePlayer otherPlayer = PlayerName.resolvePlayerByName(args[0]);
             if (otherPlayer == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return true;
             }
 
             //delete all that player's claims
-            GriefPrevention.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
+            TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.DeleteAllSuccess, otherPlayer.getName());
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DeleteAllSuccess, otherPlayer.getName());
             if (player != null)
             {
-                GriefPrevention.AddLogEntry(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".", CustomLogEntryTypes.AdminActivity);
+                CustomLogger.log(player.getName() + " deleted all claims belonging to " + otherPlayer.getName() + ".");
 
                 //revert any current visualization
                 if (player.isOnline())
                 {
-                    GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
+                    TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
                 }
             }
 
@@ -1074,7 +1034,7 @@ public class ChungusCommand implements CommandExecutor {
             //must be executed at the console
             if (player != null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ConsoleOnlyCommand);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ConsoleOnlyCommand);
                 return true;
             }
 
@@ -1085,13 +1045,13 @@ public class ChungusCommand implements CommandExecutor {
             World world = Bukkit.getServer().getWorld(args[0]);
             if (world == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.WorldNotFound);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.WorldNotFound);
                 return true;
             }
 
             //delete all claims in that world
-            GriefPrevention.instance.dataStore.deleteClaimsInWorld(world, true);
-            GriefPrevention.AddLogEntry("Deleted all claims in world: " + world.getName() + ".", CustomLogEntryTypes.AdminActivity);
+            TheatriaClaims.instance.dataStore.deleteClaimsInWorld(world, true);
+            CustomLogger.log("Deleted all claims in world: " + world.getName() + ".");
             return true;
         }
         else if (cmd.getName().equalsIgnoreCase("deleteuserclaimsinworld"))
@@ -1099,7 +1059,7 @@ public class ChungusCommand implements CommandExecutor {
             //must be executed at the console
             if (player != null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ConsoleOnlyCommand);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ConsoleOnlyCommand);
                 return true;
             }
 
@@ -1110,13 +1070,13 @@ public class ChungusCommand implements CommandExecutor {
             World world = Bukkit.getServer().getWorld(args[0]);
             if (world == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.WorldNotFound);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.WorldNotFound);
                 return true;
             }
 
             //delete all USER claims in that world
-            GriefPrevention.instance.dataStore.deleteClaimsInWorld(world, false);
-            GriefPrevention.AddLogEntry("Deleted all user claims in world: " + world.getName() + ".", CustomLogEntryTypes.AdminActivity);
+            TheatriaClaims.instance.dataStore.deleteClaimsInWorld(world, false);
+            CustomLogger.log("Deleted all user claims in world: " + world.getName() + ".");
             return true;
         }
 
@@ -1127,15 +1087,14 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //try to find the specified player
-            Player otherPlayer = GriefPrevention.instance.getServer().getPlayer(args[0]);
+            Player otherPlayer = TheatriaClaims.instance.getServer().getPlayer(args[0]);
             if (otherPlayer == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return true;
             }
-            else
-            {
-                WelcomeTask task = new WelcomeTask(otherPlayer);
+            else {
+                WelcomeTask task = new WelcomeTask(otherPlayer, configManager);
                 task.run();
                 return true;
             }
@@ -1160,9 +1119,9 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //otherwise if no permission to delve into another player's claims data
-            else if (player != null && !player.hasPermission("griefprevention.claimslistother"))
+            else if (player != null && !player.hasPermission("TheatriaClaims.claimslistother"))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.ClaimsListNoPermission);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClaimsListNoPermission);
                 return true;
             }
 
@@ -1172,33 +1131,33 @@ public class ChungusCommand implements CommandExecutor {
                 otherPlayer = PlayerName.resolvePlayerByName(args[0]);
                 if (otherPlayer == null)
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                     return true;
                 }
             }
 
             //load the target player's data
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(otherPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(otherPlayer.getUniqueId());
             Vector<Claim> claims = playerData.getClaims();
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.StartBlockMath,
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.StartBlockMath,
                     String.valueOf(playerData.getAccruedClaimBlocks()),
-                    String.valueOf((playerData.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
-                    String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + GriefPrevention.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
+                    String.valueOf((playerData.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))),
+                    String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + TheatriaClaims.instance.dataStore.getGroupBonusBlocks(otherPlayer.getUniqueId()))));
             if (claims.size() > 0)
             {
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.ClaimsListHeader);
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ClaimsListHeader);
                 for (int i = 0; i < playerData.getClaims().size(); i++)
                 {
                     Claim claim = playerData.getClaims().get(i);
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), getfriendlyLocationString(claim.getLesserBoundaryCorner()) + GriefPrevention.instance.dataStore.getMessage(MessageType.ContinueBlockMath, String.valueOf(claim.getArea())));
+                    Messages.sendMessage(player, TextMode.Instr.getColor(), GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()) + configManager.getMessagesConfig().getMessage(MessageType.ContinueBlockMath, String.valueOf(claim.getArea())));
                 }
 
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.EndBlockMath, String.valueOf(playerData.getRemainingClaimBlocks()));
             }
 
             //drop the data we just loaded, if the player isn't online
             if (!otherPlayer.isOnline())
-                GriefPrevention.instance.dataStore.clearCachedPlayerData(otherPlayer.getUniqueId());
+                TheatriaClaims.instance.dataStore.clearCachedPlayerData(otherPlayer.getUniqueId());
 
             return true;
         }
@@ -1208,7 +1167,7 @@ public class ChungusCommand implements CommandExecutor {
         {
             //find admin claims
             Vector<Claim> claims = new Vector<>();
-            for (Claim claim : GriefPrevention.instance.dataStore.claims)
+            for (Claim claim : TheatriaClaims.instance.dataStore.claims)
             {
                 if (claim.ownerID == null)  //admin claim
                 {
@@ -1217,10 +1176,9 @@ public class ChungusCommand implements CommandExecutor {
             }
             if (claims.size() > 0)
             {
-                Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.ClaimsListHeader);
-                for (Claim claim : claims)
-                {
-                    Messages.sendMessage(player, TextMode.Instr.getColor(), getfriendlyLocationString(claim.getLesserBoundaryCorner()));
+                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ClaimsListHeader);
+                for (Claim claim : claims) {
+                    Messages.sendMessage(player, TextMode.Instr.getColor(), GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                 }
             }
 
@@ -1232,22 +1190,22 @@ public class ChungusCommand implements CommandExecutor {
         {
             PlayerData playerData;
 
-            if (player.hasPermission("griefprevention.unlockothersdrops") && args.length == 1)
+            if (player.hasPermission("TheatriaClaims.unlockothersdrops") && args.length == 1)
             {
                 Player otherPlayer = Bukkit.getPlayer(args[0]);
                 if (otherPlayer == null)
                 {
-                    Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                    Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                     return true;
                 }
 
-                playerData = GriefPrevention.instance.dataStore.getPlayerData(otherPlayer.getUniqueId());
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.DropUnlockOthersConfirmation, otherPlayer.getName());
+                playerData = TheatriaClaims.instance.dataStore.getPlayerData(otherPlayer.getUniqueId());
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DropUnlockOthersConfirmation, otherPlayer.getName());
             }
             else
             {
-                playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.DropUnlockConfirmation);
+                playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DropUnlockConfirmation);
             }
 
             playerData.dropsAreUnlocked = true;
@@ -1258,22 +1216,22 @@ public class ChungusCommand implements CommandExecutor {
         //deletealladminclaims
         else if (player != null && cmd.getName().equalsIgnoreCase("deletealladminclaims"))
         {
-            if (!player.hasPermission("griefprevention.deleteclaims"))
+            if (!player.hasPermission("TheatriaClaims.deleteclaims"))
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NoDeletePermission);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoDeletePermission);
                 return true;
             }
 
             //delete all admin claims
-            GriefPrevention.instance.dataStore.deleteClaimsForPlayer(null, true);  //null for owner id indicates an administrative claim
+            TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(null, true);  //null for owner id indicates an administrative claim
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AllAdminDeleted);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AllAdminDeleted);
             if (player != null)
             {
-                GriefPrevention.AddLogEntry(player.getName() + " deleted all administrative claims.", CustomLogEntryTypes.AdminActivity);
+                CustomLogger.log(player.getName() + " deleted all administrative claims.");
 
                 //revert any current visualization
-                GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
+                TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
             }
 
             return true;
@@ -1300,11 +1258,11 @@ public class ChungusCommand implements CommandExecutor {
             if (args[0].startsWith("[") && args[0].endsWith("]"))
             {
                 String permissionIdentifier = args[0].substring(1, args[0].length() - 1);
-                int newTotal = GriefPrevention.instance.dataStore.adjustGroupBonusBlocks(permissionIdentifier, adjustment);
+                int newTotal = TheatriaClaims.instance.dataStore.adjustGroupBonusBlocks(permissionIdentifier, adjustment);
 
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AdjustGroupBlocksSuccess, permissionIdentifier, String.valueOf(adjustment), String.valueOf(newTotal));
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdjustGroupBlocksSuccess, permissionIdentifier, String.valueOf(adjustment), String.valueOf(newTotal));
                 if (player != null)
-                    GriefPrevention.AddLogEntry(player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
+                    CustomLogger.log(player.getName() + " adjusted " + permissionIdentifier + "'s bonus claim blocks by " + adjustment + ".");
 
                 return true;
             }
@@ -1314,7 +1272,7 @@ public class ChungusCommand implements CommandExecutor {
             try
             {
                 UUID playerID = UUID.fromString(args[0]);
-                targetPlayer = GriefPrevention.instance.getServer().getOfflinePlayer(playerID);
+                targetPlayer = TheatriaClaims.instance.getServer().getOfflinePlayer(playerID);
 
             }
             catch (IllegalArgumentException e)
@@ -1324,18 +1282,18 @@ public class ChungusCommand implements CommandExecutor {
 
             if (targetPlayer == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return true;
             }
 
             //give blocks to player
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(targetPlayer.getUniqueId());
             playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-            GriefPrevention.instance.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
+            TheatriaClaims.instance.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment), String.valueOf(playerData.getBonusClaimBlocks()));
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment), String.valueOf(playerData.getBonusClaimBlocks()));
             if (player != null)
-                GriefPrevention.AddLogEntry(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".", CustomLogEntryTypes.AdminActivity);
+                CustomLogger.log(player.getName() + " adjusted " + targetPlayer.getName() + "'s bonus claim blocks by " + adjustment + ".");
 
             return true;
         }
@@ -1359,19 +1317,19 @@ public class ChungusCommand implements CommandExecutor {
 
             //for each online player
             @SuppressWarnings("unchecked")
-            Collection<Player> players = (Collection<Player>) GriefPrevention.instance.getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) TheatriaClaims.instance.getServer().getOnlinePlayers();
             StringBuilder builder = new StringBuilder();
             for (Player onlinePlayer : players)
             {
                 UUID playerID = onlinePlayer.getUniqueId();
-                PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(playerID);
+                PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(playerID);
                 playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-                GriefPrevention.instance.dataStore.savePlayerData(playerID, playerData);
+                TheatriaClaims.instance.dataStore.savePlayerData(playerID, playerData);
                 builder.append(onlinePlayer.getName()).append(' ');
             }
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.AdjustBlocksAllSuccess, String.valueOf(adjustment));
-            GriefPrevention.AddLogEntry("Adjusted all " + players.size() + "players' bonus claim blocks by " + adjustment + ".  " + builder.toString(), CustomLogEntryTypes.AdminActivity);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdjustBlocksAllSuccess, String.valueOf(adjustment));
+            CustomLogger.log("Adjusted all " + players.size() + "players' bonus claim blocks by " + adjustment + ".  " + builder.toString());
 
             return true;
         }
@@ -1397,67 +1355,66 @@ public class ChungusCommand implements CommandExecutor {
             OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
             if (targetPlayer == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return true;
             }
 
             //set player's blocks
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(targetPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(targetPlayer.getUniqueId());
             playerData.setAccruedClaimBlocks(newAmount);
-            GriefPrevention.instance.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
+            TheatriaClaims.instance.dataStore.savePlayerData(targetPlayer.getUniqueId(), playerData);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SetClaimBlocksSuccess);
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SetClaimBlocksSuccess);
             if (player != null)
-                GriefPrevention.AddLogEntry(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".", CustomLogEntryTypes.AdminActivity);
+                CustomLogger.log(player.getName() + " set " + targetPlayer.getName() + "'s accrued claim blocks to " + newAmount + ".");
 
             return true;
         }
 
-        else if (cmd.getName().equalsIgnoreCase("softmute"))
-        {
-            //requires one parameter
-            if (args.length != 1) return false;
+        // else if (cmd.getName().equalsIgnoreCase("softmute"))
+        // {
+        //     //requires one parameter
+        //     if (args.length != 1) return false;
 
-            //find the specified player
-            OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-            if (targetPlayer == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     //find the specified player
+        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
+        //     if (targetPlayer == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            //toggle mute for player
-            boolean isMuted = GriefPrevention.instance.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
-            if (isMuted)
-            {
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SoftMuted, targetPlayer.getName());
-                String executorName = "console";
-                if (player != null)
-                {
-                    executorName = player.getName();
-                }
+        //     //toggle mute for player
+        //     boolean isMuted = TheatriaClaims.instance.dataStore.toggleSoftMute(targetPlayer.getUniqueId());
+        //     if (isMuted)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SoftMuted, targetPlayer.getName());
+        //         String executorName = "console";
+        //         if (player != null)
+        //         {
+        //             executorName = player.getName();
+        //         }
 
-                GriefPrevention.AddLogEntry(executorName + " muted " + targetPlayer.getName() + ".", CustomLogEntryTypes.AdminActivity, true);
-            }
-            else
-            {
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UnSoftMuted, targetPlayer.getName());
-            }
+        //         CustomLogger.log(executorName + " muted " + targetPlayer.getName() + ".");
+        //     }
+        //     else
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UnSoftMuted, targetPlayer.getName());
+        //     }
 
-            return true;
-        }
+        //     return true;
+        // }
         else if (cmd.getName().equalsIgnoreCase("gpreload"))
         {
-            GriefPrevention.instance.loadConfig();
-            GriefPrevention.instance.dataStore.loadMessages();
-            playerEventHandler.resetPattern();
+            configManager.loadConfig();
+            configManager.getMessagesConfig().loadMessages();
             if (player != null)
             {
                 Messages.sendMessage(player, TextMode.Success.getColor(), "Configuration updated.  If you have updated your Grief Prevention JAR, you still need to /reload or reboot your server.");
             }
             else
             {
-                GriefPrevention.AddLogEntry("Configuration updated.  If you have updated your Grief Prevention JAR, you still need to /reload or reboot your server.");
+                CustomLogger.log("Configuration updated.  If you have updated your Grief Prevention JAR, you still need to /reload or reboot your server.");
             }
 
             return true;
@@ -1469,13 +1426,13 @@ public class ChungusCommand implements CommandExecutor {
             //requires one parameter
             if (args.length < 1) return false;
 
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
             //special case: cancellation
             if (args[0].equalsIgnoreCase("cancel"))
             {
                 playerData.petGiveawayRecipient = null;
-                Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.PetTransferCancellation);
+                Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.PetTransferCancellation);
                 return true;
             }
 
@@ -1483,7 +1440,7 @@ public class ChungusCommand implements CommandExecutor {
             OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
             if (targetPlayer == null)
             {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
                 return true;
             }
 
@@ -1491,7 +1448,7 @@ public class ChungusCommand implements CommandExecutor {
             playerData.petGiveawayRecipient = targetPlayer;
 
             //send instructions
-            Messages.sendMessage(player, TextMode.Instr.getColor(), MessageType.ReadyToTransferPet);
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ReadyToTransferPet);
 
             return true;
         }
@@ -1509,143 +1466,143 @@ public class ChungusCommand implements CommandExecutor {
             return true;
         }
 
-        //ignoreplayer
-        else if (cmd.getName().equalsIgnoreCase("ignoreplayer") && player != null)
-        {
-            //requires target player name
-            if (args.length < 1) return false;
+        // //ignoreplayer
+        // else if (cmd.getName().equalsIgnoreCase("ignoreplayer") && player != null)
+        // {
+        //     //requires target player name
+        //     if (args.length < 1) return false;
 
-            //validate target player
-            OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-            if (targetPlayer == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     //validate target player
+        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
+        //     if (targetPlayer == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            GriefPrevention.instance.setIgnoreStatus(player, targetPlayer, GriefPrevention.IgnoreMode.StandardIgnore);
+        //     TheatriaClaims.instance.setIgnoreStatus(player, targetPlayer, TheatriaClaims.IgnoreMode.StandardIgnore);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.IgnoreConfirmation);
+        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.IgnoreConfirmation);
 
-            return true;
-        }
+        //     return true;
+        // }
 
-        //unignoreplayer
-        else if (cmd.getName().equalsIgnoreCase("unignoreplayer") && player != null)
-        {
-            //requires target player name
-            if (args.length < 1) return false;
+        // //unignoreplayer
+        // else if (cmd.getName().equalsIgnoreCase("unignoreplayer") && player != null)
+        // {
+        //     //requires target player name
+        //     if (args.length < 1) return false;
 
-            //validate target player
-            OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-            if (targetPlayer == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     //validate target player
+        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
+        //     if (targetPlayer == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
-            if (ignoreStatus == null || ignoreStatus == true)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.NotIgnoringPlayer);
-                return true;
-            }
+        //     PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        //     Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
+        //     if (ignoreStatus == null || ignoreStatus == true)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotIgnoringPlayer);
+        //         return true;
+        //     }
 
-            GriefPrevention.instance.setIgnoreStatus(player, targetPlayer, GriefPrevention.IgnoreMode.None);
+        //     TheatriaClaims.instance.setIgnoreStatus(player, targetPlayer, TheatriaClaims.IgnoreMode.None);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UnIgnoreConfirmation);
+        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UnIgnoreConfirmation);
 
-            return true;
-        }
+        //     return true;
+        // }
 
-        //ignoredplayerlist
-        else if (cmd.getName().equalsIgnoreCase("ignoredplayerlist") && player != null)
-        {
-            PlayerData playerData = GriefPrevention.instance.dataStore.getPlayerData(player.getUniqueId());
-            StringBuilder builder = new StringBuilder();
-            for (Map.Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet())
-            {
-                if (entry.getValue() != null)
-                {
-                    //if not an admin ignore, add it to the list
-                    if (!entry.getValue())
-                    {
-                        builder.append(PlayerName.lookupPlayerName(entry.getKey()));
-                        builder.append(" ");
-                    }
-                }
-            }
+        // //ignoredplayerlist
+        // else if (cmd.getName().equalsIgnoreCase("ignoredplayerlist") && player != null)
+        // {
+        //     PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        //     StringBuilder builder = new StringBuilder();
+        //     for (Map.Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet())
+        //     {
+        //         if (entry.getValue() != null)
+        //         {
+        //             //if not an admin ignore, add it to the list
+        //             if (!entry.getValue())
+        //             {
+        //                 builder.append(PlayerName.lookupPlayerName(entry.getKey()));
+        //                 builder.append(" ");
+        //             }
+        //         }
+        //     }
 
-            String list = builder.toString().trim();
-            if (list.isEmpty())
-            {
-                Messages.sendMessage(player, TextMode.Info.getColor(), MessageType.NotIgnoringAnyone);
-            }
-            else
-            {
-                Messages.sendMessage(player, TextMode.Info.getColor(), list);
-            }
+        //     String list = builder.toString().trim();
+        //     if (list.isEmpty())
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.NotIgnoringAnyone);
+        //     }
+        //     else
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Info.getColor(), list);
+        //     }
 
-            return true;
-        }
+        //     return true;
+        // }
 
-        //separateplayers
-        else if (cmd.getName().equalsIgnoreCase("separate"))
-        {
-            //requires two player names
-            if (args.length < 2) return false;
+        // //separateplayers
+        // else if (cmd.getName().equalsIgnoreCase("separate"))
+        // {
+        //     //requires two player names
+        //     if (args.length < 2) return false;
 
-            //validate target players
-            OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-            if (targetPlayer == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     //validate target players
+        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
+        //     if (targetPlayer == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
-            if (targetPlayer2 == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
+        //     if (targetPlayer2 == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            GriefPrevention.instance.setIgnoreStatus(targetPlayer, targetPlayer2, GriefPrevention.IgnoreMode.AdminIgnore);
+        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer, targetPlayer2, TheatriaClaims.IgnoreMode.AdminIgnore);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.SeparateConfirmation);
+        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SeparateConfirmation);
 
-            return true;
-        }
+        //     return true;
+        // }
 
-        //unseparateplayers
-        else if (cmd.getName().equalsIgnoreCase("unseparate"))
-        {
-            //requires two player names
-            if (args.length < 2) return false;
+        // //unseparateplayers
+        // else if (cmd.getName().equalsIgnoreCase("unseparate"))
+        // {
+        //     //requires two player names
+        //     if (args.length < 2) return false;
 
-            //validate target players
-            OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-            if (targetPlayer == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     //validate target players
+        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
+        //     if (targetPlayer == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
-            if (targetPlayer2 == null)
-            {
-                Messages.sendMessage(player, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return true;
-            }
+        //     OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
+        //     if (targetPlayer2 == null)
+        //     {
+        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+        //         return true;
+        //     }
 
-            GriefPrevention.instance.setIgnoreStatus(targetPlayer, targetPlayer2, GriefPrevention.IgnoreMode.None);
-            GriefPrevention.instance.setIgnoreStatus(targetPlayer2, targetPlayer, GriefPrevention.IgnoreMode.None);
+        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer, targetPlayer2, TheatriaClaims.IgnoreMode.None);
+        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer2, targetPlayer, TheatriaClaims.IgnoreMode.None);
 
-            Messages.sendMessage(player, TextMode.Success.getColor(), MessageType.UnSeparateConfirmation);
+        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UnSeparateConfirmation);
 
-            return true;
-        }
+        //     return true;
+        // }
         return false;
     }
 }
