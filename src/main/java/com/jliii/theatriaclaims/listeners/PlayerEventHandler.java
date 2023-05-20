@@ -1204,31 +1204,4 @@ public class PlayerEventHandler implements Listener {
         return true;
     }
 
-    public String allowBuild(Player player, Location location) {
-        // TODO check all derivatives and rework API
-        return this.allowBuild(player, location, location.getBlock().getType());
-    }
-
-    public String allowBuild(Player player, Location location, Material material) {
-        if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
-
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
-
-        //exception: administrators in ignore claims mode
-        if (playerData.ignoreClaims) return null;
-
-            //if not in the wilderness, then apply claim rules (permissions, etc)
-        else {
-            //cache the claim for later reference
-            playerData.lastClaim = claim;
-            Block block = location.getBlock();
-
-            Supplier<String> supplier = claim.checkPermission(player, ClaimPermission.Build, new BlockPlaceEvent(block, block.getState(), block, new ItemStack(material), player, true, EquipmentSlot.HAND));
-
-            if (supplier == null) return null;
-
-            return supplier.get();
-        }
-    }
 }

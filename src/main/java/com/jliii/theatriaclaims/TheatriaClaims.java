@@ -473,42 +473,6 @@ public class TheatriaClaims extends JavaPlugin {
         while (!chunk.isLoaded() || !chunk.load(true)) ;
     }
 
-    //TODO these methods do nothing currently, could be import issues though
-    public String allowBreak(Player player, Block block, Location location) {
-        return this.allowBreak(player, block, location, new BlockBreakEvent(block, player));
-    }
-
-    public String allowBreak(Player player, Material material, Location location, BlockBreakEvent breakEvent) {
-        return this.allowBreak(player, location.getBlock(), location, breakEvent);
-    }
-
-    public String allowBreak(Player player, Block block, Location location, BlockBreakEvent breakEvent) {
-        if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
-
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = this.dataStore.getClaimAt(location, false, playerData.lastClaim);
-
-        //exception: administrators in ignore claims mode
-        if (playerData.ignoreClaims) return null;
-
-        else {
-            //cache the claim for later reference
-            playerData.lastClaim = claim;
-
-            //if not in the wilderness, then apply claim rules (permissions, etc)
-            Supplier<String> cancel = claim.checkPermission(player, ClaimPermission.Build, breakEvent);
-            if (cancel != null && breakEvent != null) {
-                PreventBlockBreakEvent preventionEvent = new PreventBlockBreakEvent(breakEvent);
-                Bukkit.getPluginManager().callEvent(preventionEvent);
-                if (preventionEvent.isCancelled()) {
-                    cancel = null;
-                }
-            }
-            if (cancel == null) return null;
-            return cancel.get();
-        }
-    }
-
     public Set<Material> parseMaterialListFromConfig(List<String> stringsToParse) {
         Set<Material> materials = EnumSet.noneOf(Material.class);
         //for each string in the list

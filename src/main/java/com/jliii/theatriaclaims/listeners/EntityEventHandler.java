@@ -19,7 +19,12 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.claim.Claim;
+import com.jliii.theatriaclaims.enums.ClaimsMode;
+import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.managers.PermissionManager;
 import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.*;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
@@ -51,17 +56,19 @@ import java.util.*;
 import java.util.function.Supplier;
 
 //handles events related to entities
-public class EntityEventHandler implements Listener
-{
+public class EntityEventHandler implements Listener {
     //convenience reference for the singleton datastore
     private final DataStore dataStore;
+    private final PermissionManager permissionManager;
+    private final ConfigManager configManager;
     private final TheatriaClaims instance;
     private final NamespacedKey luredByPlayer;
 
-    public EntityEventHandler(DataStore dataStore, TheatriaClaims plugin)
-    {
+    public EntityEventHandler(DataStore dataStore, TheatriaClaims plugin, ConfigManager configManager, PermissionManager permissionManager) {
         this.dataStore = dataStore;
         instance = plugin;
+        this.configManager = configManager;
+        this.permissionManager = permissionManager;
         luredByPlayer = new NamespacedKey(plugin, "lured_by_player");
     }
 
@@ -72,7 +79,7 @@ public class EntityEventHandler implements Listener
         if (entity.getType() == EntityType.PLAYER)
         {
             Player player = (Player) event.getEntity();
-            String noBuildReason = TheatriaClaims.instance.allowBuild(player, event.getBlock().getLocation(), event.getNewState().getType());
+            String noBuildReason = permissionManager.allowBuild(player, event.getBlock().getLocation(), event.getNewState().getType());
             if (noBuildReason != null)
             {
                 event.setCancelled(true);
@@ -81,57 +88,46 @@ public class EntityEventHandler implements Listener
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOWEST)
-    public void onEntityChangeBLock(EntityChangeBlockEvent event)
-    {
-        if (!GriefPrevention.instance.config_endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN)
-        {
+    public void onEntityChangeBLock(EntityChangeBlockEvent event) {
+        if (!configManager.getClaimsConfig().endermenMoveBlocks && event.getEntityType() == EntityType.ENDERMAN) {
             event.setCancelled(true);
         }
-        else if (!GriefPrevention.instance.config_silverfishBreakBlocks && event.getEntityType() == EntityType.SILVERFISH)
-        {
+        else if (!configManager.getWorldConfig().silverfishBreakBlocks && event.getEntityType() == EntityType.SILVERFISH) {
             event.setCancelled(true);
         }
-        else if (!GriefPrevention.instance.config_rabbitsEatCrops && event.getEntityType() == EntityType.RABBIT)
-        {
+        else if (!configManager.getWorldConfig().rabbitsEatCrops && event.getEntityType() == EntityType.RABBIT) {
             event.setCancelled(true);
         }
-        else if (!GriefPrevention.instance.config_claims_ravagersBreakBlocks && event.getEntityType() == EntityType.RAVAGER)
-        {
+        else if (!configManager.getClaimsConfig().ravagersBreakBlocks && event.getEntityType() == EntityType.RAVAGER) {
             event.setCancelled(true);
         }
         // All other handling depends on claims being enabled.
-        else if (GriefPrevention.instance.config_claims_worldModes.get(event.getBlock().getWorld()) == ClaimsMode.Disabled)
-        {
+        else if (!configManager.getSystemConfig().claimsEnabledForWorld(event.getBlock().getWorld()))  {
             return;
         }
 
         // Handle projectiles changing blocks: TNT ignition, tridents knocking down pointed dripstone, etc.
-        if (event.getEntity() instanceof Projectile)
-        {
+        if (event.getEntity() instanceof Projectile) {
             handleProjectileChangeBlock(event, (Projectile) event.getEntity());
         }
 
-        else if (event.getEntityType() == EntityType.WITHER)
-        {
+        else if (event.getEntityType() == EntityType.WITHER) {
             Claim claim = this.dataStore.getClaimAt(event.getBlock().getLocation(), false, null);
-            if (claim == null || !claim.areExplosivesAllowed || !GriefPrevention.instance.config_blockClaimExplosions)
-            {
+            if (claim == null || !claim.areExplosivesAllowed || !configManager.getClaimsConfig().blockClaimExplosions) {
                 event.setCancelled(true);
             }
         }
 
         //don't allow crops to be trampled, except by a player with build permission
-        else if (event.getTo() == Material.DIRT && event.getBlock().getType() == Material.FARMLAND)
-        {
-            if (event.getEntityType() != EntityType.PLAYER)
-            {
+        else if (event.getTo() == Material.DIRT && event.getBlock().getType() == Material.FARMLAND) {
+            if (event.getEntityType() != EntityType.PLAYER) {
                 event.setCancelled(true);
             }
             else
             {
                 Player player = (Player) event.getEntity();
                 Block block = event.getBlock();
-                if (GriefPrevention.instance.allowBreak(player, block, block.getLocation()) != null)
+                if (permissionManager.allowBreak(player, block, block.getLocation()) != null)
                 {
                     event.setCancelled(true);
                 }
@@ -145,7 +141,7 @@ public class EntityEventHandler implements Listener
             if (driver instanceof Player)
             {
                 Block block = event.getBlock();
-                if (GriefPrevention.instance.allowBreak((Player) driver, block, block.getLocation()) != null)
+                if (permissionManager.allowBreak((Player) driver, block, block.getLocation()) != null)
                 {
                     event.setCancelled(true);
                 }
@@ -153,15 +149,14 @@ public class EntityEventHandler implements Listener
         }
 
         //sand cannon fix - when the falling block doesn't fall straight down, take additional anti-grief steps
-        else if (event.getEntityType() == EntityType.FALLING_BLOCK)
-        {
+        else if (event.getEntityType() == EntityType.FALLING_BLOCK) {
             FallingBlock entity = (FallingBlock) event.getEntity();
             Block block = event.getBlock();
 
             //if changing a block TO air, this is when the falling block formed.  note its original location
             if (event.getTo() == Material.AIR)
             {
-                entity.setMetadata("GP_FALLINGBLOCK", new FixedMetadataValue(GriefPrevention.instance, block.getLocation()));
+                entity.setMetadata("GP_FALLINGBLOCK", new FixedMetadataValue(TheatriaClaims.instance, block.getLocation()));
             }
             //otherwise, the falling block is forming a block.  compare new location to original source
             else
@@ -459,17 +454,6 @@ public class EntityEventHandler implements Listener
         }
     }
 
-    //when an experience bottle explodes...
-    @EventHandler(priority = EventPriority.LOWEST)
-    public void onExpBottle(ExpBottleEvent event)
-    {
-        //if in a creative world, cancel the event (don't drop exp on the ground)
-        if (GriefPrevention.instance.creativeRulesApply(event.getEntity().getLocation()))
-        {
-            event.setExperience(0);
-        }
-    }
-
     //when a creature spawns...
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntitySpawn(CreatureSpawnEvent event)
@@ -518,12 +502,6 @@ public class EntityEventHandler implements Listener
         Player player = (Player) entity;
         PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
 
-        //if involved in a siege
-//        if (playerData.siegeData != null)
-//        {
-//            //end it, with the dieing player being the loser
-//            this.dataStore.endSiege(playerData.siegeData, null, player.getName(), event.getDrops());
-//        }
 
         //FEATURE: lock dropped items to player who dropped them
 
