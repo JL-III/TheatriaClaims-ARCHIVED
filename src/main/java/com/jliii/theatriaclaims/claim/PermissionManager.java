@@ -14,10 +14,8 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 
 public class PermissionManager {
     
@@ -29,8 +27,8 @@ public class PermissionManager {
     public static String allowBuild(Player player, ConfigManager configManager, Location location, Material material) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
-        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
@@ -60,8 +58,8 @@ public class PermissionManager {
     public static String allowBreak(Player player, ConfigManager configManager, Block block, Location location, BlockBreakEvent breakEvent) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
-        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;

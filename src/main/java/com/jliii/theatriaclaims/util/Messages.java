@@ -51,7 +51,7 @@ public class Messages {
 
         //Only schedule if there should be a delay. Otherwise, send the message right now, else the message will appear out of order.
         if (delayInTicks > 0) {
-            TheatriaClaims.instance.getServer().getScheduler().runTaskLater(TheatriaClaims.instance, task, delayInTicks);
+            TheatriaClaims.getInstance().getServer().getScheduler().runTaskLater(TheatriaClaims.getInstance(), task, delayInTicks);
         }
         else {
             task.run();

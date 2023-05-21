@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -31,7 +31,7 @@ public class SendPlayerMessageTask implements Runnable {
 
         //if the player is dead, save it for after his respawn
         if (this.player.isDead()) {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(this.player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(this.player.getUniqueId());
             playerData.messageOnRespawn = this.color + this.message;
         }
         //otherwise send it immediately

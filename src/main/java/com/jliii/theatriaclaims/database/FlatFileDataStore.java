@@ -19,12 +19,11 @@
 package com.jliii.theatriaclaims.database;
 
 import com.google.common.io.Files;
-import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
-import com.jliii.theatriaclaims.util.PlayerData;
-import com.jliii.theatriaclaims.util.UUIDFetcher;
+import com.jliii.theatriaclaims.player.PlayerData;
+import com.jliii.theatriaclaims.player.UUIDFetcher;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;

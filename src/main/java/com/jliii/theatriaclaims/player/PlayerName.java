@@ -1,6 +1,7 @@
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.player;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Player;
@@ -13,23 +14,23 @@ public class PlayerName {
 
     public static OfflinePlayer resolvePlayerByName(String name) {
         //try online players first
-        Player targetPlayer = TheatriaClaims.instance.getServer().getPlayerExact(name);
+        Player targetPlayer = TheatriaClaims.getInstance().getServer().getPlayerExact(name);
         if (targetPlayer != null) return targetPlayer;
 
         UUID bestMatchID = null;
 
         //try exact match first
-        bestMatchID = TheatriaClaims.instance.playerNameToIDMap.get(name);
+        bestMatchID = TheatriaClaims.getInstance().getPlayerNameToIDMap().get(name);
 
         //if failed, try ignore case
         if (bestMatchID == null) {
-            bestMatchID = TheatriaClaims.instance.playerNameToIDMap.get(name.toLowerCase());
+            bestMatchID = TheatriaClaims.getInstance().getPlayerNameToIDMap().get(name.toLowerCase());
         }
         if (bestMatchID == null) {
             return null;
         }
 
-        return TheatriaClaims.instance.getServer().getOfflinePlayer(bestMatchID);
+        return TheatriaClaims.getInstance().getServer().getOfflinePlayer(bestMatchID);
     }
 
     //helper method to resolve a player name from the player's UUID
@@ -37,7 +38,7 @@ public class PlayerName {
         //parameter validation
         if (playerID == null) return "someone";
         //check the cache
-        OfflinePlayer player = TheatriaClaims.instance.getServer().getOfflinePlayer(playerID);
+        OfflinePlayer player = TheatriaClaims.getInstance().getServer().getOfflinePlayer(playerID);
         return lookupPlayerName(player);
     }
 
@@ -55,8 +56,8 @@ public class PlayerName {
     //cache for player name lookups, to save searches of all offline players
     public static void cacheUUIDNamePair(UUID playerID, String playerName) {
         //store the reverse mapping
-        TheatriaClaims.instance.playerNameToIDMap.put(playerName, playerID);
-        TheatriaClaims.instance.playerNameToIDMap.put(playerName.toLowerCase(), playerID);
+        TheatriaClaims.getInstance().getPlayerNameToIDMap().put(playerName, playerID);
+        TheatriaClaims.getInstance().getPlayerNameToIDMap().put(playerName.toLowerCase(), playerID);
     }
 
     //string overload for above helper

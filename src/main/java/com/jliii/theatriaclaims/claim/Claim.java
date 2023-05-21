@@ -7,7 +7,7 @@ import com.jliii.theatriaclaims.listeners.BlockEventHandler;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.database.DataStore;
-import com.jliii.theatriaclaims.util.PlayerName;
+import com.jliii.theatriaclaims.player.PlayerName;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
@@ -28,14 +28,11 @@ import java.util.function.Supplier;
 //creating an instance doesn't make an effective claim
 //only claims which have been added to the datastore have any effect
 public class Claim {
-    //two locations, which together define the boundaries of the claim
-
     private ConfigManager configManager;
 
     public Claim(ConfigManager configManager) {
         this.configManager = configManager;
     }
-
 
     public Location lesserBoundaryCorner;
     public Location greaterBoundaryCorner;
@@ -64,8 +61,7 @@ public class Claim {
 
     public boolean areExplosivesAllowed = false;
 
-    //parent claim
-    //only used for claim subdivisions.  top level claims have null here
+    //parent claim - only used for claim subdivisions. top level claims have null here
     public Claim parent = null;
 
     // intended for subclaims - they inherit no permissions
@@ -389,7 +385,7 @@ public class Claim {
 
         // Claim owner and admins in ignoreclaims mode have access.
         if (uuid.equals(this.getOwnerID())
-                || TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(uuid).ignoreClaims
+                || TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(uuid).ignoreClaims
                 && hasBypassPermission(player, permission))
             return null;
 

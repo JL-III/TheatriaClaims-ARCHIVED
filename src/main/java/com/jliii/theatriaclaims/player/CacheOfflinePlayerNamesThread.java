@@ -1,6 +1,7 @@
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.player;
 
 import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
 import org.bukkit.OfflinePlayer;
 
 import java.util.UUID;

@@ -27,6 +27,8 @@ import com.jliii.theatriaclaims.enums.*;
 import com.jliii.theatriaclaims.events.ClaimInspectionEvent;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.claim.PermissionManager;
+import com.jliii.theatriaclaims.player.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerName;
 import com.jliii.theatriaclaims.tasks.EquipShovelProcessingTask;
 import com.jliii.theatriaclaims.util.*;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
@@ -320,7 +322,7 @@ public class PlayerEventHandler implements Listener {
         // Name tags may only be used on entities that the player is allowed to kill.
         if (itemInHand.getType() == Material.NAME_TAG) {
             EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.CUSTOM, 0);
-            instance.getEntityEventHandler().onEntityDamage(damageEvent);
+            instance.getEventManager().getEntityEventHandler().onEntityDamage(damageEvent);
             if (damageEvent.isCancelled()) {
                 event.setCancelled(true);
                 return;

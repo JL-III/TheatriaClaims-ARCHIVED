@@ -4,7 +4,7 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
@@ -25,7 +25,7 @@ class CleanupUnusedClaimPreTask implements Runnable {
     @Override
     public void run() {
         //get the data
-        PlayerData ownerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerDataFromStorage(ownerID);
+        PlayerData ownerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerDataFromStorage(ownerID);
         OfflinePlayer ownerInfo = Bukkit.getServer().getOfflinePlayer(ownerID);
         CustomLogger.log("Looking for expired claims.  Checking data for " + ownerID.toString());
         //expiration code uses last logout timestamp to decide whether to expire claims
@@ -45,7 +45,7 @@ class CleanupUnusedClaimPreTask implements Runnable {
             return;
         }
         Claim claimToExpire = null;
-        for (Claim claim : TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaims()) {
+        for (Claim claim : TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaims()) {
             if (ownerID.equals(claim.ownerID))
             {
                 claimToExpire = claim;
@@ -57,6 +57,6 @@ class CleanupUnusedClaimPreTask implements Runnable {
             return;
         }
         //pass it back to the main server thread, where it's safe to delete a claim if needed
-        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.instance, new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo, configManager), 1L);
+        Bukkit.getScheduler().scheduleSyncDelayedTask(TheatriaClaims.getInstance(), new CleanupUnusedClaimTask(claimToExpire, ownerData, ownerInfo, configManager), 1L);
     }
 }

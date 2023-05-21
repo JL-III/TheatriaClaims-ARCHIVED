@@ -15,8 +15,8 @@ import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PlayerData;
-import com.jliii.theatriaclaims.util.PlayerName;
+import com.jliii.theatriaclaims.player.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerName;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 
@@ -59,7 +59,7 @@ public class ChungusCommand implements CommandExecutor {
                 return true;
             }
 
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
             //default is chest claim radius, unless -1
             int radius = configManager.getSystemConfig().automaticClaimsForNewPlayersRadius;
@@ -110,11 +110,11 @@ public class ChungusCommand implements CommandExecutor {
             int remaining = playerData.getRemainingClaimBlocks();
             if (remaining < area) {
                 Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(area - remaining));
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().tryAdvertiseAdminAlternatives(player);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().tryAdvertiseAdminAlternatives(player);
                 return true;
             }
 
-            CreateClaimResult result = TheatriaClaims.instance.getDatabaseManager().getDataStore().createClaim(lc.getWorld(),
+            CreateClaimResult result = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().createClaim(lc.getWorld(),
                     lc.getBlockX(), gc.getBlockX(),
                     lc.getBlockZ(), gc.getBlockZ(),
                     player.getUniqueId(), null, null, player);
@@ -171,8 +171,8 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //must be standing in a land claim
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, playerData.lastClaim);
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, playerData.lastClaim);
             if (claim == null) {
                 Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.StandInClaimToResize);
                 return true;
@@ -243,7 +243,7 @@ public class ChungusCommand implements CommandExecutor {
 
             //attempt resize
             playerData.claimResizing = claim;
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().resizeClaimWithChecks(player, playerData, newx1, newx2, newz1, newz2);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().resizeClaimWithChecks(player, playerData, newx1, newx2, newz1, newz2);
             playerData.claimResizing = null;
 
             return true;
@@ -261,7 +261,7 @@ public class ChungusCommand implements CommandExecutor {
 
         //ignoreclaims
         if (cmd.getName().equalsIgnoreCase("ignoreclaims") && player != null) {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
             playerData.ignoreClaims = !playerData.ignoreClaims;
 
@@ -290,7 +290,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //count claims
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             int originalClaimCount = playerData.getClaims().size();
 
             //check count
@@ -311,7 +311,7 @@ public class ChungusCommand implements CommandExecutor {
 
 
             //delete them
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsForPlayer(player.getUniqueId(), false);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaimsForPlayer(player.getUniqueId(), false);
 
             //inform the player
             int remainingBlocks = playerData.getRemainingClaimBlocks();
@@ -339,7 +339,7 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("transferclaim") && player != null)
         {
             //which claim is the user in?
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, null);
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, null);
             if (claim == null)
             {
                 Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.TransferClaimMissing);
@@ -371,7 +371,7 @@ public class ChungusCommand implements CommandExecutor {
             //change ownerhsip
             try
             {
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().changeClaimOwner(claim, newOwnerID);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().changeClaimOwner(claim, newOwnerID);
             }
             catch (DataStore.NoTransferException e)
             {
@@ -389,7 +389,7 @@ public class ChungusCommand implements CommandExecutor {
         //trustlist
         else if (cmd.getName().equalsIgnoreCase("trustlist") && player != null)
         {
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, null);
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, null);
 
             //if no claim here, error message
             if (claim == null)
@@ -476,7 +476,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //determine which claim the player is standing in
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             //determine whether a single player or clearing permissions entirely
             boolean clearPermissions = false;
@@ -522,7 +522,7 @@ public class ChungusCommand implements CommandExecutor {
             //if no claim here, apply changes to all his claims
             if (claim == null)
             {
-                PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+                PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
                 String idToDrop = args[0];
                 if (otherPlayer != null)
@@ -557,7 +557,7 @@ public class ChungusCommand implements CommandExecutor {
                     }
 
                     //save changes
-                    TheatriaClaims.instance.getDatabaseManager().getDataStore().saveClaim(claim);
+                    TheatriaClaims.getInstance().getDatabaseManager().getDataStore().saveClaim(claim);
                 }
 
                 //beautify for output
@@ -646,7 +646,7 @@ public class ChungusCommand implements CommandExecutor {
                 }
 
                 //save changes
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().saveClaim(claim);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().saveClaim(claim);
             }
 
             return true;
@@ -688,8 +688,8 @@ public class ChungusCommand implements CommandExecutor {
         //restrictsubclaim
         else if (cmd.getName().equalsIgnoreCase("restrictsubclaim") && player != null)
         {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, playerData.lastClaim);
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, playerData.lastClaim);
             if (claim == null || claim.parent == null)
             {
                 Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.StandInSubclaim);
@@ -715,7 +715,7 @@ public class ChungusCommand implements CommandExecutor {
                 claim.setSubclaimRestrictions(true);
                 Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SubclaimRestricted);
             }
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().saveClaim(claim);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().saveClaim(claim);
             return true;
         }
 
@@ -752,7 +752,7 @@ public class ChungusCommand implements CommandExecutor {
             }
             else
             {
-                PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+                PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
                 //try to parse number of blocks
                 int blockCount;
@@ -796,7 +796,7 @@ public class ChungusCommand implements CommandExecutor {
 
                     //add blocks
                     playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + blockCount);
-                    TheatriaClaims.instance.getDatabaseManager().getDataStore().savePlayerData(player.getUniqueId(), playerData);
+                    TheatriaClaims.getInstance().getDatabaseManager().getDataStore().savePlayerData(player.getUniqueId(), playerData);
 
                     //inform player
                     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.PurchaseConfirmation, String.valueOf(totalCost), String.valueOf(playerData.getRemainingClaimBlocks()));
@@ -831,7 +831,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //load player data
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             int availableBlocks = playerData.getRemainingClaimBlocks();
 
             //if no amount provided, just tell player value per block sold, and how many he can sell
@@ -872,7 +872,7 @@ public class ChungusCommand implements CommandExecutor {
 
                 //subtract blocks
                 playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() - blockCount);
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().savePlayerData(player.getUniqueId(), playerData);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().savePlayerData(player.getUniqueId(), playerData);
 
                 //inform player
                 Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.BlockSaleConfirmation, String.valueOf(totalValue), String.valueOf(playerData.getRemainingClaimBlocks()));
@@ -884,7 +884,7 @@ public class ChungusCommand implements CommandExecutor {
         //adminclaims
         else if (cmd.getName().equalsIgnoreCase("adminclaims") && player != null)
         {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Admin;
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdminClaimsMode);
 
@@ -894,7 +894,7 @@ public class ChungusCommand implements CommandExecutor {
         //basicclaims
         else if (cmd.getName().equalsIgnoreCase("basicclaims") && player != null)
         {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Basic;
             playerData.claimSubdividing = null;
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.BasicClaimsMode);
@@ -905,7 +905,7 @@ public class ChungusCommand implements CommandExecutor {
         //subdivideclaims
         else if (cmd.getName().equalsIgnoreCase("subdivideclaims") && player != null)
         {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             playerData.shovelMode = ShovelMode.Subdivide;
             playerData.claimSubdividing = null;
             Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SubdivisionMode);
@@ -918,7 +918,7 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("deleteclaim") && player != null)
         {
             //determine which claim the player is standing in
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             if (claim == null)
             {
@@ -928,14 +928,14 @@ public class ChungusCommand implements CommandExecutor {
             {
                 //deleting an admin claim additionally requires the adminclaims permission
                 if (!claim.isAdminClaim() || player.hasPermission("TheatriaClaims.adminclaims")) {
-                    PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+                    PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
                     if (claim.children.size() > 0 && !playerData.warnedAboutMajorDeletion) {
                         Messages.sendMessage(player, configManager, TextMode.Warn.getColor(), MessageType.DeletionSubdivisionWarning);
                         playerData.warnedAboutMajorDeletion = true;
                     }
                     else {
                         // claim.removeSurfaceFluids(null);
-                        TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaim(claim, true, true);
+                        TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaim(claim, true, true);
                         Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DeleteSuccess);
                         CustomLogger.log(player.getName() + " deleted " + claim.getOwnerName() + "'s claim at " + GeneralUtils.getfriendlyLocationString(claim.getLesserBoundaryCorner()));
                         //revert any current visualization
@@ -954,7 +954,7 @@ public class ChungusCommand implements CommandExecutor {
         else if (cmd.getName().equalsIgnoreCase("claimexplosions") && player != null)
         {
             //determine which claim the player is standing in
-            Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
+            Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
             if (claim == null)
             {
@@ -999,7 +999,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //delete all that player's claims
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaimsForPlayer(otherPlayer.getUniqueId(), true);
 
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DeleteAllSuccess, otherPlayer.getName());
             if (player != null)
@@ -1009,7 +1009,7 @@ public class ChungusCommand implements CommandExecutor {
                 //revert any current visualization
                 if (player.isOnline())
                 {
-                    TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
+                    TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
                 }
             }
 
@@ -1036,7 +1036,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //delete all claims in that world
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsInWorld(world, true);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaimsInWorld(world, true);
             CustomLogger.log("Deleted all claims in world: " + world.getName() + ".");
             return true;
         }
@@ -1061,7 +1061,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //delete all USER claims in that world
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsInWorld(world, false);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaimsInWorld(world, false);
             CustomLogger.log("Deleted all user claims in world: " + world.getName() + ".");
             return true;
         }
@@ -1073,7 +1073,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //try to find the specified player
-            Player otherPlayer = TheatriaClaims.instance.getServer().getPlayer(args[0]);
+            Player otherPlayer = TheatriaClaims.getInstance().getServer().getPlayer(args[0]);
             if (otherPlayer == null)
             {
                 Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
@@ -1123,12 +1123,12 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //load the target player's data
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(otherPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(otherPlayer.getUniqueId());
             Vector<Claim> claims = playerData.getClaims();
             Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.StartBlockMath,
                     String.valueOf(playerData.getAccruedClaimBlocks()),
-                    String.valueOf((playerData.getBonusClaimBlocks() + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(otherPlayer.getUniqueId()))),
-                    String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(otherPlayer.getUniqueId()))));
+                    String.valueOf((playerData.getBonusClaimBlocks() + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(otherPlayer.getUniqueId()))),
+                    String.valueOf((playerData.getAccruedClaimBlocks() + playerData.getBonusClaimBlocks() + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(otherPlayer.getUniqueId()))));
             if (claims.size() > 0)
             {
                 Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.ClaimsListHeader);
@@ -1143,7 +1143,7 @@ public class ChungusCommand implements CommandExecutor {
 
             //drop the data we just loaded, if the player isn't online
             if (!otherPlayer.isOnline())
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().clearCachedPlayerData(otherPlayer.getUniqueId());
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().clearCachedPlayerData(otherPlayer.getUniqueId());
 
             return true;
         }
@@ -1153,7 +1153,7 @@ public class ChungusCommand implements CommandExecutor {
         {
             //find admin claims
             Vector<Claim> claims = new Vector<>();
-            for (Claim claim : TheatriaClaims.instance.getDatabaseManager().getDataStore().claims)
+            for (Claim claim : TheatriaClaims.getInstance().getDatabaseManager().getDataStore().claims)
             {
                 if (claim.ownerID == null)  //admin claim
                 {
@@ -1185,12 +1185,12 @@ public class ChungusCommand implements CommandExecutor {
                     return true;
                 }
 
-                playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(otherPlayer.getUniqueId());
+                playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(otherPlayer.getUniqueId());
                 Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DropUnlockOthersConfirmation, otherPlayer.getName());
             }
             else
             {
-                playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+                playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
                 Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.DropUnlockConfirmation);
             }
 
@@ -1209,7 +1209,7 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //delete all admin claims
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsForPlayer(null, true);  //null for owner id indicates an administrative claim
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaimsForPlayer(null, true);  //null for owner id indicates an administrative claim
 
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AllAdminDeleted);
             if (player != null)
@@ -1217,7 +1217,7 @@ public class ChungusCommand implements CommandExecutor {
                 CustomLogger.log(player.getName() + " deleted all administrative claims.");
 
                 //revert any current visualization
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId()).setVisibleBoundaries(null);
             }
 
             return true;
@@ -1244,7 +1244,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args[0].startsWith("[") && args[0].endsWith("]"))
             {
                 String permissionIdentifier = args[0].substring(1, args[0].length() - 1);
-                int newTotal = TheatriaClaims.instance.getDatabaseManager().getDataStore().adjustGroupBonusBlocks(permissionIdentifier, adjustment);
+                int newTotal = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().adjustGroupBonusBlocks(permissionIdentifier, adjustment);
 
                 Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdjustGroupBlocksSuccess, permissionIdentifier, String.valueOf(adjustment), String.valueOf(newTotal));
                 if (player != null)
@@ -1258,7 +1258,7 @@ public class ChungusCommand implements CommandExecutor {
             try
             {
                 UUID playerID = UUID.fromString(args[0]);
-                targetPlayer = TheatriaClaims.instance.getServer().getOfflinePlayer(playerID);
+                targetPlayer = TheatriaClaims.getInstance().getServer().getOfflinePlayer(playerID);
 
             }
             catch (IllegalArgumentException e)
@@ -1273,9 +1273,9 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //give blocks to player
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(targetPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(targetPlayer.getUniqueId());
             playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().savePlayerData(targetPlayer.getUniqueId(), playerData);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().savePlayerData(targetPlayer.getUniqueId(), playerData);
 
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AdjustBlocksSuccess, targetPlayer.getName(), String.valueOf(adjustment), String.valueOf(playerData.getBonusClaimBlocks()));
             if (player != null)
@@ -1303,14 +1303,14 @@ public class ChungusCommand implements CommandExecutor {
 
             //for each online player
             @SuppressWarnings("unchecked")
-            Collection<Player> players = (Collection<Player>) TheatriaClaims.instance.getServer().getOnlinePlayers();
+            Collection<Player> players = (Collection<Player>) TheatriaClaims.getInstance().getServer().getOnlinePlayers();
             StringBuilder builder = new StringBuilder();
             for (Player onlinePlayer : players)
             {
                 UUID playerID = onlinePlayer.getUniqueId();
-                PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(playerID);
+                PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(playerID);
                 playerData.setBonusClaimBlocks(playerData.getBonusClaimBlocks() + adjustment);
-                TheatriaClaims.instance.getDatabaseManager().getDataStore().savePlayerData(playerID, playerData);
+                TheatriaClaims.getInstance().getDatabaseManager().getDataStore().savePlayerData(playerID, playerData);
                 builder.append(onlinePlayer.getName()).append(' ');
             }
 
@@ -1346,9 +1346,9 @@ public class ChungusCommand implements CommandExecutor {
             }
 
             //set player's blocks
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(targetPlayer.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(targetPlayer.getUniqueId());
             playerData.setAccruedClaimBlocks(newAmount);
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().savePlayerData(targetPlayer.getUniqueId(), playerData);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().savePlayerData(targetPlayer.getUniqueId(), playerData);
 
             Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SetClaimBlocksSuccess);
             if (player != null)
@@ -1371,7 +1371,7 @@ public class ChungusCommand implements CommandExecutor {
         //     }
 
         //     //toggle mute for player
-        //     boolean isMuted = TheatriaClaims.instance.getDatabaseManager().getDataStore().toggleSoftMute(targetPlayer.getUniqueId());
+        //     boolean isMuted = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().toggleSoftMute(targetPlayer.getUniqueId());
         //     if (isMuted)
         //     {
         //         Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SoftMuted, targetPlayer.getName());
@@ -1412,7 +1412,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires one parameter
             if (args.length < 1) return false;
 
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
             //special case: cancellation
             if (args[0].equalsIgnoreCase("cancel"))
@@ -1457,7 +1457,7 @@ public class ChungusCommand implements CommandExecutor {
     //helper method keeps the trust commands consistent and eliminates duplicate code
     public void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) {
         //determine which claim the player is standing in
-        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
+        Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
 
         //validate player or group argument
         String permission = null;
@@ -1494,7 +1494,7 @@ public class ChungusCommand implements CommandExecutor {
         //determine which claims should be modified
         ArrayList<Claim> targetClaims = new ArrayList<>();
         if (claim == null) {
-            PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
             targetClaims.addAll(playerData.getClaims());
         }
         else {
@@ -1563,7 +1563,7 @@ public class ChungusCommand implements CommandExecutor {
             else {
                 currentClaim.setPermission(identifierToAdd, permissionLevel);
             }
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().saveClaim(currentClaim);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().saveClaim(currentClaim);
         }
 
         //notify player
@@ -1595,10 +1595,10 @@ public class ChungusCommand implements CommandExecutor {
     }
 
     public boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
         //which claim is being abandoned?
-        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
+        Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true /*ignore height*/, null);
         if (claim == null) {
             Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.AbandonClaimMissing);
         }
@@ -1615,7 +1615,7 @@ public class ChungusCommand implements CommandExecutor {
         }
         else {
             //delete it
-            TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaim(claim, true, false);
+            TheatriaClaims.getInstance().getDatabaseManager().getDataStore().deleteClaim(claim, true, false);
 
             //adjust claim blocks when abandoning a top level claim
             if (configManager.getSystemConfig().abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {

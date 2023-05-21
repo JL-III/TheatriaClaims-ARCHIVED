@@ -7,7 +7,7 @@ import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.IntVector;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -94,8 +94,8 @@ public abstract class BoundaryVisualization {
      * @param playerData the {@link PlayerData} of the visualization target
      */
     protected void scheduleRevert(@NotNull Player player, @NotNull PlayerData playerData) {
-        TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                TheatriaClaims.instance,
+        TheatriaClaims.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(
+                TheatriaClaims.getInstance(),
                 () -> {
                     // Only revert if this is the active visualization.
                     if (playerData.getVisibleBoundaries() == this) revert(player);
@@ -246,7 +246,7 @@ public abstract class BoundaryVisualization {
         Bukkit.getPluginManager().callEvent(event);
 
         Player player = event.getPlayer();
-        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
         BoundaryVisualization currentVisualization = playerData.getVisibleBoundaries();
 
         Collection<Boundary> boundaries = event.getBoundaries();
@@ -267,8 +267,8 @@ public abstract class BoundaryVisualization {
         // If they are online and in the same world as the visualization, display the visualization next tick.
         if (visualization.canVisualize(player))
         {
-            TheatriaClaims.instance.getServer().getScheduler().scheduleSyncDelayedTask(
-                    TheatriaClaims.instance,
+            TheatriaClaims.getInstance().getServer().getScheduler().scheduleSyncDelayedTask(
+                    TheatriaClaims.getInstance(),
                     new DelayedVisualizationTask(visualization, playerData, event, configManager),
                     1L);
         }
@@ -287,7 +287,7 @@ public abstract class BoundaryVisualization {
             catch (Exception exception) {
                 if (event.getProvider() == BoundaryVisualizationEvent.DEFAULT_PROVIDER) {
                     // If the provider is our own, log normally.
-                    TheatriaClaims.instance.getLogger().log(Level.WARNING, "Exception visualizing claim", exception);
+                    TheatriaClaims.getInstance().getLogger().log(Level.WARNING, "Exception visualizing claim", exception);
                     return;
                 }
                 // Otherwise, add an extra hint that the problem is not with GP.
@@ -297,7 +297,7 @@ public abstract class BoundaryVisualization {
                                 event.getProvider().getClass().getName(),
                                 exception.getClass().getName(),
                                 exception.getCause()));
-                TheatriaClaims.instance.getLogger().log(
+                TheatriaClaims.getInstance().getLogger().log(
                         Level.WARNING,
                         "Exception visualizing claim using external provider",
                         exception);

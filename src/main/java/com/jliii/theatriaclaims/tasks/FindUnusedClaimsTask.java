@@ -53,12 +53,12 @@ public class FindUnusedClaimsTask implements Runnable {
             return;
         }
 
-        TheatriaClaims.instance.getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.instance, new CleanupUnusedClaimPreTask(claimOwnerIterator.next(), configManager));
+        TheatriaClaims.getInstance().getServer().getScheduler().runTaskAsynchronously(TheatriaClaims.getInstance(), new CleanupUnusedClaimPreTask(claimOwnerIterator.next(), configManager));
     }
 
     public void refreshUUIDs() {
         // Fetch owner UUIDs from list of claims
-        claimOwnerUUIDs = TheatriaClaims.instance.getDatabaseManager().getDataStore().claims.stream().map(claim -> claim.ownerID)
+        claimOwnerUUIDs = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().claims.stream().map(claim -> claim.ownerID)
                 .distinct().filter(Objects::nonNull).collect(Collectors.toList());
 
         if (!claimOwnerUUIDs.isEmpty()) {

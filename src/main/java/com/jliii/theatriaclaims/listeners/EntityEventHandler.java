@@ -9,7 +9,7 @@ import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.claim.PermissionManager;
 import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -583,7 +583,7 @@ public class EntityEventHandler implements Listener {
         // but also doesn't disable self-damage.
         if (entity instanceof Player) return false;
 
-        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(entity.getLocation(), false, null);
+        Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(entity.getLocation(), false, null);
 
         // Only block explosion damage inside claims.
         if (claim == null) return false;
@@ -597,7 +597,7 @@ public class EntityEventHandler implements Listener {
     {
         if (shootEvent.getEntity() instanceof Player && shootEvent.getProjectile() instanceof Firework)
         {
-            shootEvent.getProjectile().setMetadata("GP_FIREWORK", new FixedMetadataValue(TheatriaClaims.instance, shootEvent.getEntity()));
+            shootEvent.getProjectile().setMetadata("GP_FIREWORK", new FixedMetadataValue(TheatriaClaims.getInstance(), shootEvent.getEntity()));
         }
     }
 

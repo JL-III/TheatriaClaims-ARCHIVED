@@ -1,10 +1,12 @@
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.player;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.enums.ShovelMode;
 import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -117,7 +119,7 @@ public class PlayerData {
     // the number of claim blocks a player has available for claiming land
     public int getRemainingClaimBlocks() {
         int remainingBlocks = this.getAccruedClaimBlocks() + this.getBonusClaimBlocks()
-                + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
+                + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
         for (int i = 0; i < this.getClaims().size(); i++) {
             Claim claim = this.getClaims().get(i);
             remainingBlocks -= claim.getArea();
@@ -164,7 +166,7 @@ public class PlayerData {
 
     private void loadDataFromSecondaryStorage() {
         // reach out to secondary storage to get any data there
-        PlayerData storageData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerDataFromStorage(this.playerID);
+        PlayerData storageData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerDataFromStorage(this.playerID);
 
         if (this.accruedClaimBlocks == null) {
             if (storageData.accruedClaimBlocks != null) {
@@ -197,7 +199,7 @@ public class PlayerData {
 
             // find all the claims belonging to this player and note them for future
             // reference
-            DataStore dataStore = TheatriaClaims.instance.getDatabaseManager().getDataStore();
+            DataStore dataStore = TheatriaClaims.getInstance().getDatabaseManager().getDataStore();
             int totalClaimsArea = 0;
             for (int i = 0; i < dataStore.claims.size(); i++) {
                 Claim claim = dataStore.claims.get(i);
@@ -217,9 +219,9 @@ public class PlayerData {
 
             // if total claimed area is more than total blocks available
             int totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks()
-                    + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
+                    + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
             if (configManager.getSystemConfig().advanced_fixNegativeClaimblockAmounts && totalBlocks < totalClaimsArea) {
-                OfflinePlayer player = TheatriaClaims.instance.getServer().getOfflinePlayer(this.playerID);
+                OfflinePlayer player = TheatriaClaims.getInstance().getServer().getOfflinePlayer(this.playerID);
                 CustomLogger
                         .log(player.getName() + " has more claimed land than blocks available.  Adding blocks to fix.");
                 CustomLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks()
@@ -241,7 +243,7 @@ public class PlayerData {
 
                 // Recalculate total blocks (accrued + bonus + permission group bonus)
                 totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks()
-                        + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
+                        + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
                         CustomLogger.log("New total blocks: " + totalBlocks);
 
                 // if that didn't fix it, then make up the difference with bonus blocks
@@ -251,10 +253,10 @@ public class PlayerData {
                     CustomLogger.log(
                             "Accrued blocks weren't enough. Adding " + bonusBlocksToAdd + " bonus blocks.");
                 }
-                CustomLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID));
+                CustomLogger.log(player.getName() + " Accrued blocks: " + this.getAccruedClaimBlocks() + " Bonus blocks: " + this.getBonusClaimBlocks() + " Group Bonus Blocks: " + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID));
                 // Recalculate total blocks (accrued + bonus + permission group bonus)
                 totalBlocks = this.accruedClaimBlocks + this.getBonusClaimBlocks()
-                        + TheatriaClaims.instance.getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
+                        + TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getGroupBonusBlocks(this.playerID);
                 CustomLogger.log("Total blocks: " + totalBlocks + " Total claimed area: " + totalClaimsArea);
                 CustomLogger.log("Remaining claim blocks to use: " + this.getRemainingClaimBlocks() + " (should be 0)");
             }

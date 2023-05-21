@@ -26,6 +26,8 @@ import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.events.*;
 import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.player.PlayerData;
+import com.jliii.theatriaclaims.player.UUIDFetcher;
 import com.jliii.theatriaclaims.util.*;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
@@ -85,7 +87,6 @@ public abstract class DataStore {
     //video links
     //TODO change these video links, or remove the feature altogether
     public static final String SURVIVAL_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpuser" + ChatColor.RESET;
-    public static final String CREATIVE_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpcrea" + ChatColor.RESET;
     public static final String SUBDIVISION_VIDEO_URL = "" + ChatColor.DARK_AQUA + ChatColor.UNDERLINE + "bit.ly/mcgpsub" + ChatColor.RESET;
 
     //list of UUIDs which are soft-muted
@@ -118,7 +119,7 @@ public abstract class DataStore {
         {
             if (claim.id >= nextClaimID)
             {
-                TheatriaClaims.instance.getLogger().severe("nextClaimID was lesser or equal to an already-existing claim ID!\n" +
+                TheatriaClaims.getInstance().getLogger().severe("nextClaimID was lesser or equal to an already-existing claim ID!\n" +
                         "This usually happens if you ran out of storage space.");
                 CustomLogger.log("Changing nextClaimID from " + nextClaimID + " to " + claim.id);
                 nextClaimID = claim.id + 1;
@@ -181,7 +182,7 @@ public abstract class DataStore {
     //this will return 0 when he's offline, and the correct number when online.
     synchronized public int getGroupBonusBlocks(UUID playerID)
     {
-        Player player = TheatriaClaims.instance.getServer().getPlayer(playerID);
+        Player player = TheatriaClaims.getInstance().getServer().getPlayer(playerID);
 
         if (player == null) return 0;
 
@@ -895,7 +896,7 @@ public abstract class DataStore {
         newClaim.greaterBoundaryCorner = new Location(world, newx2, world.getMaxHeight(), newz2);
 
         //call event here to check if it has been cancelled
-        ClaimResizeEvent event = new ClaimModifiedEvent(oldClaim, newClaim, player); // Swap to ClaimResizeEvent when ClaimModifiedEvent is removed
+        ClaimResizeEvent event = new ClaimResizeEvent(oldClaim, newClaim, player); // Swap to ClaimResizeEvent when ClaimModifiedEvent is removed
         Bukkit.getPluginManager().callEvent(event);
 
         //return here if event is cancelled
@@ -912,7 +913,7 @@ public abstract class DataStore {
         }
 
         //ask the datastore to try and resize the claim, this checks for conflicts with other claims
-        CreateClaimResult result = TheatriaClaims.instance.getDatabaseManager().getDataStore().resizeClaim(
+        CreateClaimResult result = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().resizeClaim(
                 playerData.claimResizing,
                 newClaim.getLesserBoundaryCorner().getBlockX(),
                 newClaim.getGreaterBoundaryCorner().getBlockX(),
@@ -934,7 +935,7 @@ public abstract class DataStore {
                 else {
                     PlayerData ownerData = this.getPlayerData(ownerID);
                     claimBlocksRemaining = ownerData.getRemainingClaimBlocks();
-                    OfflinePlayer owner = TheatriaClaims.instance.getServer().getOfflinePlayer(ownerID);
+                    OfflinePlayer owner = TheatriaClaims.getInstance().getServer().getOfflinePlayer(ownerID);
                     if (!owner.isOnline()) {
                         this.clearCachedPlayerData(ownerID);
                     }

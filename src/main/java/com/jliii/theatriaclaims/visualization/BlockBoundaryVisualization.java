@@ -3,7 +3,7 @@ package com.jliii.theatriaclaims.visualization;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.IntVector;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;

@@ -14,6 +14,8 @@ import com.jliii.theatriaclaims.database.DataStore;
 public class EventManager {
     private EntityEventHandler entityEventHandler;
 
+    private EconomyHandler economyHandler;
+
 
     public EventManager(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager) {
         registerEvents(plugin, dataStore, configManager);
@@ -29,8 +31,9 @@ public class EventManager {
         setEntityEventHandler(entityEventHandler);
         Bukkit.getPluginManager().registerEvents(entityEventHandler, plugin);
         //vault-based economy integration
-        Bukkit.getPluginManager().registerEvents(new EconomyHandler(plugin, configManager), plugin);
-
+        EconomyHandler economyHandler = new EconomyHandler(plugin, configManager);
+        Bukkit.getPluginManager().registerEvents(economyHandler, plugin);
+        setEconomyHandler(economyHandler);
         CustomLogger.log("Events registered!");
     }
 
@@ -39,4 +42,8 @@ public class EventManager {
     }
 
     public void setEntityEventHandler(EntityEventHandler entityEventHandler) { this.entityEventHandler = entityEventHandler; }
+
+    public EconomyHandler getEconomyHandler() { return economyHandler; }
+
+    public void setEconomyHandler(EconomyHandler economyHandler) { this.economyHandler = economyHandler; }
 }

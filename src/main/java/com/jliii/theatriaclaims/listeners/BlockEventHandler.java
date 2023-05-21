@@ -28,7 +28,7 @@ import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.claim.PermissionManager;
 import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.player.PlayerData;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 
@@ -456,7 +456,7 @@ public class BlockEventHandler implements Listener {
         //don't track in worlds where claims are not enabled
         if (!configManager.getSystemConfig().claimsEnabledForWorld(igniteEvent.getBlock().getWorld())) return;
 
-        if (igniteEvent.getCause() == IgniteCause.LIGHTNING && TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getIgnitingEntity().getLocation(), false, null) != null) {
+        if (igniteEvent.getCause() == IgniteCause.LIGHTNING && TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getIgnitingEntity().getLocation(), false, null) != null) {
             igniteEvent.setCancelled(true); //BlockIgniteEvent is called before LightningStrikeEvent. See #532. However, see #1125 for further discussion on detecting trident-caused lightning.
         }
 
@@ -464,8 +464,8 @@ public class BlockEventHandler implements Listener {
         if (igniteEvent.getCause() == IgniteCause.FIREBALL && igniteEvent.getIgnitingEntity() instanceof Fireball) {
             ProjectileSource shooter = ((Fireball) igniteEvent.getIgnitingEntity()).getShooter();
             if (shooter instanceof BlockProjectileSource) {
-                Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getBlock().getLocation(), false, null);
-                if (claim != null && TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(((BlockProjectileSource) shooter).getBlock().getLocation(), false, claim) == claim) {
+                Claim claim = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getBlock().getLocation(), false, null);
+                if (claim != null && TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getClaimAt(((BlockProjectileSource) shooter).getBlock().getLocation(), false, claim) == claim) {
                     return;
                 }
             }
@@ -481,7 +481,7 @@ public class BlockEventHandler implements Listener {
 
                 // Call event.
                 EntityChangeBlockEvent changeBlockEvent = new EntityChangeBlockEvent(igniteEvent.getIgnitingEntity(), igniteEvent.getBlock(), blockData);
-                TheatriaClaims.instance.getEntityEventHandler().onEntityChangeBLock(changeBlockEvent);
+                TheatriaClaims.getInstance().getEventManager().getEntityEventHandler().onEntityChangeBLock(changeBlockEvent);
 
                 // Respect event result.
                 if (changeBlockEvent.isCancelled()) {
@@ -714,7 +714,7 @@ public class BlockEventHandler implements Listener {
                 UUID ownerID = (UUID) data.get(0).value();
 
                 //has that player unlocked his drops?
-                OfflinePlayer owner = TheatriaClaims.instance.getServer().getOfflinePlayer(ownerID);
+                OfflinePlayer owner = TheatriaClaims.getInstance().getServer().getOfflinePlayer(ownerID);
                 if (owner.isOnline()) {
                     PlayerData playerData = this.dataStore.getPlayerData(ownerID);
 

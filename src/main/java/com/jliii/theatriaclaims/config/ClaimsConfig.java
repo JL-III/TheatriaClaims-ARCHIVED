@@ -5,7 +5,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 public class ClaimsConfig {
 
     private FileConfiguration config;
-
     public boolean preventGlobalMonsterEggs;
     public boolean preventTheft;
     public boolean protectCreatures;
