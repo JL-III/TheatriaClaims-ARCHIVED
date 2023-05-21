@@ -3,7 +3,6 @@ package com.jliii.theatriaclaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.commands.ChungusCommand;
-import com.jliii.theatriaclaims.dynmap.DynmapIntegration;
 import com.jliii.theatriaclaims.enums.IgnoreMode;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
@@ -51,10 +50,10 @@ public class TheatriaClaims extends JavaPlugin {
         //DYNMAP INTEGRATION
         Plugin dynmap = getServer().getPluginManager().getPlugin("dynmap");
         if(dynmap != null && dynmap.isEnabled()) {
-            getLogger().severe("Found Dynmap!  Enabling Dynmap integration...");
+//            getLogger().severe("Found Dynmap!  Enabling Dynmap integration...");
 
-            DynmapIntegration dynmapIntegration = new DynmapIntegration(this);
-
+//            DynmapIntegration dynmapIntegration = new DynmapIntegration(this);
+//
 
 
         }

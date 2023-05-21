@@ -1,10 +1,11 @@
 package com.jliii.theatriaclaims.util;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 
 public class CustomLogger {
 
-    private static final String pluginPrefix = "[TheatriaClaims] ";
+    private static final String pluginPrefix = ChatColor.GREEN + "[" + ChatColor.DARK_GREEN + "TheatriaClaims" + ChatColor.GREEN + "] ";
 
     public static void log(String message) {
         Bukkit.getConsoleSender().sendMessage(getPluginPrefix() + message);

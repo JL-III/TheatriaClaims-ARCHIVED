@@ -40,6 +40,7 @@ public class ConfigManager {
         systemConfig = new SystemConfig(config);
         worldConfig = new WorldConfig(config);
         messagesConfig = new MessagesConfig();
+        theatriaClaims.saveDefaultConfig();
     }
 
     public FileConfiguration getConfig() {

@@ -1,5 +1,5 @@
 config-version: 1
-greifprevention:
+griefprevention:
   worldnames:
   - world
   - world_nether

@@ -275,8 +275,8 @@ public class MessagesConfig {
         //save any changes
         try {
             List<String> header = new ArrayList<>();
-            header.add("Use a YAML editor like NotepadPlusPlus to edit this file.  \nAfter editing, back up your changes before reloading the server in case you made a syntax error.  \nUse dollar signs ($) for formatting codes, which are documented here: http://minecraft.gamepedia.com/Formatting_codes");
-            config.options().setHeader(header);
+//            header.add("Use a YAML editor like NotepadPlusPlus to edit this file. \nAfter editing, back up your changes before reloading the server in case you made a syntax error. \nUse dollar signs ($) for formatting codes, which are documented here- \"http://minecraft.gamepedia.com/Formatting_codes\"");
+//            config.options().setHeader(header);
             config.save(messagesFilePath);
         }
         catch (IOException exception) {

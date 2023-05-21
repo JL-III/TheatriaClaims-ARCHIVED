@@ -68,7 +68,10 @@ public class SystemConfig {
         manualDeliveryDelaySeconds = config.getInt("GriefPrevention.Claims.ManualDeliveryDelaySeconds", 30);
         chestClaimExpirationDays = config.getInt("GriefPrevention.Claims.Expiration.ChestClaimDays", 7);
         commandsRequiringAccessTrust = new ArrayList<>();
-        claimWorldNames = config.getStringList("GriefPrevention.worldnames");
+        claimWorldNames = (List<String>) config.getList("GriefPrevention.worldnames");
+        for (String worldName : claimWorldNames) {
+            CustomLogger.log("Claim world name " + worldName + " claims enabled.");
+        }
 
         String accessTrustSlashCommands = config.getString("GriefPrevention.Claims.CommandsRequiringAccessTrust", "/sethome");
 
