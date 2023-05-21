@@ -1,16 +1,13 @@
 package com.jliii.theatriaclaims;
 
 import com.jliii.theatriaclaims.commands.ChungusCommand;
-import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.database.DatabaseManager;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
-import com.jliii.theatriaclaims.listeners.EntityEventHandler;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.events.EventManager;
 import com.jliii.theatriaclaims.tasks.TaskManager;
 import com.jliii.theatriaclaims.util.*;
 import org.bukkit.*;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -19,6 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TheatriaClaims extends JavaPlugin {
     public static TheatriaClaims instance;
     private DatabaseManager databaseManager;
+    private EventManager eventManager;
     EconomyHandler economyHandler;
     ConfigManager configManager;
     //helper method to resolve a player by name
@@ -35,7 +33,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         new TaskManager(this, configManager).registerScheduledSyncRepeatingTasks();
 
-        EventManager.registerEvents(this, getDatabaseManager().getDataStore(), configManager);
+        eventManager = new EventManager(this, getDatabaseManager().getDataStore(), configManager);
 
         Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, configManager));
 
@@ -53,6 +51,10 @@ public class TheatriaClaims extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public EventManager getEventManager() {
+        return eventManager;
     }
 
 }

@@ -14,6 +14,11 @@ import com.jliii.theatriaclaims.database.DataStore;
 public class EventManager {
     private EntityEventHandler entityEventHandler;
 
+
+    public EventManager(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager) {
+        registerEvents(plugin, dataStore, configManager);
+    }
+
     public void registerEvents(TheatriaClaims plugin, DataStore dataStore, ConfigManager configManager) {
         //player events
         Bukkit.getPluginManager().registerEvents(new PlayerEventHandler(plugin, dataStore, configManager), plugin);
