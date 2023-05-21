@@ -61,15 +61,6 @@ public class ChungusCommand implements CommandExecutor {
 
             PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
 
-            // //if he's at the claim count per player limit already and doesn't have permission to bypass, display an error message
-            // if (configManager.getSystemConfig().maxClaimsPerPlayer > 0 &&
-            //         !player.hasPermission("TheatriaClaims.overrideclaimcountlimit") &&
-            //         playerData.getClaims().size() >= TheatriaClaims.instance.config_claims_maxClaimsPerPlayer)
-            // {
-            //     Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.ClaimCreationFailedOverClaimCountLimit);
-            //     return true;
-            // }
-
             //default is chest claim radius, unless -1
             int radius = configManager.getSystemConfig().automaticClaimsForNewPlayersRadius;
             if (radius < 0) radius = (int) Math.ceil(Math.sqrt(configManager.getSystemConfig().minArea) / 2);

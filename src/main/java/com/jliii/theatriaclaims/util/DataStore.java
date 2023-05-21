@@ -836,7 +836,7 @@ public abstract class DataStore {
 
     //tries to resize a claim
     //see CreateClaim() for details on return value
-    synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newy1, int newy2, int newz1, int newz2, Player resizingPlayer) {
+    synchronized public CreateClaimResult resizeClaim(Claim claim, int newx1, int newx2, int newz1, int newz2, Player resizingPlayer) {
         //try to create this new claim, ignoring the original when checking for overlap
         CreateClaimResult result = this.createClaim(claim.getLesserBoundaryCorner().getWorld(), newx1, newx2, newz1, newz2, claim.ownerID, claim.parent, claim.id, resizingPlayer, true);
 
@@ -915,8 +915,6 @@ public abstract class DataStore {
                 playerData.claimResizing,
                 newClaim.getLesserBoundaryCorner().getBlockX(),
                 newClaim.getGreaterBoundaryCorner().getBlockX(),
-                newClaim.getLesserBoundaryCorner().getBlockY(),
-                newClaim.getGreaterBoundaryCorner().getBlockY(),
                 newClaim.getLesserBoundaryCorner().getBlockZ(),
                 newClaim.getGreaterBoundaryCorner().getBlockZ(),
                 player);

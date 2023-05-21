@@ -16,7 +16,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-class WorldGuardWrapper
+public class WorldGuardWrapper
 {
     private final WorldGuardPlugin worldGuard;
 

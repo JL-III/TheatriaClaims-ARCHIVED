@@ -1,21 +1,3 @@
-/*
-    GriefPrevention Server Plugin for Minecraft
-    Copyright (C) 2012 Ryan Hamshire
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.jliii.theatriaclaims.claim;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
@@ -25,11 +7,8 @@ import com.jliii.theatriaclaims.listeners.BlockEventHandler;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.DataStore;
-import com.jliii.theatriaclaims.util.PlayerData;
 import com.jliii.theatriaclaims.util.PlayerName;
 import org.bukkit.*;
-import org.bukkit.World.Environment;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -50,7 +29,6 @@ import java.util.function.Supplier;
 //only claims which have been added to the datastore have any effect
 public class Claim {
     //two locations, which together define the boundaries of the claim
-    //note that the upper Y value is always ignored, because claims ALWAYS extend up to the sky
 
     private ConfigManager configManager;
 

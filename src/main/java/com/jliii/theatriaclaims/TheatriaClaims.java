@@ -3,7 +3,6 @@ package com.jliii.theatriaclaims;
 import com.jliii.theatriaclaims.commands.ChungusCommand;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
 import com.jliii.theatriaclaims.listeners.EntityEventHandler;
-import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.managers.EventManager;
 import com.jliii.theatriaclaims.tasks.DeliverClaimBlocksTask;
@@ -58,7 +57,7 @@ public class TheatriaClaims extends JavaPlugin {
                 this.dataStore = databaseStore;
             }
             catch (Exception e) {
-                CustomLogger.log("Because there was a problem with the database, GriefPrevention will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that GriefPrevention can use the file system to store data.");
+                CustomLogger.log("Because there was a problem with the database, TheatriaClaims will not function properly.  Either update the database config settings resolve the issue, or delete those lines from your config.yml so that TheatriaClaims can use the file system to store data.");
                 e.printStackTrace();
                 this.getServer().getPluginManager().disablePlugin(this);
                 return;
@@ -71,10 +70,10 @@ public class TheatriaClaims extends JavaPlugin {
             File oldclaimdata = new File(getDataFolder(), "ClaimData");
             if (oldclaimdata.exists()) {
                 if (!FlatFileDataStore.hasData()) {
-                    File claimdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "ClaimData");
+                    File claimdata = new File("plugins" + File.separator + "TheatriaClaimsData" + File.separator + "ClaimData");
                     oldclaimdata.renameTo(claimdata);
                     File oldplayerdata = new File(getDataFolder(), "PlayerData");
-                    File playerdata = new File("plugins" + File.separator + "GriefPreventionData" + File.separator + "PlayerData");
+                    File playerdata = new File("plugins" + File.separator + "TheatriaClaimsData" + File.separator + "PlayerData");
                     oldplayerdata.renameTo(playerdata);
                 }
             }
