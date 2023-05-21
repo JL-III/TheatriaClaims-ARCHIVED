@@ -3,8 +3,12 @@ package com.jliii.theatriaclaims.database;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.PlayerData;
+import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.util.Collection;
+import java.util.UUID;
 
 public class DatabaseManager {
     private TheatriaClaims plugin;
@@ -70,4 +74,16 @@ public class DatabaseManager {
 
     public void setDataStore(DataStore dataStore) { this.dataStore = dataStore; }
 
+    public void onDisablePlugin() {
+        //save data for any online players
+        @SuppressWarnings("unchecked")
+        Collection<Player> players = (Collection<Player>) plugin.getServer().getOnlinePlayers();
+        for (Player player : players) {
+            UUID playerID = player.getUniqueId();
+            PlayerData playerData = getDataStore().getPlayerData(playerID);
+            getDataStore().savePlayerDataSync(playerID, playerData);
+        }
+
+        getDataStore().close();
+    }
 }

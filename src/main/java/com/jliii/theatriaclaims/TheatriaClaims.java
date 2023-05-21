@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class TheatriaClaims extends JavaPlugin {
     public static TheatriaClaims instance;
-    private EntityEventHandler entityEventHandler;
     private DatabaseManager databaseManager;
     EconomyHandler economyHandler;
     ConfigManager configManager;
@@ -48,30 +47,12 @@ public class TheatriaClaims extends JavaPlugin {
     }
 
     public void onDisable() {
-        //save data for any online players
-        @SuppressWarnings("unchecked")
-        Collection<Player> players = (Collection<Player>) this.getServer().getOnlinePlayers();
-        for (Player player : players) {
-            UUID playerID = player.getUniqueId();
-            PlayerData playerData = databaseManager.getDataStore().getPlayerData(playerID);
-            databaseManager.getDataStore().savePlayerDataSync(playerID, playerData);
-        }
-
-        databaseManager.getDataStore().close();
-
+        databaseManager.onDisablePlugin();
         CustomLogger.log("Plugin has disabled.");
     }
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
-    }
-
-    public EntityEventHandler getEntityEventHandler() {
-        return entityEventHandler;
-    }
-
-    public void setEntityEventHandler(EntityEventHandler entityEventHandler) {
-        this.entityEventHandler = entityEventHandler;
     }
 
 }
