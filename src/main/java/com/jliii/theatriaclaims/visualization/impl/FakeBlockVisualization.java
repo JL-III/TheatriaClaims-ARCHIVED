@@ -123,6 +123,8 @@ public class FakeBlockVisualization extends BlockBoundaryVisualization {
                 return waterTransparent;
             case SNOW:
                 return false;
+            default:
+                break;
         }
 
         if (blockMaterial.isAir()
