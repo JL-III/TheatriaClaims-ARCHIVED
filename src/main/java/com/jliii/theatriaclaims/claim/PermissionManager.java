@@ -1,7 +1,8 @@
-package com.jliii.theatriaclaims.managers;
+package com.jliii.theatriaclaims.claim;
 
 import java.util.function.Supplier;
 
+import com.jliii.theatriaclaims.config.ConfigManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,8 +29,8 @@ public class PermissionManager {
     public static String allowBuild(Player player, ConfigManager configManager, Location location, Material material) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;
@@ -59,8 +60,8 @@ public class PermissionManager {
     public static String allowBreak(Player player, ConfigManager configManager, Block block, Location location, BlockBreakEvent breakEvent) {
         if (!configManager.getSystemConfig().claimsEnabledForWorld(location.getWorld())) return null;
 
-        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
-        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(location, false, playerData.lastClaim);
+        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(location, false, playerData.lastClaim);
 
         //exception: administrators in ignore claims mode
         if (playerData.ignoreClaims) return null;

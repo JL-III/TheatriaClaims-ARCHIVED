@@ -3,7 +3,7 @@ package com.jliii.theatriaclaims.tasks;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.events.ClaimExpirationEvent;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.Bukkit;
@@ -40,7 +40,7 @@ public class CleanupUnusedClaimTask implements Runnable {
             if (sevenDaysAgo.getTime().after(new Date(ownerInfo.getLastPlayed()))) {
                 if (expireEventCanceled())
                     return;
-                TheatriaClaims.instance.dataStore.deleteClaim(claim, true, true);
+                TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaim(claim, true, true);
                 CustomLogger.log(" " + claim.getOwnerName() + "'s new player claim expired.");
             }
         }
@@ -54,7 +54,7 @@ public class CleanupUnusedClaimTask implements Runnable {
                 if (expireEventCanceled())
                     return;
                 //delete them
-                TheatriaClaims.instance.dataStore.deleteClaimsForPlayer(claim.ownerID, true);
+                TheatriaClaims.instance.getDatabaseManager().getDataStore().deleteClaimsForPlayer(claim.ownerID, true);
                 CustomLogger.log(" All of " + claim.getOwnerName() + "'s claims have expired.");
                 CustomLogger.log("earliestPermissibleLastLogin#getTime: " + earliestPermissibleLastLogin.getTime());
                 CustomLogger.log("ownerInfo#getLastPlayed: " + ownerInfo.getLastPlayed());

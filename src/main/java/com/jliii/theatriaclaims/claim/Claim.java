@@ -4,9 +4,9 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.events.ClaimPermissionCheckEvent;
 import com.jliii.theatriaclaims.listeners.BlockEventHandler;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
-import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.PlayerName;
 import org.bukkit.*;
 import org.bukkit.block.BlockState;
@@ -389,7 +389,7 @@ public class Claim {
 
         // Claim owner and admins in ignoreclaims mode have access.
         if (uuid.equals(this.getOwnerID())
-                || TheatriaClaims.instance.dataStore.getPlayerData(uuid).ignoreClaims
+                || TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(uuid).ignoreClaims
                 && hasBypassPermission(player, permission))
             return null;
 

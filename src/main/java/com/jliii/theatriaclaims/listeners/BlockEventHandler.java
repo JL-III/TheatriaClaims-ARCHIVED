@@ -23,20 +23,16 @@ import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
 import com.jliii.theatriaclaims.enums.MessageType;
-import com.jliii.theatriaclaims.enums.PistonMode;
 import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.managers.PermissionManager;
-import com.jliii.theatriaclaims.util.BoundingBox;
-import com.jliii.theatriaclaims.util.DataStore;
-import com.jliii.theatriaclaims.util.GeneralUtils;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.claim.PermissionManager;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
 import com.jliii.theatriaclaims.util.PlayerData;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 
 import org.bukkit.*;
-import org.bukkit.World.Environment;
 import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Lightable;
@@ -59,14 +55,11 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.world.PortalCreateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
 import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.projectiles.BlockProjectileSource;
 import org.bukkit.projectiles.ProjectileSource;
 
-import java.io.ObjectInputFilter.Config;
 import java.util.*;
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 
 //event handlers related to blocks
@@ -463,7 +456,7 @@ public class BlockEventHandler implements Listener {
         //don't track in worlds where claims are not enabled
         if (!configManager.getSystemConfig().claimsEnabledForWorld(igniteEvent.getBlock().getWorld())) return;
 
-        if (igniteEvent.getCause() == IgniteCause.LIGHTNING && TheatriaClaims.instance.dataStore.getClaimAt(igniteEvent.getIgnitingEntity().getLocation(), false, null) != null) {
+        if (igniteEvent.getCause() == IgniteCause.LIGHTNING && TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getIgnitingEntity().getLocation(), false, null) != null) {
             igniteEvent.setCancelled(true); //BlockIgniteEvent is called before LightningStrikeEvent. See #532. However, see #1125 for further discussion on detecting trident-caused lightning.
         }
 
@@ -471,8 +464,8 @@ public class BlockEventHandler implements Listener {
         if (igniteEvent.getCause() == IgniteCause.FIREBALL && igniteEvent.getIgnitingEntity() instanceof Fireball) {
             ProjectileSource shooter = ((Fireball) igniteEvent.getIgnitingEntity()).getShooter();
             if (shooter instanceof BlockProjectileSource) {
-                Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(igniteEvent.getBlock().getLocation(), false, null);
-                if (claim != null && TheatriaClaims.instance.dataStore.getClaimAt(((BlockProjectileSource) shooter).getBlock().getLocation(), false, claim) == claim) {
+                Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(igniteEvent.getBlock().getLocation(), false, null);
+                if (claim != null && TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(((BlockProjectileSource) shooter).getBlock().getLocation(), false, claim) == claim) {
                     return;
                 }
             }
@@ -488,7 +481,7 @@ public class BlockEventHandler implements Listener {
 
                 // Call event.
                 EntityChangeBlockEvent changeBlockEvent = new EntityChangeBlockEvent(igniteEvent.getIgnitingEntity(), igniteEvent.getBlock(), blockData);
-                TheatriaClaims.instance.entityEventHandler.onEntityChangeBLock(changeBlockEvent);
+                TheatriaClaims.instance.getEntityEventHandler().onEntityChangeBLock(changeBlockEvent);
 
                 // Respect event result.
                 if (changeBlockEvent.isCancelled()) {

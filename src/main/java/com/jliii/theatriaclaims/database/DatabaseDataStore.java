@@ -16,10 +16,13 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.database;
 
 import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.util.UUIDFetcher;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;

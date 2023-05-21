@@ -1,7 +1,7 @@
 package com.jliii.theatriaclaims.listeners;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.event.EventHandler;

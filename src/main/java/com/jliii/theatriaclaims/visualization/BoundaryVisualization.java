@@ -3,7 +3,7 @@ package com.jliii.theatriaclaims.visualization;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.events.BoundaryVisualizationEvent;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.BoundingBox;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.IntVector;
@@ -246,7 +246,7 @@ public abstract class BoundaryVisualization {
         Bukkit.getPluginManager().callEvent(event);
 
         Player player = event.getPlayer();
-        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
         BoundaryVisualization currentVisualization = playerData.getVisibleBoundaries();
 
         Collection<Boundary> boundaries = event.getBoundaries();

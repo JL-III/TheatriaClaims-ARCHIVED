@@ -1,4 +1,4 @@
-package com.jliii.theatriaclaims.managers;
+package com.jliii.theatriaclaims.config;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.config.ClaimsConfig;
@@ -41,6 +41,7 @@ public class ConfigManager {
         worldConfig = new WorldConfig(config);
         messagesConfig = new MessagesConfig();
         theatriaClaims.saveDefaultConfig();
+        loadConfig();
     }
 
     public FileConfiguration getConfig() {

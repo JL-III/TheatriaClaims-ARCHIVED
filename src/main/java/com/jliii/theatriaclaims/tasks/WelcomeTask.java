@@ -9,8 +9,8 @@ import org.bukkit.inventory.meta.BookMeta;
 
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
 
 public class WelcomeTask implements Runnable {

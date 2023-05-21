@@ -16,7 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.database;
 
 import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
@@ -25,7 +25,8 @@ import com.jliii.theatriaclaims.claim.CreateClaimResult;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.events.*;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.util.*;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 import org.bukkit.*;
@@ -911,7 +912,7 @@ public abstract class DataStore {
         }
 
         //ask the datastore to try and resize the claim, this checks for conflicts with other claims
-        CreateClaimResult result = TheatriaClaims.instance.dataStore.resizeClaim(
+        CreateClaimResult result = TheatriaClaims.instance.getDatabaseManager().getDataStore().resizeClaim(
                 playerData.claimResizing,
                 newClaim.getLesserBoundaryCorner().getBlockX(),
                 newClaim.getGreaterBoundaryCorner().getBlockX(),

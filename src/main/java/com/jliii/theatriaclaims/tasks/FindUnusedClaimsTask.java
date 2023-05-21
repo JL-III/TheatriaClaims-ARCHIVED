@@ -19,7 +19,7 @@
 package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
 
 import java.util.*;
@@ -58,7 +58,7 @@ public class FindUnusedClaimsTask implements Runnable {
 
     public void refreshUUIDs() {
         // Fetch owner UUIDs from list of claims
-        claimOwnerUUIDs = TheatriaClaims.instance.dataStore.claims.stream().map(claim -> claim.ownerID)
+        claimOwnerUUIDs = TheatriaClaims.instance.getDatabaseManager().getDataStore().claims.stream().map(claim -> claim.ownerID)
                 .distinct().filter(Objects::nonNull).collect(Collectors.toList());
 
         if (!claimOwnerUUIDs.isEmpty()) {

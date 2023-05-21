@@ -24,8 +24,8 @@ import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.ShovelMode;
 import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.GeneralUtils;
 import com.jliii.theatriaclaims.util.Messages;
 import com.jliii.theatriaclaims.util.PlayerData;
@@ -54,7 +54,7 @@ public class EquipShovelProcessingTask implements Runnable {
         //if he's not holding the golden shovel anymore, do nothing
         if (GeneralUtils.getItemInHand(player, EquipmentSlot.HAND).getType() != configManager.getSystemConfig().modificationTool)
             return;
-        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+        PlayerData playerData = TheatriaClaims.instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
         //reset any work he might have been doing
         playerData.lastShovelLocation = null;
         playerData.claimResizing = null;
@@ -74,7 +74,7 @@ public class EquipShovelProcessingTask implements Runnable {
         }
 
         //if standing in a claim owned by the player, visualize it
-        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true, playerData.lastClaim);
+        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(player.getLocation(), true, playerData.lastClaim);
         if (claim != null && claim.checkPermission(player, ClaimPermission.Edit, null) == null) {
             playerData.lastClaim = claim;
             BoundaryVisualization.visualizeClaim(player, claim, VisualizationType.CLAIM, configManager);

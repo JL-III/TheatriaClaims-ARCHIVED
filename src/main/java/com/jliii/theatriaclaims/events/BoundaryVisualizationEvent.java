@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.events;
 
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.visualization.Boundary;
 import com.jliii.theatriaclaims.visualization.VisualizationProvider;

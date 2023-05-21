@@ -29,10 +29,10 @@ public class UUIDFetcher {
     private final boolean rateLimiting;
 
     //cache for username -> uuid lookups
-    static HashMap<String, UUID> lookupCache;
+    public static HashMap<String, UUID> lookupCache;
 
     //record of username -> proper casing updates
-    static HashMap<String, String> correctedNames;
+    public static HashMap<String, String> correctedNames;
 
     public UUIDFetcher(List<String> names, boolean rateLimiting) {
         this.names = names;

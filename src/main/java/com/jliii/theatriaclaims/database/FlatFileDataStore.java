@@ -16,13 +16,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.jliii.theatriaclaims.util;
+package com.jliii.theatriaclaims.database;
 
 import com.google.common.io.Files;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.util.CustomLogger;
+import com.jliii.theatriaclaims.util.PlayerData;
+import com.jliii.theatriaclaims.util.UUIDFetcher;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -38,7 +40,7 @@ import java.util.regex.Matcher;
 //manages data stored in the file system
 public class FlatFileDataStore extends DataStore {
 
-    private ConfigManager configManager;
+    private final ConfigManager configManager;
     private final static String claimDataFolderPath = dataLayerFolderPath + File.separator + "ClaimData";
     private final static String nextClaimIdFilePath = claimDataFolderPath + File.separator + "_nextClaimID";
     private final static String schemaVersionFilePath = dataLayerFolderPath + File.separator + "_schemaVersion";
@@ -800,7 +802,6 @@ public class FlatFileDataStore extends DataStore {
             File schemaVersionFile = new File(schemaVersionFilePath);
             schemaVersionFile.createNewFile();
             outStream = new BufferedWriter(new FileWriter(schemaVersionFile));
-
             outStream.write(String.valueOf(versionToSet));
         }
 

@@ -1,5 +1,6 @@
-package com.jliii.theatriaclaims.managers;
+package com.jliii.theatriaclaims.events;
 
+import com.jliii.theatriaclaims.config.ConfigManager;
 import org.bukkit.Bukkit;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
@@ -8,7 +9,7 @@ import com.jliii.theatriaclaims.listeners.EconomyHandler;
 import com.jliii.theatriaclaims.listeners.EntityEventHandler;
 import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import com.jliii.theatriaclaims.util.CustomLogger;
-import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.database.DataStore;
 
 public class EventManager {
 
@@ -19,7 +20,7 @@ public class EventManager {
         Bukkit.getPluginManager().registerEvents(new BlockEventHandler(dataStore, configManager), plugin);
         //entity events
         EntityEventHandler entityEventHandler = new EntityEventHandler(dataStore, plugin, configManager);
-        plugin.entityEventHandler = entityEventHandler;
+        plugin.setEntityEventHandler(entityEventHandler);
         Bukkit.getPluginManager().registerEvents(entityEventHandler, plugin);
         //vault-based economy integration
         Bukkit.getPluginManager().registerEvents(new EconomyHandler(plugin, configManager), plugin);

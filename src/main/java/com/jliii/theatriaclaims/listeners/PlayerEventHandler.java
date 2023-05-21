@@ -22,52 +22,38 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.enums.*;
 import com.jliii.theatriaclaims.events.ClaimInspectionEvent;
-import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.managers.PermissionManager;
-import com.jliii.theatriaclaims.tasks.BroadcastMessageTask;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.claim.PermissionManager;
 import com.jliii.theatriaclaims.tasks.EquipShovelProcessingTask;
-import com.jliii.theatriaclaims.tasks.WelcomeTask;
 import com.jliii.theatriaclaims.util.*;
 import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.VisualizationType;
 import org.bukkit.*;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Waterlogged;
-import org.bukkit.command.Command;
 import org.bukkit.entity.*;
-import org.bukkit.entity.minecart.PoweredMinecart;
-import org.bukkit.entity.minecart.StorageMinecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.event.player.PlayerLoginEvent.Result;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.raid.RaidTriggerEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.MetadataValue;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.BlockIterator;
 
-import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import java.util.regex.Pattern;
 
 public class PlayerEventHandler implements Listener {
 
@@ -334,7 +320,7 @@ public class PlayerEventHandler implements Listener {
         // Name tags may only be used on entities that the player is allowed to kill.
         if (itemInHand.getType() == Material.NAME_TAG) {
             EntityDamageByEntityEvent damageEvent = new EntityDamageByEntityEvent(player, entity, EntityDamageEvent.DamageCause.CUSTOM, 0);
-            instance.entityEventHandler.onEntityDamage(damageEvent);
+            instance.getEntityEventHandler().onEntityDamage(damageEvent);
             if (damageEvent.isCancelled()) {
                 event.setCancelled(true);
                 return;
@@ -382,8 +368,8 @@ public class PlayerEventHandler implements Listener {
         if (entity.getType() == EntityType.ARMOR_STAND || entity instanceof Animals)
         {
             Player player = event.getPlayer();
-            PlayerData playerData = instance.dataStore.getPlayerData(player.getUniqueId());
-            Claim claim = instance.dataStore.getClaimAt(entity.getLocation(), false, playerData.lastClaim);
+            PlayerData playerData = instance.getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
+            Claim claim = instance.getDatabaseManager().getDataStore().getClaimAt(entity.getLocation(), false, playerData.lastClaim);
             if (claim != null)
             {
                 //if no permission, cancel
@@ -1056,7 +1042,7 @@ public class PlayerEventHandler implements Listener {
                     int remainingBlocks = playerData.getRemainingClaimBlocks();
                     if (newClaimArea > remainingBlocks) {
                         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimInsufficientBlocks, String.valueOf(newClaimArea - remainingBlocks));
-                        instance.dataStore.tryAdvertiseAdminAlternatives(player);
+                        instance.getDatabaseManager().getDataStore().tryAdvertiseAdminAlternatives(player);
                         return;
                     }
                 }

@@ -20,9 +20,9 @@ package com.jliii.theatriaclaims.tasks;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.events.AccrueClaimBlocksEvent;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.CustomLogger;
-import com.jliii.theatriaclaims.util.DataStore;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.PlayerData;
 import org.bukkit.entity.Player;
 
@@ -67,7 +67,7 @@ public class DeliverClaimBlocksTask implements Runnable {
             return; //player is not online to receive claim blocks
         }
 
-        DataStore dataStore = instance.dataStore;
+        DataStore dataStore = instance.getDatabaseManager().getDataStore();
         PlayerData playerData = dataStore.getPlayerData(player.getUniqueId());
 
         // check if player is idle. considered idle if

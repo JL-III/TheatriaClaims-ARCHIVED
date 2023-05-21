@@ -1,6 +1,6 @@
 package com.jliii.theatriaclaims.visualization.impl;
 
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.util.IntVector;
 import com.jliii.theatriaclaims.visualization.BlockBoundaryVisualization;
 import com.jliii.theatriaclaims.visualization.Boundary;

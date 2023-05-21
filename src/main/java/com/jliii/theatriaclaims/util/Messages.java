@@ -3,7 +3,7 @@ package com.jliii.theatriaclaims.util;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.tasks.SendPlayerMessageTask;
 
 import net.kyori.adventure.text.format.NamedTextColor;

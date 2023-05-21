@@ -3,20 +3,15 @@ package com.jliii.theatriaclaims.listeners;
 import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
-import com.jliii.theatriaclaims.enums.ClaimsMode;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.managers.ConfigManager;
-import com.jliii.theatriaclaims.managers.PermissionManager;
-import com.jliii.theatriaclaims.util.DataStore;
-import com.jliii.theatriaclaims.util.GeneralUtils;
+import com.jliii.theatriaclaims.config.ConfigManager;
+import com.jliii.theatriaclaims.claim.PermissionManager;
+import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.util.PendingItemProtection;
 import com.jliii.theatriaclaims.util.PlayerData;
-import com.jliii.theatriaclaims.util.PlayerName;
 
 import org.bukkit.*;
-import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.entity.*;
 import org.bukkit.entity.minecart.ExplosiveMinecart;
@@ -26,18 +21,15 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.EntityBlockFormEvent;
 import org.bukkit.event.entity.*;
-import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.hanging.HangingPlaceEvent;
 import org.bukkit.event.vehicle.VehicleDamageEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.projectiles.BlockProjectileSource;
 import org.bukkit.projectiles.ProjectileSource;
@@ -591,7 +583,7 @@ public class EntityEventHandler implements Listener {
         // but also doesn't disable self-damage.
         if (entity instanceof Player) return false;
 
-        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(entity.getLocation(), false, null);
+        Claim claim = TheatriaClaims.instance.getDatabaseManager().getDataStore().getClaimAt(entity.getLocation(), false, null);
 
         // Only block explosion damage inside claims.
         if (claim == null) return false;
