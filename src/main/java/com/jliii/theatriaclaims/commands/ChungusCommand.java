@@ -4,13 +4,11 @@ import com.jliii.theatriaclaims.TheatriaClaims;
 import com.jliii.theatriaclaims.claim.Claim;
 import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.claim.CreateClaimResult;
-import com.jliii.theatriaclaims.enums.CustomLogEntryTypes;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.ShovelMode;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.events.TrustChangedEvent;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
-import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import com.jliii.theatriaclaims.managers.ConfigManager;
 import com.jliii.theatriaclaims.tasks.WelcomeTask;
 import com.jliii.theatriaclaims.util.CustomLogger;
@@ -37,14 +35,11 @@ import java.util.function.Supplier;
 
 public class ChungusCommand implements CommandExecutor {
 
-    private Player player;
     private EconomyHandler economyHandler;
-    private PlayerEventHandler playerEventHandler;
     private ConfigManager configManager;
 
-    public ChungusCommand(EconomyHandler economyHandler, PlayerEventHandler playerEventHandler, ConfigManager configManager) {
+    public ChungusCommand(EconomyHandler economyHandler, ConfigManager configManager) {
         this.economyHandler = economyHandler;
-        this.playerEventHandler = playerEventHandler;
         this.configManager = configManager;
     }
 
@@ -265,12 +260,12 @@ public class ChungusCommand implements CommandExecutor {
 
         //abandonclaim
         if (cmd.getName().equalsIgnoreCase("abandonclaim") && player != null) {
-            return TheatriaClaims.instance.abandonClaimHandler(player, false);
+            return abandonClaimHandler(player, false);
         }
 
         //abandontoplevelclaim
         if (cmd.getName().equalsIgnoreCase("abandontoplevelclaim") && player != null) {
-            return TheatriaClaims.instance.abandonClaimHandler(player, true);
+            return abandonClaimHandler(player, true);
         }
 
         //ignoreclaims
@@ -344,7 +339,7 @@ public class ChungusCommand implements CommandExecutor {
             if (args.length != 1) return false;
 
             //most trust commands use this helper method, it keeps them consistent
-            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Build, args[0]);
+            handleTrustCommand(player, ClaimPermission.Build, args[0]);
 
             return true;
         }
@@ -435,7 +430,7 @@ public class ChungusCommand implements CommandExecutor {
             if (managers.size() > 0)
             {
                 for (String manager : managers)
-                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(manager)).append(' ');
+                    permissions.append(trustEntryToPlayerName(manager)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -445,7 +440,7 @@ public class ChungusCommand implements CommandExecutor {
             if (builders.size() > 0)
             {
                 for (String builder : builders)
-                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(builder)).append(' ');
+                    permissions.append(trustEntryToPlayerName(builder)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -455,7 +450,7 @@ public class ChungusCommand implements CommandExecutor {
             if (containers.size() > 0)
             {
                 for (String container : containers)
-                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(container)).append(' ');
+                    permissions.append(trustEntryToPlayerName(container)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -465,7 +460,7 @@ public class ChungusCommand implements CommandExecutor {
             if (accessors.size() > 0)
             {
                 for (String accessor : accessors)
-                    permissions.append(TheatriaClaims.instance.trustEntryToPlayerName(accessor)).append(' ');
+                    permissions.append(trustEntryToPlayerName(accessor)).append(' ');
             }
 
             player.sendMessage(permissions.toString());
@@ -672,7 +667,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Access, args[0]);
+            handleTrustCommand(player, ClaimPermission.Access, args[0]);
 
             return true;
         }
@@ -683,7 +678,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            TheatriaClaims.instance.handleTrustCommand(player, ClaimPermission.Inventory, args[0]);
+            handleTrustCommand(player, ClaimPermission.Inventory, args[0]);
 
             return true;
         }
@@ -694,7 +689,7 @@ public class ChungusCommand implements CommandExecutor {
             //requires exactly one parameter, the other player's name
             if (args.length != 1) return false;
 
-            TheatriaClaims.instance.handleTrustCommand(player, null, args[0]);  //null indicates permissiontrust to the helper method
+            handleTrustCommand(player, null, args[0]);  //null indicates permissiontrust to the helper method
 
             return true;
         }
@@ -1465,144 +1460,197 @@ public class ChungusCommand implements CommandExecutor {
 
             return true;
         }
-
-        // //ignoreplayer
-        // else if (cmd.getName().equalsIgnoreCase("ignoreplayer") && player != null)
-        // {
-        //     //requires target player name
-        //     if (args.length < 1) return false;
-
-        //     //validate target player
-        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-        //     if (targetPlayer == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     TheatriaClaims.instance.setIgnoreStatus(player, targetPlayer, TheatriaClaims.IgnoreMode.StandardIgnore);
-
-        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.IgnoreConfirmation);
-
-        //     return true;
-        // }
-
-        // //unignoreplayer
-        // else if (cmd.getName().equalsIgnoreCase("unignoreplayer") && player != null)
-        // {
-        //     //requires target player name
-        //     if (args.length < 1) return false;
-
-        //     //validate target player
-        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-        //     if (targetPlayer == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
-        //     Boolean ignoreStatus = playerData.ignoredPlayers.get(targetPlayer.getUniqueId());
-        //     if (ignoreStatus == null || ignoreStatus == true)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotIgnoringPlayer);
-        //         return true;
-        //     }
-
-        //     TheatriaClaims.instance.setIgnoreStatus(player, targetPlayer, TheatriaClaims.IgnoreMode.None);
-
-        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UnIgnoreConfirmation);
-
-        //     return true;
-        // }
-
-        // //ignoredplayerlist
-        // else if (cmd.getName().equalsIgnoreCase("ignoredplayerlist") && player != null)
-        // {
-        //     PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
-        //     StringBuilder builder = new StringBuilder();
-        //     for (Map.Entry<UUID, Boolean> entry : playerData.ignoredPlayers.entrySet())
-        //     {
-        //         if (entry.getValue() != null)
-        //         {
-        //             //if not an admin ignore, add it to the list
-        //             if (!entry.getValue())
-        //             {
-        //                 builder.append(PlayerName.lookupPlayerName(entry.getKey()));
-        //                 builder.append(" ");
-        //             }
-        //         }
-        //     }
-
-        //     String list = builder.toString().trim();
-        //     if (list.isEmpty())
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Info.getColor(), MessageType.NotIgnoringAnyone);
-        //     }
-        //     else
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Info.getColor(), list);
-        //     }
-
-        //     return true;
-        // }
-
-        // //separateplayers
-        // else if (cmd.getName().equalsIgnoreCase("separate"))
-        // {
-        //     //requires two player names
-        //     if (args.length < 2) return false;
-
-        //     //validate target players
-        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-        //     if (targetPlayer == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
-        //     if (targetPlayer2 == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer, targetPlayer2, TheatriaClaims.IgnoreMode.AdminIgnore);
-
-        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.SeparateConfirmation);
-
-        //     return true;
-        // }
-
-        // //unseparateplayers
-        // else if (cmd.getName().equalsIgnoreCase("unseparate"))
-        // {
-        //     //requires two player names
-        //     if (args.length < 2) return false;
-
-        //     //validate target players
-        //     OfflinePlayer targetPlayer = PlayerName.resolvePlayerByName(args[0]);
-        //     if (targetPlayer == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     OfflinePlayer targetPlayer2 = PlayerName.resolvePlayerByName(args[1]);
-        //     if (targetPlayer2 == null)
-        //     {
-        //         Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-        //         return true;
-        //     }
-
-        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer, targetPlayer2, TheatriaClaims.IgnoreMode.None);
-        //     TheatriaClaims.instance.setIgnoreStatus(targetPlayer2, targetPlayer, TheatriaClaims.IgnoreMode.None);
-
-        //     Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.UnSeparateConfirmation);
-
-        //     return true;
-        // }
         return false;
+    }
+
+    //helper method keeps the trust commands consistent and eliminates duplicate code
+    public void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) {
+        //determine which claim the player is standing in
+        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+
+        //validate player or group argument
+        String permission = null;
+        OfflinePlayer otherPlayer = null;
+        UUID recipientID = null;
+        if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
+            permission = recipientName.substring(1, recipientName.length() - 1);
+            if (permission == null || permission.isEmpty()) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.InvalidPermissionID);
+                return;
+            }
+        }
+        else {
+            otherPlayer = PlayerName.resolvePlayerByName(recipientName);
+            boolean isPermissionFormat = recipientName.contains(".");
+            if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all") && !isPermissionFormat) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
+                return;
+            }
+
+            if (otherPlayer == null && isPermissionFormat) {
+                //player does not exist and argument has a period so this is a permission instead
+                permission = recipientName;
+            }
+            else if (otherPlayer != null) {
+                recipientName = otherPlayer.getName();
+                recipientID = otherPlayer.getUniqueId();
+            }
+            else {
+                recipientName = "public";
+            }
+        }
+
+        //determine which claims should be modified
+        ArrayList<Claim> targetClaims = new ArrayList<>();
+        if (claim == null) {
+            PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+            targetClaims.addAll(playerData.getClaims());
+        }
+        else {
+            //check permission here
+            if (claim.checkPermission(player, ClaimPermission.Manage, null) != null) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
+                return;
+            }
+
+            //see if the player has the level of permission he's trying to grant
+            Supplier<String> errorMessage;
+
+            //permission level null indicates granting permission trust
+            if (permissionLevel == null) {
+                errorMessage = claim.checkPermission(player, ClaimPermission.Edit, null);
+                if (errorMessage != null) {
+                    errorMessage = () -> "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
+                }
+            }
+
+            //otherwise just use the ClaimPermission enum values
+            else {
+                errorMessage = claim.checkPermission(player, permissionLevel, null);
+            }
+
+            //error message for trying to grant a permission the player doesn't have
+            if (errorMessage != null) {
+                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CantGrantThatPermission);
+                return;
+            }
+
+            targetClaims.add(claim);
+        }
+
+        //if we didn't determine which claims to modify, tell the player to be specific
+        if (targetClaims.size() == 0) {
+            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.GrantPermissionNoClaim);
+            return;
+        }
+
+        String identifierToAdd = recipientName;
+        if (permission != null) {
+            identifierToAdd = "[" + permission + "]";
+            //replace recipientName as well so the success message clearly signals a permission
+            recipientName = identifierToAdd;
+        }
+        else if (recipientID != null) {
+            identifierToAdd = recipientID.toString();
+        }
+
+        //calling the event
+        TrustChangedEvent event = new TrustChangedEvent(player, targetClaims, permissionLevel, true, identifierToAdd);
+        Bukkit.getPluginManager().callEvent(event);
+
+        if (event.isCancelled()) {
+            return;
+        }
+
+        //apply changes
+        for (Claim currentClaim : event.getClaims()) {
+            if (permissionLevel == null) {
+                if (!currentClaim.managers.contains(identifierToAdd)) {
+                    currentClaim.managers.add(identifierToAdd);
+                }
+            }
+            else {
+                currentClaim.setPermission(identifierToAdd, permissionLevel);
+            }
+            TheatriaClaims.instance.dataStore.saveClaim(currentClaim);
+        }
+
+        //notify player
+        if (recipientName.equals("public")) recipientName = configManager.getMessagesConfig().getMessage(MessageType.CollectivePublic);
+        String permissionDescription;
+        if (permissionLevel == null) {
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.PermissionsPermission);
+        }
+        else if (permissionLevel == ClaimPermission.Build) {
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.BuildPermission);
+        }
+        else if (permissionLevel == ClaimPermission.Access) {
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.AccessPermission);
+        }
+        //ClaimPermission.Inventory
+        else {
+            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.ContainersPermission);
+        }
+
+        String location;
+        if (claim == null) {
+            location = configManager.getMessagesConfig().getMessage(MessageType.LocationAllClaims);
+        }
+        else {
+            location = configManager.getMessagesConfig().getMessage(MessageType.LocationCurrentClaim);
+        }
+
+        Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.GrantPermissionConfirmation, recipientName, permissionDescription, location);
+    }
+
+    public boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
+        PlayerData playerData = TheatriaClaims.instance.dataStore.getPlayerData(player.getUniqueId());
+
+        //which claim is being abandoned?
+        Claim claim = TheatriaClaims.instance.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
+        if (claim == null) {
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.AbandonClaimMissing);
+        }
+
+        //verify ownership
+        else if (claim.checkPermission(player, ClaimPermission.Edit, null) != null) {
+            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotYourClaim);
+        }
+
+        //warn if has children and we're not explicitly deleting a top level claim
+        else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
+            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.DeleteTopLevelClaim);
+            return true;
+        }
+        else {
+            //delete it
+            TheatriaClaims.instance.dataStore.deleteClaim(claim, true, false);
+
+            //adjust claim blocks when abandoning a top level claim
+            if (configManager.getSystemConfig().abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {
+                playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - configManager.getSystemConfig().abandonReturnRatio))));
+            }
+
+            //tell the player how many claim blocks he has left
+            int remainingBlocks = playerData.getRemainingClaimBlocks();
+            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AbandonSuccess, String.valueOf(remainingBlocks));
+
+            //revert any current visualization
+            playerData.setVisibleBoundaries(null);
+
+            playerData.warnedAboutMajorDeletion = false;
+        }
+
+        return true;
+
+    }
+
+    public String trustEntryToPlayerName(String entry) {
+        if (entry.startsWith("[") || entry.equals("public")) {
+            return entry;
+        }
+        else {
+            return PlayerName.lookupPlayerName(entry);
+        }
     }
 }

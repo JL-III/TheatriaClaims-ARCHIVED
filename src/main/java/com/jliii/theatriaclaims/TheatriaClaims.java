@@ -1,35 +1,22 @@
 package com.jliii.theatriaclaims;
 
-import com.jliii.theatriaclaims.claim.Claim;
-import com.jliii.theatriaclaims.claim.ClaimPermission;
 import com.jliii.theatriaclaims.commands.ChungusCommand;
-import com.jliii.theatriaclaims.enums.IgnoreMode;
-import com.jliii.theatriaclaims.enums.MessageType;
-import com.jliii.theatriaclaims.enums.TextMode;
-import com.jliii.theatriaclaims.events.PreventBlockBreakEvent;
-import com.jliii.theatriaclaims.events.TrustChangedEvent;
-import com.jliii.theatriaclaims.listeners.BlockEventHandler;
 import com.jliii.theatriaclaims.listeners.EconomyHandler;
 import com.jliii.theatriaclaims.listeners.EntityEventHandler;
 import com.jliii.theatriaclaims.listeners.PlayerEventHandler;
 import com.jliii.theatriaclaims.managers.ConfigManager;
+import com.jliii.theatriaclaims.managers.EventManager;
 import com.jliii.theatriaclaims.tasks.DeliverClaimBlocksTask;
 import com.jliii.theatriaclaims.tasks.FindUnusedClaimsTask;
 import com.jliii.theatriaclaims.util.*;
 import org.bukkit.*;
-import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 public class TheatriaClaims extends JavaPlugin {
     //for convenience, a reference to the instance of this plugin
@@ -39,10 +26,7 @@ public class TheatriaClaims extends JavaPlugin {
     // Event handlers with common functionality
     public EntityEventHandler entityEventHandler;
     // Player event handler
-    PlayerEventHandler playerEventHandler;
-
     EconomyHandler economyHandler;
-
     ConfigManager configManager;
 
     //initializes well...   everything
@@ -51,11 +35,8 @@ public class TheatriaClaims extends JavaPlugin {
         Plugin dynmap = getServer().getPluginManager().getPlugin("dynmap");
         if(dynmap != null && dynmap.isEnabled()) {
 //            getLogger().severe("Found Dynmap!  Enabling Dynmap integration...");
-
 //            DynmapIntegration dynmapIntegration = new DynmapIntegration(this);
 //
-
-
         }
         instance = this;
         configManager = new ConfigManager(this);
@@ -121,27 +102,11 @@ public class TheatriaClaims extends JavaPlugin {
         FindUnusedClaimsTask task2 = new FindUnusedClaimsTask(configManager);
         this.getServer().getScheduler().scheduleSyncRepeatingTask(this, task2, 20L * 60, 20L * configManager.getSystemConfig().advanced_claim_expiration_check_rate);
 
-        //register for events
-        PluginManager pluginManager = this.getServer().getPluginManager();
-
-        //player events
-        playerEventHandler = new PlayerEventHandler(this, this.dataStore, configManager);
-        pluginManager.registerEvents(playerEventHandler, this);
-
-        //block events
-        BlockEventHandler blockEventHandler = new BlockEventHandler(this.dataStore, configManager);
-        pluginManager.registerEvents(blockEventHandler, this);
-
-        //entity events
-        entityEventHandler = new EntityEventHandler(this.dataStore, this, configManager);
-        pluginManager.registerEvents(entityEventHandler, this);
-
-        //vault-based economy integration
-        economyHandler = new EconomyHandler(this, configManager);
-        pluginManager.registerEvents(economyHandler, this);
+        //Register events
+        EventManager.registerEvents(this, dataStore, configManager);
 
         //register commands
-        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, playerEventHandler, configManager));
+        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(economyHandler, configManager));
 
         //cache offline players
         OfflinePlayer[] offlinePlayers = this.getServer().getOfflinePlayers();
@@ -158,213 +123,6 @@ public class TheatriaClaims extends JavaPlugin {
 
         CustomLogger.log("Boot finished.");
 
-    }
-
-    public void setIgnoreStatus(OfflinePlayer ignorer, OfflinePlayer ignoree, IgnoreMode mode) {
-        PlayerData playerData = this.dataStore.getPlayerData(ignorer.getUniqueId());
-        if (mode == IgnoreMode.None) {
-            playerData.ignoredPlayers.remove(ignoree.getUniqueId());
-        }
-        else {
-            playerData.ignoredPlayers.put(ignoree.getUniqueId(), mode == IgnoreMode.StandardIgnore ? false : true);
-        }
-
-        playerData.ignoreListChanged = true;
-        if (!ignorer.isOnline()) {
-            this.dataStore.savePlayerData(ignorer.getUniqueId(), playerData);
-            this.dataStore.clearCachedPlayerData(ignorer.getUniqueId());
-        }
-    }
-
-    public String trustEntryToPlayerName(String entry) {
-        if (entry.startsWith("[") || entry.equals("public")) {
-            return entry;
-        }
-        else {
-            return PlayerName.lookupPlayerName(entry);
-        }
-    }
-
-    public boolean abandonClaimHandler(Player player, boolean deleteTopLevelClaim) {
-        PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-
-        //which claim is being abandoned?
-        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
-        if (claim == null) {
-            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.AbandonClaimMissing);
-        }
-
-        //verify ownership
-        else if (claim.checkPermission(player, ClaimPermission.Edit, null) != null) {
-            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NotYourClaim);
-        }
-
-        //warn if has children and we're not explicitly deleting a top level claim
-        else if (claim.children.size() > 0 && !deleteTopLevelClaim) {
-            Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.DeleteTopLevelClaim);
-            return true;
-        }
-        else {
-            //delete it
-            this.dataStore.deleteClaim(claim, true, false);
-
-            //adjust claim blocks when abandoning a top level claim
-            if (configManager.getSystemConfig().abandonReturnRatio != 1.0D && claim.parent == null && claim.ownerID.equals(playerData.playerID)) {
-                playerData.setAccruedClaimBlocks(playerData.getAccruedClaimBlocks() - (int) Math.ceil((claim.getArea() * (1 - configManager.getSystemConfig().abandonReturnRatio))));
-            }
-
-            //tell the player how many claim blocks he has left
-            int remainingBlocks = playerData.getRemainingClaimBlocks();
-            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.AbandonSuccess, String.valueOf(remainingBlocks));
-
-            //revert any current visualization
-            playerData.setVisibleBoundaries(null);
-
-            playerData.warnedAboutMajorDeletion = false;
-        }
-
-        return true;
-
-    }
-
-    //helper method keeps the trust commands consistent and eliminates duplicate code
-    public void handleTrustCommand(Player player, ClaimPermission permissionLevel, String recipientName) {
-        //determine which claim the player is standing in
-        Claim claim = this.dataStore.getClaimAt(player.getLocation(), true /*ignore height*/, null);
-
-        //validate player or group argument
-        String permission = null;
-        OfflinePlayer otherPlayer = null;
-        UUID recipientID = null;
-        if (recipientName.startsWith("[") && recipientName.endsWith("]")) {
-            permission = recipientName.substring(1, recipientName.length() - 1);
-            if (permission == null || permission.isEmpty()) {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.InvalidPermissionID);
-                return;
-            }
-        }
-        else {
-            otherPlayer = PlayerName.resolvePlayerByName(recipientName);
-            boolean isPermissionFormat = recipientName.contains(".");
-            if (otherPlayer == null && !recipientName.equals("public") && !recipientName.equals("all") && !isPermissionFormat) {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.PlayerNotFound2);
-                return;
-            }
-
-            if (otherPlayer == null && isPermissionFormat) {
-                //player does not exist and argument has a period so this is a permission instead
-                permission = recipientName;
-            }
-            else if (otherPlayer != null) {
-                recipientName = otherPlayer.getName();
-                recipientID = otherPlayer.getUniqueId();
-            }
-            else {
-                recipientName = "public";
-            }
-        }
-
-        //determine which claims should be modified
-        ArrayList<Claim> targetClaims = new ArrayList<>();
-        if (claim == null) {
-            PlayerData playerData = this.dataStore.getPlayerData(player.getUniqueId());
-            targetClaims.addAll(playerData.getClaims());
-        }
-        else {
-            //check permission here
-            if (claim.checkPermission(player, ClaimPermission.Manage, null) != null) {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.NoPermissionTrust, claim.getOwnerName());
-                return;
-            }
-
-            //see if the player has the level of permission he's trying to grant
-            Supplier<String> errorMessage;
-
-            //permission level null indicates granting permission trust
-            if (permissionLevel == null) {
-                errorMessage = claim.checkPermission(player, ClaimPermission.Edit, null);
-                if (errorMessage != null) {
-                    errorMessage = () -> "Only " + claim.getOwnerName() + " can grant /PermissionTrust here.";
-                }
-            }
-
-            //otherwise just use the ClaimPermission enum values
-            else {
-                errorMessage = claim.checkPermission(player, permissionLevel, null);
-            }
-
-            //error message for trying to grant a permission the player doesn't have
-            if (errorMessage != null) {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CantGrantThatPermission);
-                return;
-            }
-
-            targetClaims.add(claim);
-        }
-
-        //if we didn't determine which claims to modify, tell the player to be specific
-        if (targetClaims.size() == 0) {
-            Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.GrantPermissionNoClaim);
-            return;
-        }
-
-        String identifierToAdd = recipientName;
-        if (permission != null) {
-            identifierToAdd = "[" + permission + "]";
-            //replace recipientName as well so the success message clearly signals a permission
-            recipientName = identifierToAdd;
-        }
-        else if (recipientID != null) {
-            identifierToAdd = recipientID.toString();
-        }
-
-        //calling the event
-        TrustChangedEvent event = new TrustChangedEvent(player, targetClaims, permissionLevel, true, identifierToAdd);
-        Bukkit.getPluginManager().callEvent(event);
-
-        if (event.isCancelled()) {
-            return;
-        }
-
-        //apply changes
-        for (Claim currentClaim : event.getClaims()) {
-            if (permissionLevel == null) {
-                if (!currentClaim.managers.contains(identifierToAdd)) {
-                    currentClaim.managers.add(identifierToAdd);
-                }
-            }
-            else {
-                currentClaim.setPermission(identifierToAdd, permissionLevel);
-            }
-            this.dataStore.saveClaim(currentClaim);
-        }
-
-        //notify player
-        if (recipientName.equals("public")) recipientName = configManager.getMessagesConfig().getMessage(MessageType.CollectivePublic);
-        String permissionDescription;
-        if (permissionLevel == null) {
-            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.PermissionsPermission);
-        }
-        else if (permissionLevel == ClaimPermission.Build) {
-            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.BuildPermission);
-        }
-        else if (permissionLevel == ClaimPermission.Access) {
-            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.AccessPermission);
-        }
-        //ClaimPermission.Inventory
-        else {
-            permissionDescription = configManager.getMessagesConfig().getMessage(MessageType.ContainersPermission);
-        }
-
-        String location;
-        if (claim == null) {
-            location = configManager.getMessagesConfig().getMessage(MessageType.LocationAllClaims);
-        }
-        else {
-            location = configManager.getMessagesConfig().getMessage(MessageType.LocationCurrentClaim);
-        }
-
-        Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.GrantPermissionConfirmation, recipientName, permissionDescription, location);
     }
 
     //helper method to resolve a player by name
@@ -418,85 +176,7 @@ public class TheatriaClaims extends JavaPlugin {
 
         this.dataStore.close();
 
-        CustomLogger.log("GriefPrevention disabled.");
-    }
-
-    public static boolean isInventoryEmpty(Player player) {
-        PlayerInventory inventory = player.getInventory();
-        ItemStack[] armorStacks = inventory.getArmorContents();
-
-        //check armor slots, stop if any items are found
-        for (ItemStack armorStack : armorStacks) {
-            if (!(armorStack == null || armorStack.getType() == Material.AIR)) return false;
-        }
-
-        //check other slots, stop if any items are found
-        ItemStack[] generalStacks = inventory.getContents();
-        for (ItemStack generalStack : generalStacks) {
-            if (!(generalStack == null || generalStack.getType() == Material.AIR)) return false;
-        }
-
-        return true;
-    }
-    //TODO lets double check if these while loops are necessary.
-    //moves a player from the claim he's in to a nearby wilderness location
-    public Location ejectPlayer(Player player) {
-        //look for a suitable location
-        Location candidateLocation = player.getLocation();
-        while (true) {
-            Claim claim = null;
-            claim = TheatriaClaims.instance.dataStore.getClaimAt(candidateLocation, false, null);
-
-            //if there's a claim here, keep looking
-            if (claim != null) {
-                candidateLocation = new Location(claim.lesserBoundaryCorner.getWorld(), claim.lesserBoundaryCorner.getBlockX() - 1, claim.lesserBoundaryCorner.getBlockY(), claim.lesserBoundaryCorner.getBlockZ() - 1);
-                continue;
-            }
-
-            //otherwise find a safe place to teleport the player
-            else {
-                //find a safe height, a couple of blocks above the surface
-                GuaranteeChunkLoaded(candidateLocation);
-                Block highestBlock = candidateLocation.getWorld().getHighestBlockAt(candidateLocation.getBlockX(), candidateLocation.getBlockZ());
-                Location destination = new Location(highestBlock.getWorld(), highestBlock.getX(), highestBlock.getY() + 2, highestBlock.getZ());
-                player.teleport(destination);
-                return destination;
-            }
-        }
-    }
-
-    //ensures a piece of the managed world is loaded into server memory
-    //(generates the chunk if necessary)
-    private static void GuaranteeChunkLoaded(Location location) {
-        Chunk chunk = location.getChunk();
-        while (!chunk.isLoaded() || !chunk.load(true)) ;
-    }
-
-    public Set<Material> parseMaterialListFromConfig(List<String> stringsToParse) {
-        Set<Material> materials = EnumSet.noneOf(Material.class);
-        //for each string in the list
-        for (int i = 0; i < stringsToParse.size(); i++) {
-            String string = stringsToParse.get(i);
-            //defensive coding
-            if (string == null) continue;
-            //try to parse the string value into a material
-            Material material = Material.getMaterial(string.toUpperCase());
-            //null value returned indicates an error parsing the string from the config file
-            if (material == null) {
-                //check if string has failed validity before
-                if (!string.contains("can't")) {
-                    //update string, which will go out to config file to help user find the error entry
-                    stringsToParse.set(i, string + "     <-- can't understand this entry, see BukkitDev documentation");
-                    //warn about invalid material in log
-                    Bukkit.getLogger().info(String.format("ERROR: Invalid material %s.  Please update your config.yml.", string));
-                }
-            }
-            //otherwise material is valid, add it
-            else {
-                materials.add(material);
-            }
-        }
-        return materials;
+        CustomLogger.log("Plugin has disabled.");
     }
 
 }
