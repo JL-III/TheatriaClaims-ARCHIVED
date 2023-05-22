@@ -1,16 +1,13 @@
 package com.jliii.theatriaclaims.commands;
 
 import com.jliii.theatriaclaims.TheatriaClaims;
-import com.jliii.theatriaclaims.claim.CreateClaimResult;
+import com.jliii.theatriaclaims.claim.ClaimManager;
 import com.jliii.theatriaclaims.config.ConfigManager;
-import com.jliii.theatriaclaims.database.DataStore;
 import com.jliii.theatriaclaims.enums.MessageType;
 import com.jliii.theatriaclaims.enums.TextMode;
 import com.jliii.theatriaclaims.player.PlayerData;
 import com.jliii.theatriaclaims.util.CustomLogger;
 import com.jliii.theatriaclaims.util.Messages;
-import com.jliii.theatriaclaims.visualization.BoundaryVisualization;
-import com.jliii.theatriaclaims.visualization.VisualizationType;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
@@ -21,9 +18,11 @@ import org.jetbrains.annotations.NotNull;
 
 public class Claim implements CommandExecutor {
     private final ConfigManager configManager;
+    private ClaimManager claimManager;
 
-    public Claim(ConfigManager configManager) {
+    public Claim(ConfigManager configManager, ClaimManager claimManager) {
         this.configManager = configManager;
+        this.claimManager = claimManager;
     }
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args) {
@@ -62,20 +61,20 @@ public class Claim implements CommandExecutor {
                 return true;
             }
 
-            int specifiedRadius;
+            int requestedRadius;
             try {
-                specifiedRadius = Integer.parseInt(args[0]);
+                requestedRadius = Integer.parseInt(args[0]);
             }
             catch (NumberFormatException e) {
                 return false;
             }
 
-            if (specifiedRadius < radius) {
+            if (requestedRadius < radius) {
                 Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.MinimumRadius, String.valueOf(radius));
                 return true;
             }
             else {
-                radius = specifiedRadius;
+                radius = requestedRadius;
             }
         }
 
@@ -83,7 +82,6 @@ public class Claim implements CommandExecutor {
 
         Location lc = player.getLocation().add(-radius, 0, -radius);
         Location gc = player.getLocation().add(radius, 0, radius);
-
         //player must have sufficient unused claim blocks
         int area = Math.abs((gc.getBlockX() - lc.getBlockX() + 1) * (gc.getBlockZ() - lc.getBlockZ() + 1));
         int remaining = playerData.getRemainingClaimBlocks();
@@ -92,33 +90,7 @@ public class Claim implements CommandExecutor {
             TheatriaClaims.getInstance().getDatabaseManager().getDataStore().tryAdvertiseAdminAlternatives(player);
             return true;
         }
-
-        CreateClaimResult result = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().createClaim(lc.getWorld(),
-                lc.getBlockX(), gc.getBlockX(),
-                lc.getBlockZ(), gc.getBlockZ(),
-                player.getUniqueId(), null, null, player);
-        if (!result.succeeded || result.claim == null) {
-            if (result.claim != null) {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapShort);
-
-                BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CONFLICT_ZONE, configManager);
-            }
-            else {
-                Messages.sendMessage(player, configManager, TextMode.Err.getColor(), MessageType.CreateClaimFailOverlapRegion);
-            }
-        }
-        else {
-            Messages.sendMessage(player, configManager, TextMode.Success.getColor(), MessageType.CreateClaimSuccess);
-
-            if (configManager.getSystemConfig().claimsEnabledForWorld(player.getWorld())) {
-                Messages.sendMessage(player, configManager, TextMode.Instr.getColor(), MessageType.SurvivalBasicsVideo2, DataStore.SURVIVAL_VIDEO_URL);
-            }
-            BoundaryVisualization.visualizeClaim(player, result.claim, VisualizationType.CLAIM, configManager);
-            playerData.claimResizing = null;
-            playerData.lastShovelLocation = null;
-
-        }
-
+        claimManager.createClaimFromCommand(player, configManager, lc, gc, playerData);
         return true;
     }
 }
