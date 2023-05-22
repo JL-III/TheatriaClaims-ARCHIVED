@@ -1,13 +1,11 @@
 package com.jliii.theatriaclaims;
 
-import com.jliii.theatriaclaims.commands.ChungusCommand;
 import com.jliii.theatriaclaims.database.DatabaseManager;
 import com.jliii.theatriaclaims.config.ConfigManager;
 import com.jliii.theatriaclaims.events.EventManager;
 import com.jliii.theatriaclaims.player.CacheOfflinePlayerNamesThread;
 import com.jliii.theatriaclaims.tasks.TaskManager;
 import com.jliii.theatriaclaims.util.*;
-import org.bukkit.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -33,7 +31,6 @@ public class TheatriaClaims extends JavaPlugin {
 
         new TaskManager(this, configManager).registerScheduledSyncRepeatingTasks();
 
-        Objects.requireNonNull(Bukkit.getPluginCommand("gp")).setExecutor(new ChungusCommand(eventManager.getEconomyHandler(), configManager));
 
         CacheOfflinePlayerNamesThread namesThread = new CacheOfflinePlayerNamesThread(configManager, getServer().getOfflinePlayers(), this.playerNameToIDMap);
         namesThread.setPriority(Thread.MIN_PRIORITY);
