@@ -37,6 +37,20 @@ public class Claim implements CommandExecutor {
             return true;
         }
 
+        if (args.length >= 2) {
+            switch (args[1]) {
+                case "list" -> {
+                    //handle list command here
+                }
+                case "extend" -> {
+                    //handle extend
+                }
+                default -> {
+
+                }
+            }
+        }
+
         PlayerData playerData = TheatriaClaims.getInstance().getDatabaseManager().getDataStore().getPlayerData(player.getUniqueId());
 
         //default is chest claim radius, unless -1
